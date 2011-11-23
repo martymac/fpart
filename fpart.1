@@ -1,0 +1,146 @@
+.\" Copyright (c) 2011 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+.\" All rights reserved.
+.\" 
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 
+.\" THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.Dd November 18, 2011
+.Dt FPART 1
+.Os
+.Sh NAME
+.Nm fpart
+.Nd sort files and divide them into partitions
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl V
+.Op Fl n Ar num | Fl f Ar files | Fl s Ar size
+.Op Fl i Ar infile
+.Op Fl o Ar outfile
+.Op Fl d Ar depth
+.Op Fl e
+.Op Fl v
+.Op Ar file or dir ...
+.Sh DESCRIPTION
+The
+.Nm
+utility helps you sort files and divide them into partitions.
+.Pp
+.Sh GENERAL OPTIONS
+.Bl -tag -width indent
+.It Fl h
+Print help
+.It Fl V
+Print version
+.El
+.Sh PARTITION CONTROL
+.Bl -tag -width indent
+.It Ic -n Ar num
+Cause
+.Nm
+to create
+.Ar num
+partitions and spread files over them by trying to generate partitions with
+the same size and number of files.
+.It Ic -f Ar files
+Cause
+.Nm
+to create partitions containing at most
+.Ar files
+files. This option can be used in conjunction with
+.Fl s .
+.It Ic -s Ar size
+Cause
+.Nm
+to create partitions of maximum size
+.Ar size .
+With this option, partition 0 may be used to handle files that do not fit in a
+regular partition, given the provided
+.Ar size
+limit. This option can be used in conjunction with
+.Fl f .
+.El
+.Sh INPUT/OUTPUT CONTROL
+.Bl -tag -width indent
+.It Ic -i Ar file
+Read file or directory list from
+.Ar file .
+If
+.Ar file
+is
+.Dq Li "-" ,
+then list is read from stdin.
+.It Ic -o Ar file
+Output partitions' content to
+.Ar file
+template. Multiple files will be
+generated given that template. Each
+.Ar file
+will get partition number as
+a suffix. If
+.Ar file
+is
+.Dq Li "-" ,
+then partitions will be printed to stdout, with partition number used as a
+prefix (so you can grep partitions you are interested in, or do whatever you
+want).
+.It Ic -d Ar depth
+After a certain
+.Ar depth ,
+output directories as file entries (directories themselves will be added to
+partitions, instead of their content).
+.It Fl e
+When displaying directories (see 
+.Fl d
+option), add an ending
+.Dq Li "/"
+to each directory entry.
+.It Fl v
+Verbose mode. Print files while crawling filesystem.
+.El
+.Sh EXAMPLES
+Here are some examples :
+.Bl -tag -width indent
+.It Li "fpart -n 3 -o var-parts /var"
+Produce 3 partitions, with (hopefully) the same size and number of files. This
+can be used (for example) to launch several
+.Xr rsync 1
+commands in parallel. 3 files : var-parts.0, var-parts.1 and var-parts.2 are
+generated as output.
+.It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
+Produce partitions of 4.4 GB, containing music files from /path/to/music as well
+as MP3 files from current directory ; with such a partition size, each partition
+content will be ready to be burnt to a DVD. Files
+music-parts.0 to music-parts.n, are generated as output.
+.It Li "find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'"
+Produce partitions containing 10000 files each by examining /usr first and then
+/home and display only partition 0 on stdout.
+.El
+.Sh SEE ALSO
+.Xr packo 1 ,
+.Xr rsync 1 ,
+.Xr find 1 ,
+.Xr grep 1
+.Sh AUTHOR, AVAILABILITY
+Fpart has been written by Ganaël LAPLANCHE and is available under the BSD
+license on \fIhttp://contribs.martymac.org\fR
+.Sh BUGS
+No bug known.

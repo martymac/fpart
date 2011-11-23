@@ -1,0 +1,13 @@
+TODO (ideas) :
+**************
+
+- As a second pass, remove partitions with no file
+  (e.g. special partition #0 for option -s)
+- Read on stdin even if option -i is not specified
+  (when not path is given as an argument)
+- Use fts(3) instead of opendir(3)
+- Make the program multithread for FS analysis
+- Add an option to follow symlinks
+- Add an option not to follow mounts
+- Display progress during FS analysis ?
+- Display/accept size in a human-friendly format
