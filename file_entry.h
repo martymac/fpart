@@ -44,7 +44,8 @@ struct file_entry {
 };
 
 fnum_t init_file_entries(const char *file_path, struct file_entry **head,
-    struct program_options *options, int cur_depth);
+    dev_t parent_dir_dev, struct program_options *options,
+    int cur_depth);
 void uninit_file_entries(struct file_entry *head);
 int print_file_entries(struct file_entry *head, char *out_template,
     pnum_t num_parts);

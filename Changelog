@@ -1,0 +1,10 @@
+2011/11/24  0.2
+    - New "follow symbolic links" (-l) option
+    - Ending slash (if present in input path) is now left to allow following an
+      initial symbolic link (without using option -l)
+    - New "do not cross file system boundaries" (-x) option
+    - Fpart now reads on stdin by default if no path is given
+    - File size are now written to stdout when displaying partition contents
+    - Various smaller changes
+2011/11/18  0.1
+    - Initial version

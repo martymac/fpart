@@ -44,16 +44,20 @@ init_options(struct program_options *options)
     options->in_filename = NULL;
     options->out_filename = NULL;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
-    options->add_slash = 0;
-    options->verbose = 0;
+    options->add_slash = DFLT_OPT_ADDSLASH;
+    options->verbose = DFLT_OPT_VERBOSE;
+    options->stat_function = DFLT_OPT_FOLLOWSYMLINKS;
+    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
 }
 
 /* Un-initialize global options structure */
 void
 uninit_options(struct program_options *options)
 {
-    options->verbose = 0;
-    options->add_slash = 0;
+    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
+    options->stat_function = DFLT_OPT_FOLLOWSYMLINKS;
+    options->verbose = DFLT_OPT_VERBOSE;
+    options->add_slash = DFLT_OPT_ADDSLASH;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     if(options->out_filename != NULL)
         free(options->out_filename);

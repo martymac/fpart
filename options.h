@@ -31,20 +31,48 @@
 
 #include <sys/types.h>
 
+/* stat(2) */
+#include <sys/types.h>
+#include <sys/stat.h>
+
 /* Program options */
 struct program_options {
+/* number of partitions (option -n) */
 #define DFLT_OPT_NUM_PART           0
     pnum_t num_parts;
+/* maximum files per partition (option -f) */
 #define DFLT_OPT_MAX_ENTRIES        0
     fnum_t max_entries;
+/* maximum partition size (option -s) */
 #define DFLT_OPT_MAX_SIZE           0
     fsize_t max_size;
+/* input file (option -i); NULL = undefined, "-" = stdout, "filename" */
     char *in_filename;
+/* output file (option -o); NULL = stdout, "filename" */
     char *out_filename;
+/* display directories after certain depth (option -d); -1 = disabled */
 #define DFLT_OPT_DIR_DEPTH          -1
     int dir_depth;
+/* add slash to directories (option -e) */
+#define OPT_NOADDSLASH              0
+#define OPT_ADDSLASH                1
+#define DFLT_OPT_ADDSLASH           OPT_NOADDSLASH
     unsigned char add_slash;
+/* verbose output (option -v) */
+#define OPT_NOVERBOSE               0
+#define OPT_VERBOSE                 1
+#define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
     unsigned char verbose;
+/* follow symbolic links (option -l) */
+#define OPT_FOLLOWSYMLINKS          (&stat)
+#define OPT_NOFOLLOWSYMLINKS        (&lstat)
+#define DFLT_OPT_FOLLOWSYMLINKS     OPT_NOFOLLOWSYMLINKS
+    int (*stat_function)(const char *path, struct stat *sb);
+/* cross fs boundaries (option -x) */
+#define OPT_NOCROSSFSBOUNDARIES     0
+#define OPT_CROSSFSBOUNDARIES       1
+#define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES
+    unsigned char cross_fs_boundaries;
 };
 
 void init_options(struct program_options *options);

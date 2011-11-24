@@ -32,12 +32,14 @@
 .Nm
 .Op Fl h
 .Op Fl V
-.Op Fl n Ar num | Fl f Ar files | Fl s Ar size
+.Fl n Ar num | Fl f Ar files | Fl s Ar size
 .Op Fl i Ar infile
 .Op Fl o Ar outfile
 .Op Fl d Ar depth
 .Op Fl e
 .Op Fl v
+.Op Fl l
+.Op Fl x
 .Op Ar file or dir ...
 .Sh DESCRIPTION
 The
@@ -115,6 +117,13 @@ option), add an ending
 to each directory entry.
 .It Fl v
 Verbose mode. Print files while crawling filesystem.
+.El
+.Sh BEHAVIOUR CONTROL
+.Bl -tag -width indent
+.It Fl l
+Follow symbolic links (default: do not follow)
+.It Fl x
+Do not cross file system boundaries (default: cross)
 .El
 .Sh EXAMPLES
 Here are some examples :

@@ -69,10 +69,13 @@
 /* Initialize a double-linked list of file_entries from a path
    - file_path may be a file or directory
    - if head is NULL, creates a new list ; if not, chains a new list to it
+   - parent dir's dev_t may be provided ; it will be used to detect file
+     system boundaries
    - returns the number of files found with head set to the last element */
 fnum_t
 init_file_entries(const char *file_path, struct file_entry **head,
-    struct program_options *options, int cur_depth)
+    dev_t parent_dir_dev, struct program_options *options,
+    int cur_depth)
 {
     fnum_t num_files = 0;  /* number of files added to the list */
     struct stat file_stat;   /* file stat */
@@ -85,15 +88,29 @@ init_file_entries(const char *file_path, struct file_entry **head,
     assert(options != NULL);
 
     /* perform stat (and chech path validity and accessibility) */
-    if(lstat(file_path, &file_stat)<0) {
+    if(options->stat_function(file_path, &file_stat) < 0) {
         fprintf(stderr, "%s: %s\n", file_path, strerror(errno));
         return (0);
     }
 
-    if((!S_ISDIR(file_stat.st_mode)) ||
-       ((options->dir_depth >= 0) && (cur_depth >= options->dir_depth))) {
-        /* file found, or dir_depth reached : add entry */
+    /* file system boundary detected */
+    if((parent_dir_dev != NODEV) &&
+        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
+        (parent_dir_dev != file_stat.st_dev)) {
+        /* special case : if requested (option -d), artificially keep
+           mountpoint. Otherwise, it would be skipped, as the directory that
+           appears here is the the root of another filesystem (not the original
+           mountpoint). This directory will end with size 0. */
+        if(!(S_ISDIR(file_stat.st_mode) &&
+            ((options->dir_depth >= 0) && (cur_depth >= options->dir_depth)))) {
+                return (0);
+        }
+    }
 
+    /* if a file is found */
+    if((!S_ISDIR(file_stat.st_mode)) ||
+    /* or dir_depth reached */
+        ((options->dir_depth >= 0) && (cur_depth >= options->dir_depth))) {
         /* backup current structure pointer and initialize a new structure */
         previous = *current;
         if((*current = malloc(sizeof(struct file_entry))) == NULL) {
@@ -106,20 +123,25 @@ init_file_entries(const char *file_path, struct file_entry **head,
             *head = *current;
 
         /* update current structure data */
-        if(options->verbose)
+        if(options->verbose == OPT_VERBOSE)
             fprintf(stderr, "%s\n", file_path);
-        size_t malloc_size = strnlen(file_path, FILENAME_MAX) + 1;
-        if(S_ISDIR(file_stat.st_mode) && options->add_slash)
+        size_t file_path_len = strnlen(file_path, FILENAME_MAX);
+        size_t malloc_size = file_path_len + 1; /* ending '\0' */
+        if(S_ISDIR(file_stat.st_mode) && (options->add_slash == OPT_ADDSLASH))
             malloc_size += 1; /* ending slash */
         if(((*current)->path = (char *)malloc(malloc_size)) == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             return (0);
         }
-        if(S_ISDIR(file_stat.st_mode) && options->add_slash)
+        if(S_ISDIR(file_stat.st_mode) && (options->add_slash == OPT_ADDSLASH) &&
+            (file_path_len > 0) && (file_path[file_path_len - 1] != '/'))
+            /* file is a directory, user requested to add a slash and file_path
+               does not already end with a '/' so we can add one */
             snprintf((*current)->path, FILENAME_MAX + 1, "%s/", file_path);
         else
             snprintf((*current)->path, FILENAME_MAX + 1, "%s", file_path);
-        (*current)->size = get_size(file_path, &file_stat);
+        (*current)->size = get_size(file_path, &file_stat, parent_dir_dev,
+            options);
         (*current)->partition_index = 0; /* will be set during dispatch */
         (*current)->nextp = NULL;   /* will be set in next pass (see below) */
         (*current)->prevp = previous;
@@ -147,17 +169,23 @@ init_file_entries(const char *file_path, struct file_entry **head,
 
             /* compute entry's full path */
             char *dir_entry_path;
-            if((dir_entry_path = (char *)malloc(strnlen(file_path, FILENAME_MAX) + 1 + strnlen(dir_entry->d_name, FILENAME_MAX) + 1)) == NULL) {
+            size_t file_path_len = strnlen(file_path, FILENAME_MAX);
+            if((dir_entry_path = (char *)malloc(file_path_len + 1 + strnlen(dir_entry->d_name, FILENAME_MAX) + 1)) == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 closedir(dir_handle);
                 return (0);
             }
-            snprintf(dir_entry_path, FILENAME_MAX + 1, "%s/%s", file_path,
-                dir_entry->d_name);
+            if((file_path_len > 0) && (file_path[file_path_len - 1] == '/'))
+                /* ending slash already present */
+                snprintf(dir_entry_path, FILENAME_MAX + 1, "%s%s",
+                    file_path, dir_entry->d_name);
+            else
+                snprintf(dir_entry_path, FILENAME_MAX + 1, "%s/%s",
+                    file_path, dir_entry->d_name);
 
             /* recurse for each file */
             num_files += init_file_entries(dir_entry_path, current,
-                options, cur_depth + 1);
+                file_stat.st_dev, options, cur_depth + 1);
             free(dir_entry_path);
         }
         closedir(dir_handle);
@@ -198,7 +226,8 @@ print_file_entries(struct file_entry *head, char *out_template,
     /* no template provided, just print to stdout and return */
     if(out_template == NULL) {
         while(head != NULL) {
-            fprintf(stdout, "%d: %s\n", head->partition_index, head->path);
+            fprintf(stdout, "%d (%lld): %s\n", head->partition_index,
+                head->size, head->path);
             head = head->nextp;
         }
         return (0);
@@ -237,7 +266,7 @@ print_file_entries(struct file_entry *head, char *out_template,
             snprintf(out_filename, FILENAME_MAX + 1, "%s.%d", out_template,
                 (current_chunk * PRINT_FE_CHUNKS) + current_file_entry);
 
-            if ((fd[current_file_entry] =
+            if((fd[current_file_entry] =
                 open(out_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
                 fprintf(stderr, "%s: %s\n", out_filename, strerror(errno));
                 free(out_filename);

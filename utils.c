@@ -26,6 +26,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "options.h"
 
 /* log10(3) */
 #include <math.h>
@@ -58,7 +59,7 @@ get_num_digits(double i)
 {
     if(i < 0)
         return (0);
-    else if (i == 0)
+    else if(i == 0)
         return (1);
 
     double logvalue = log10(i);
@@ -66,9 +67,12 @@ get_num_digits(double i)
 }
 
 /* Return the size of a file or directory
-   - a pointer to an existing stat may be provided */
+   - a pointer to an existing stat may be provided
+   - parent dir's dev_t may be provided ; it will be used to detect file
+     system boundaries */
 fsize_t
-get_size(const char *file_path, struct stat *file_stat)
+get_size(const char *file_path, struct stat *file_stat,
+    dev_t parent_dir_dev, struct program_options *options)
 {
     unsigned char stat_provided = 1;    /* file_stat provided */
     fsize_t file_size = 0;              /* current return value */
@@ -84,12 +88,22 @@ get_size(const char *file_path, struct stat *file_stat)
         }
 
         /* perform stat */
-        if(lstat(file_path, file_stat) < 0) {
+        if(options->stat_function(file_path, file_stat) < 0) {
             fprintf(stderr, "%s: %s\n", file_path, strerror(errno));
             if(!stat_provided)
                 free(file_stat);
             return (0);
         }
+    }
+
+    /* check for file system boundary */
+    if((parent_dir_dev != NODEV) &&
+        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
+        (parent_dir_dev != file_stat->st_dev)) {
+        /* file system boundary detected, skip */
+        if(!stat_provided)
+            free(file_stat);
+        return (0);
     }
 
     /* file */
@@ -100,9 +114,11 @@ get_size(const char *file_path, struct stat *file_stat)
         return (S_ISREG(file_stat->st_mode) ? file_stat->st_size : 0);
     }
 
+    /* update parent_dir_dev for next recusrive call and free() stat */
+    parent_dir_dev = file_stat->st_dev;
     if(!stat_provided)
         free(file_stat);
-   
+
     /* directory */
     struct dirent * dir_entry = NULL;
     DIR * dir_handle = opendir(file_path);
@@ -118,18 +134,25 @@ get_size(const char *file_path, struct stat *file_stat)
 
         /* compute entry's full path */
         char *dir_entry_path;
-        if((dir_entry_path = (char *)malloc(strnlen(file_path, FILENAME_MAX) + 1 + strnlen(dir_entry->d_name, FILENAME_MAX) + 1)) == NULL) {
+        size_t file_path_len = strnlen(file_path, FILENAME_MAX);
+        if((dir_entry_path = (char *)malloc(file_path_len + 1 + strnlen(dir_entry->d_name, FILENAME_MAX) + 1)) == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             closedir(dir_handle);
             return (0);
         }
-        snprintf(dir_entry_path, FILENAME_MAX + 1, "%s/%s",
-            file_path, dir_entry->d_name);
+        if((file_path_len > 0) && (file_path[file_path_len - 1] == '/'))
+            /* ending slash already present */
+            snprintf(dir_entry_path, FILENAME_MAX + 1, "%s%s",
+                file_path, dir_entry->d_name);
+        else
+            snprintf(dir_entry_path, FILENAME_MAX + 1, "%s/%s",
+                file_path, dir_entry->d_name);
 
         /* recurse for each file */
-        file_size += get_size(dir_entry_path, NULL);
+        file_size += get_size(dir_entry_path, NULL, parent_dir_dev, options);
         free(dir_entry_path);
     }
     closedir(dir_handle);
+
     return (file_size);
 }

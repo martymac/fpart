@@ -27,6 +27,6 @@
 #ifndef _FPART_H
 #define _FPART_H
 
-#define FPART_VERSION "0.1"
+#define FPART_VERSION "0.2"
 
 #endif /* _FPART_H */

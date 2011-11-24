@@ -68,10 +68,9 @@ version(void)
 void
 usage(void)
 {
-    fprintf(stderr, "Usage: fpart [-h] [-V] [[ -n num] | [ -f files ] | "
-        "[ -s size ]]\n"
-        "             [-i infile] [-o outfile] [-d depth] [-e] [-v]\n"
-        "             [file_or_dir_1] [file_or_dir_2] [...]\n");
+    fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
+        "[-i infile] [-o outfile]\n"
+        "             [-d depth] [-e] [-v] [-l] [-x] [file or dir ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
@@ -93,6 +92,11 @@ usage(void)
     fprintf(stderr, "  -e\tadd ending slash to directory names\n");
     fprintf(stderr, "  -v\tverbose mode\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "Behaviour:\n");
+    fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
+    fprintf(stderr, "  -x\tdo not cross file system boundaries "
+        "(default: cross)\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
         "<ganael.laplanche@martymac.org>\n");
     return;
@@ -112,17 +116,11 @@ int main(int argc, char** argv)
     /* Set default options */
     init_options(&options);
 
-    if(argc <= 1) {
-         usage();
-         uninit_options(&options);
-         return (1);
-    }
-
     /* Options handling */
     extern char *optarg;
     extern int optind;
     int ch;
-    while ((ch = getopt(argc, argv, "?hVn:f:s:i:o:d:ev")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:o:d:evlx")) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -170,9 +168,9 @@ int main(int argc, char** argv)
 
                 char *endptr = NULL;
                 long long max_entries = strtoll(optarg, &endptr, 10);
-                /* refuse values < 0 and partially converted arguments */
+                /* refuse values <= 0 and partially converted arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
-                    (max_entries < 0)) {
+                    (max_entries <= 0)) {
                     usage();
                     uninit_options(&options);
                     return (1);
@@ -192,8 +190,8 @@ int main(int argc, char** argv)
 
                 char *endptr = NULL;
                 long long max_size = strtoll(optarg, &endptr, 10);
-                /* refuse values < 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') || (max_size < 0)) {
+                /* refuse values <= 0 and partially converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') || (max_size <= 0)) {
                     usage();
                     uninit_options(&options);
                     return (1);
@@ -238,21 +236,41 @@ int main(int argc, char** argv)
             }
                 break;
             case 'e':
-                options.add_slash = 1;
+                options.add_slash = OPT_ADDSLASH;
                 break;
             case 'v':
-                options.verbose = 1;
+                options.verbose = OPT_VERBOSE;
+                break;
+            case 'l':
+                options.stat_function = OPT_FOLLOWSYMLINKS;
+                break;
+            case 'x':
+                options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
                 break;
         }
     }
     argc -= optind;
     argv += optind;
 
-    if((options.in_filename == NULL) && (argc <= 0)) {
-        /* no file specified */
+    if((options.num_parts == DFLT_OPT_NUM_PART) &&
+        (options.max_entries == DFLT_OPT_MAX_ENTRIES) &&
+        (options.max_size == DFLT_OPT_MAX_SIZE)) {
+        fprintf(stderr, "Please specify either -n, -f or -s.\n");
         usage();
         uninit_options(&options);
         return (1);
+    }
+
+    if((options.in_filename == NULL) && (argc <= 0)) {
+        /* no file specified, force stdin */
+        char *opt_input = "-";
+        options.in_filename = malloc(strnlen(opt_input, FILENAME_MAX) + 1);
+        if(options.in_filename == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            uninit_options(&options);
+            return (1);
+        }
+        snprintf(options.in_filename, FILENAME_MAX + 1, "%s", opt_input);
     }
 
     /* our main double-linked file list */
@@ -281,7 +299,7 @@ int main(int argc, char** argv)
         char *line = NULL;
         size_t linecap = 3;
         ssize_t linelen = 0;
-        while ((linelen = getline(&line, &linecap, in_fp)) > 0) {
+        while((linelen = getline(&line, &linecap, in_fp)) > 0) {
             char *input_path = NULL;
             input_path  = malloc(min(linelen, FILENAME_MAX) + 1);
             if(input_path == NULL) {
@@ -293,18 +311,20 @@ int main(int argc, char** argv)
             snprintf(input_path, min(linelen, FILENAME_MAX) + 1, "%s", line);
     
             /* remove ending junk */
-            size_t input_path_len = 0;
-            while(((input_path_len = strnlen(input_path, FILENAME_MAX)) > 0) &&
+            size_t input_path_len = strnlen(input_path, FILENAME_MAX);
+            while((input_path_len > 0) &&
                 ((input_path[input_path_len - 1] == '\n') ||
-                (input_path[input_path_len - 1] == '/'))) {
+                ((input_path_len > 1) && (input_path[input_path_len - 1] == '/')  && (input_path[input_path_len - 2] == '/')))) {
                 input_path[input_path_len - 1] = '\0';
+                input_path_len--;
             }
     
             /* crawl path */
 #if defined(DEBUG) 
             fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
 #endif
-            totalfiles += init_file_entries(input_path, &head, &options, 0);
+            totalfiles += init_file_entries(input_path, &head, NODEV,
+                &options, 0);
 
             /* cleanup */
             free(input_path);
@@ -320,15 +340,16 @@ int main(int argc, char** argv)
     unsigned int i;
     for(i = 0 ; i < argc ; i++) {
         /* remove ending slashes, if any */
-        size_t argv_len = 0;
-        while(((argv_len = strnlen(argv[i], FILENAME_MAX)) > 0) && 
-            (argv[i][argv_len - 1] == '/')) {
+        size_t argv_len = strnlen(argv[i], FILENAME_MAX);
+        while((argv_len > 1) && (argv[i][argv_len - 1] == '/') &&
+            (argv[i][argv_len - 2] == '/')) {
             argv[i][argv_len - 1] = '\0';
+            argv_len--;
         }
 #if defined(DEBUG) 
         fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
 #endif
-        totalfiles += init_file_entries(argv[i], &head, &options, 0);
+        totalfiles += init_file_entries(argv[i], &head, NODEV, &options, 0);
     }
     /* come back to the first element and display status */
     rewind_list(head);

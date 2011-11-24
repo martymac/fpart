@@ -67,7 +67,8 @@ dispatch.o: dispatch.c dispatch.h
 	${CC} ${CFLAGS} -c dispatch.c
 
 fpart: utils.o options.o partition.o file_entry.o dispatch.o fpart.c fpart.h
-	${CC} ${CFLAGS} -lm utils.o options.o partition.o file_entry.o dispatch.o fpart.c -o fpart
+	${CC} ${CFLAGS} -lm utils.o options.o partition.o file_entry.o dispatch.o \
+		fpart.c -o fpart
 
 install: installbin installman
 
