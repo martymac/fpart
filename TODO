@@ -1,9 +1,10 @@
 TODO (ideas) :
 **************
 
-- As a second pass, remove partitions with no file
-  (e.g. option -n with too many partitions, special
-  partition #0 for option -s, ...)
+- Being able to initialize file entries from arbitrary values (e.g. the output
+  of 'du')
+- As a second pass, remove partitions with no file (e.g. option -n with too many
+  partitions, special partition #0 for option -s, ...)
 - Use fts(3) instead of opendir(3)
 - Make the program multithread for FS analysis
 - Display progress during FS analysis ?
