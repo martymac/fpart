@@ -36,7 +36,7 @@ CFLAGS+= -Wall -std=c99
 
 # Configuration / variables section
 DESTDIR= 
-PREFIX= /usr/local
+PREFIX?= /usr/local
 
 # Default installation paths
 BINDIR= $(PREFIX)/bin
