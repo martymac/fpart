@@ -5,7 +5,6 @@ TODO (ideas) :
   of 'du')
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...)
-- Use fts(3) instead of opendir(3)
 - Make the program multithread for FS analysis
 - Display progress during FS analysis ?
 - Display/accept size in a human-friendly format

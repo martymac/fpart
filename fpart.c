@@ -242,7 +242,7 @@ int main(int argc, char** argv)
                 options.verbose = OPT_VERBOSE;
                 break;
             case 'l':
-                options.stat_function = OPT_FOLLOWSYMLINKS;
+                options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
                 break;
             case 'x':
                 options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
@@ -323,8 +323,7 @@ int main(int argc, char** argv)
 #if defined(DEBUG) 
             fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
 #endif
-            totalfiles += init_file_entries(input_path, &head, NODEV,
-                &options, 0);
+            totalfiles += init_file_entries(input_path, &head, &options);
 
             /* cleanup */
             free(input_path);
@@ -349,7 +348,7 @@ int main(int argc, char** argv)
 #if defined(DEBUG) 
         fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
 #endif
-        totalfiles += init_file_entries(argv[i], &head, NODEV, &options, 0);
+        totalfiles += init_file_entries(argv[i], &head, &options);
     }
     /* come back to the first element and display status */
     rewind_list(head);

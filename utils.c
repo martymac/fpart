@@ -37,8 +37,10 @@
 /* fprintf(3) */
 #include <stdio.h>
 
-/* opendir(3) */
-#include <dirent.h>
+/* fts(3) */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fts.h>
 
 /* strerror(3) */
 #include <string.h>
@@ -67,92 +69,64 @@ get_num_digits(double i)
 }
 
 /* Return the size of a file or directory
-   - a pointer to an existing stat may be provided
-   - parent dir's dev_t may be provided ; it will be used to detect file
-     system boundaries */
+   - a pointer to an existing stat must be provided */
 fsize_t
-get_size(const char *file_path, struct stat *file_stat,
-    dev_t parent_dir_dev, struct program_options *options)
+get_size(char *file_path, struct stat *file_stat,
+    struct program_options *options)
 {
-    unsigned char stat_provided = 1;    /* file_stat provided */
-    fsize_t file_size = 0;              /* current return value */
+    fsize_t file_size = 0;  /* current return value */
 
     assert(file_path != NULL);
+    assert(file_stat != NULL);
+    assert(options != NULL);
 
-    /* handle stat if none provided */
-    if(file_stat == NULL) {
-        stat_provided = 0;
-        if((file_stat = malloc(sizeof(struct stat))) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            return (0);
-        }
-
-        /* perform stat */
-        if(options->stat_function(file_path, file_stat) < 0) {
-            fprintf(stderr, "%s: %s\n", file_path, strerror(errno));
-            if(!stat_provided)
-                free(file_stat);
-            return (0);
-        }
-    }
-
-    /* check for file system boundary */
-    if((parent_dir_dev != NODEV) &&
-        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
-        (parent_dir_dev != file_stat->st_dev)) {
-        /* file system boundary detected, skip */
-        if(!stat_provided)
-            free(file_stat);
-        return (0);
-    }
-
-    /* file */
+    /* if file_path is not a directory,
+       return st_size for regular files (only) */
     if(!S_ISDIR(file_stat->st_mode)) {
-        if(!stat_provided)
-            free(file_stat);
-        /* return size of regular files only */
         return (S_ISREG(file_stat->st_mode) ? file_stat->st_size : 0);
     }
 
-    /* update parent_dir_dev for next recusrive call and free() stat */
-    parent_dir_dev = file_stat->st_dev;
-    if(!stat_provided)
-        free(file_stat);
+    /* directory, use fts */
+    FTS *ftsp = NULL;
+    FTSENT *p = NULL;
+    int fts_options =
+        (options->follow_symbolic_links == OPT_FOLLOWSYMLINKS) ? FTS_LOGICAL : FTS_PHYSICAL |
+        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) ? FTS_XDEV : 0;
 
-    /* directory */
-    struct dirent * dir_entry = NULL;
-    DIR * dir_handle = opendir(file_path);
-    if(dir_handle == NULL) {
-        fprintf(stderr, "%s: %s\n", file_path, strerror(errno));
+    char * fts_argv[] = { file_path, NULL };
+    if((ftsp = fts_open(fts_argv, fts_options, NULL)) == NULL) {
+        fprintf(stderr, "%s: fts_open()\n", file_path);
         return (0);
     }
-    while((dir_entry = readdir(dir_handle)) != NULL) {
-        /* ignore "." and ".." */
-        if(dir_entry->d_name[0] == '.' &&
-            (dir_entry->d_name[1] == 0 || (dir_entry->d_name[1] == '.' && dir_entry->d_name[2] == 0)))
-            continue;
 
-        /* compute entry's full path */
-        char *dir_entry_path;
-        size_t file_path_len = strnlen(file_path, FILENAME_MAX);
-        if((dir_entry_path = (char *)malloc(file_path_len + 1 + strnlen(dir_entry->d_name, FILENAME_MAX) + 1)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            closedir(dir_handle);
-            return (0);
+    while((p = fts_read(ftsp)) != NULL) {
+        switch (p->fts_info) {
+            case FTS_DNR:   /* un-readable directory */
+            case FTS_ERR:   /* misc error */
+            case FTS_NS:    /* stat() error */
+                fprintf(stderr, "%s: %s\n", p->fts_path,
+                    strerror(p->fts_errno));
+                continue;
+
+            case FTS_DC:
+                fprintf(stderr, "%s: file system loop detected\n", p->fts_path);
+                continue;
+
+            case FTS_F:
+                file_size += p->fts_statp->st_size;
+                continue;
+
+            /* skip everything else (only count regular files' size) */
+            default:
+                continue;
         }
-        if((file_path_len > 0) && (file_path[file_path_len - 1] == '/'))
-            /* ending slash already present */
-            snprintf(dir_entry_path, FILENAME_MAX + 1, "%s%s",
-                file_path, dir_entry->d_name);
-        else
-            snprintf(dir_entry_path, FILENAME_MAX + 1, "%s/%s",
-                file_path, dir_entry->d_name);
-
-        /* recurse for each file */
-        file_size += get_size(dir_entry_path, NULL, parent_dir_dev, options);
-        free(dir_entry_path);
     }
-    closedir(dir_handle);
+
+    if(errno != 0)
+        fprintf(stderr, "%s: fts_read()\n", file_path);
+
+    if(fts_close(ftsp) < 0)
+        fprintf(stderr, "%s: fts_close()\n", file_path);
 
     return (file_size);
 }

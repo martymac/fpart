@@ -50,8 +50,9 @@ struct program_options {
     char *in_filename;
 /* output file (option -o); NULL = stdout, "filename" */
     char *out_filename;
-/* display directories after certain depth (option -d); -1 = disabled */
-#define DFLT_OPT_DIR_DEPTH          -1
+/* display directories after certain depth (option -d) */
+#define OPT_NODIRDEPTH              -1
+#define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH
     int dir_depth;
 /* add slash to directories (option -e) */
 #define OPT_NOADDSLASH              0
@@ -64,10 +65,10 @@ struct program_options {
 #define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
     unsigned char verbose;
 /* follow symbolic links (option -l) */
-#define OPT_FOLLOWSYMLINKS          (&stat)
-#define OPT_NOFOLLOWSYMLINKS        (&lstat)
+#define OPT_FOLLOWSYMLINKS          0
+#define OPT_NOFOLLOWSYMLINKS        1
 #define DFLT_OPT_FOLLOWSYMLINKS     OPT_NOFOLLOWSYMLINKS
-    int (*stat_function)(const char *path, struct stat *sb);
+    unsigned char follow_symbolic_links;
 /* cross fs boundaries (option -x) */
 #define OPT_NOCROSSFSBOUNDARIES     0
 #define OPT_CROSSFSBOUNDARIES       1

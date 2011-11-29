@@ -41,16 +41,8 @@
 
 #define min(x, y) ((x <= y) ? x : y)
 
-/* NODEV */
-#include <sys/param.h>
-/* On some systems, NODEV is not defined;
-   as a last resort, define it as below */
-#ifndef NODEV
-#define NODEV   ((dev_t)(-1))
-#endif
-
 unsigned int get_num_digits(double i);
-fsize_t get_size(const char *file_path, struct stat *file_stat,
-    dev_t parent_dir_dev, struct program_options *options);
+fsize_t get_size(char *file_path, struct stat *file_stat,
+    struct program_options *options);
 
 #endif /* _UTILS_H */

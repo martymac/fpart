@@ -46,7 +46,7 @@ init_options(struct program_options *options)
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->verbose = DFLT_OPT_VERBOSE;
-    options->stat_function = DFLT_OPT_FOLLOWSYMLINKS;
+    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
 }
 
@@ -55,7 +55,7 @@ void
 uninit_options(struct program_options *options)
 {
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
-    options->stat_function = DFLT_OPT_FOLLOWSYMLINKS;
+    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->verbose = DFLT_OPT_VERBOSE;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
