@@ -1,5 +1,6 @@
 2011/12/??  0.3
     - Switch to fts(3)
+    - Replaced getline(3) calls with fgets(3) for compatibility
 2011/11/24  0.2
     - New "follow symbolic links" (-l) option
     - Ending slash (if present in input path) is now left to allow following an

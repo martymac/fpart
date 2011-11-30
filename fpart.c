@@ -35,9 +35,7 @@
 /* NULL */
 #include <stdlib.h>
 
-/* getline(3) */
-#define _WITH_GETLINE
-/* fprintf(3), fopen(3), fclose(3) */
+/* fprintf(3), fopen(3), fclose(3), fgets(3), foef(3) */
 #include <stdio.h>
 
 /* getopt(3) */
@@ -296,29 +294,28 @@ int main(int argc, char** argv)
         }
 
         /* read fd and do the work */
-        char *line = NULL;
-        size_t linecap = 3;
-        ssize_t linelen = 0;
-        while((linelen = getline(&line, &linecap, in_fp)) > 0) {
+        char line[MAX_LINE_LENGTH];
+        bzero(line, MAX_LINE_LENGTH);
+        while(fgets(line, MAX_LINE_LENGTH, in_fp) != NULL) {
             char *input_path = NULL;
-            input_path  = malloc(min(linelen, FILENAME_MAX) + 1);
+            size_t input_path_len = strnlen(line, FILENAME_MAX);
+            input_path  = malloc(input_path_len + 1);
             if(input_path == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 uninit_file_entries(head);
                 uninit_options(&options);
                 return (1);
             }
-            snprintf(input_path, min(linelen, FILENAME_MAX) + 1, "%s", line);
+            snprintf(input_path, FILENAME_MAX + 1, "%s", line);
     
             /* remove ending junk */
-            size_t input_path_len = strnlen(input_path, FILENAME_MAX);
             while((input_path_len > 0) &&
                 ((input_path[input_path_len - 1] == '\n') ||
                 ((input_path_len > 1) && (input_path[input_path_len - 1] == '/')  && (input_path[input_path_len - 2] == '/')))) {
                 input_path[input_path_len - 1] = '\0';
                 input_path_len--;
             }
-    
+
             /* crawl path */
 #if defined(DEBUG) 
             fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
@@ -327,10 +324,15 @@ int main(int argc, char** argv)
 
             /* cleanup */
             free(input_path);
+            bzero(line, MAX_LINE_LENGTH);
         }
+
+        /* check for error reading input */
+        if(ferror(in_fp) != 0) {
+            fprintf(stderr, "error reading from input stream\n"); 
+        }
+
         /* cleanup */
-        if(line != NULL)
-            free(line);
         if(in_fp != NULL)
             fclose(in_fp);
     }
