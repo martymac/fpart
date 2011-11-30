@@ -89,9 +89,10 @@ get_size(char *file_path, struct stat *file_stat,
     /* directory, use fts */
     FTS *ftsp = NULL;
     FTSENT *p = NULL;
-    int fts_options =
-        (options->follow_symbolic_links == OPT_FOLLOWSYMLINKS) ? FTS_LOGICAL : FTS_PHYSICAL |
-        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) ? FTS_XDEV : 0;
+    int fts_options = (options->follow_symbolic_links == OPT_FOLLOWSYMLINKS) ?
+        FTS_LOGICAL : FTS_PHYSICAL;
+    fts_options |= (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) ?
+        FTS_XDEV : 0;
 
     char * fts_argv[] = { file_path, NULL };
     if((ftsp = fts_open(fts_argv, fts_options, NULL)) == NULL) {
