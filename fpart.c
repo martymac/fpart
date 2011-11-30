@@ -317,10 +317,12 @@ int main(int argc, char** argv)
             }
 
             /* crawl path */
+            if(input_path[0] != '\0') {
 #if defined(DEBUG) 
-            fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
+                fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
 #endif
-            totalfiles += init_file_entries(input_path, &head, &options);
+                totalfiles += init_file_entries(input_path, &head, &options);
+            }
 
             /* cleanup */
             free(input_path);
@@ -347,10 +349,12 @@ int main(int argc, char** argv)
             argv[i][argv_len - 1] = '\0';
             argv_len--;
         }
+        if(argv[i][0] != '\0') {
 #if defined(DEBUG) 
-        fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
+            fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
 #endif
-        totalfiles += init_file_entries(argv[i], &head, &options);
+            totalfiles += init_file_entries(argv[i], &head, &options);
+        }
     }
     /* come back to the first element and display status */
     rewind_list(head);
