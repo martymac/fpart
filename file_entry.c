@@ -68,6 +68,55 @@
         partindex = %d\n", file_entry, (file_entry)->path, \
         (file_entry)->size, (file_entry)->partition_index); }
 
+/* Add a file entry to a double-linked list of file_entries
+   - if head is NULL, creates a new file entry ; if not, chains a new file
+     entry to it
+   - returns with head set to the newly added element */
+int
+add_file_entry(struct file_entry **head, char *path, fsize_t size)
+{
+    struct file_entry **current = head; /* current file_entry pointer address */
+    struct file_entry *previous = NULL; /* previous file_entry pointer */
+
+    assert(head != NULL);
+    assert(path != NULL);
+
+    /* backup current structure pointer and initialize a new structure */
+    previous = *current;
+    if((*current = malloc(sizeof(struct file_entry))) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        return (1);
+    }
+
+    /* set head on first call */
+    if(*head == NULL)
+        *head = *current;
+
+    /* set current file data */
+    if(((*current)->path = (char *)malloc(strnlen(path, FILENAME_MAX) + 1))
+        == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        return (1);
+    }
+    snprintf((*current)->path, FILENAME_MAX + 1, "%s", path);
+    (*current)->size = size;
+
+    /* set current file entry's index and pointers */
+    (*current)->partition_index = 0;    /* set during dispatch */
+    (*current)->nextp = NULL;           /* set in next pass (see below) */
+    (*current)->prevp = previous;
+
+    /* display added filename */
+    if(options->verbose == OPT_VERBOSE)
+        fprintf(stderr, "%s\n", (*current)->path);
+
+    /* set previous' nextp pointer */
+    if(previous != NULL)
+        previous->nextp = *current;
+
+    return (0);
+}
+
 /* Initialize a double-linked list of file_entries from a path
    - file_path may be a file or directory
    - if head is NULL, creates a new list ; if not, chains a new list to it
@@ -77,9 +126,6 @@ init_file_entries(char *file_path, struct file_entry **head,
     struct program_options *options)
 {
     fnum_t num_files = 0;   /* number of files added to the list */
-
-    struct file_entry **current = head; /* current file_entry pointer address */
-    struct file_entry *previous = NULL; /* previous file_entry pointer */
 
     assert(file_path != NULL);
     assert(head != NULL);
@@ -131,25 +177,13 @@ init_file_entries(char *file_path, struct file_entry **head,
                FTS_D (dir_depth reached), FTS_F, FTS_SL, FTS_SLNONE,
                FTS_DEFAULT */
             {
-                /* backup current structure pointer
-                   and initialize a new structure */
-                previous = *current;
-                if((*current = malloc(sizeof(struct file_entry))) == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    return (num_files);
-                }
+                /* compute current file entry's path */
+                char *file_entry_path = NULL;
+                fsize_t file_entry_size = 0;
 
-                /* set head on first pass */
-                if(*head == NULL)
-                    *head = *current;
-
-                /* update current file entry's path */
-                size_t file_path_len = strnlen(p->fts_path, FILENAME_MAX);
-                size_t malloc_size = file_path_len + 1; /* ending '\0' */
-                if(S_ISDIR(p->fts_statp->st_mode) &&
-                    (options->add_slash == OPT_ADDSLASH))
-                    malloc_size += 1; /* ending slash */
-                if(((*current)->path = (char *)malloc(malloc_size)) == NULL) {
+                /* count ending '/' and '\0', even if an ending '/' is not
+                   added */
+                if((file_entry_path = malloc(strnlen(p->fts_path, FILENAME_MAX) + 1 + 1)) == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     return (num_files);
                 }
@@ -160,10 +194,10 @@ init_file_entries(char *file_path, struct file_entry **head,
                     /* file is a directory, user requested to add a slash and
                        file_path does not already end with a '/' so we can
                        add one */
-                    snprintf((*current)->path, FILENAME_MAX + 1, "%s/",
+                    snprintf(file_entry_path, FILENAME_MAX + 1, "%s/",
                         p->fts_path);
                 else
-                    snprintf((*current)->path, FILENAME_MAX + 1, "%s",
+                    snprintf(file_entry_path, FILENAME_MAX + 1, "%s",
                         p->fts_path);
 
                 /* compute current file entry's size */
@@ -173,26 +207,18 @@ init_file_entries(char *file_path, struct file_entry **head,
                     (p->fts_parent->fts_statp->st_dev != p->fts_statp->st_dev))
                     /* keep mountpoint for non-root directories
                        and set size to 0 */
-                    (*current)->size = 0;
+                    file_entry_size = 0;
                 else
-                    (*current)->size =
+                    file_entry_size =
                         get_size(p->fts_path, p->fts_statp, options);
 
-                /* set current file entry's index and pointers */
-                (*current)->partition_index = 0;    /* set during dispatch */
-                (*current)->nextp = NULL;           /* set in next pass (see below) */
-                (*current)->prevp = previous;
+                /* add it */
+                if(add_file_entry(head, file_entry_path, file_entry_size) == 0)
+                    num_files++;
 
-                /* display added filename */
-                if(options->verbose == OPT_VERBOSE)
-                    fprintf(stderr, "%s\n", (*current)->path);
+                /* free stuff */
+                free(file_entry_path);
 
-                /* set previous' nextp pointer */
-                if(previous != NULL)
-                    previous->nextp = *current;
-
-                /* count file */ 
-                num_files++;
                 continue;
             }
         }
