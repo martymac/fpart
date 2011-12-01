@@ -43,7 +43,8 @@ struct file_entry {
     struct file_entry* prevp;       /* previous one */
 };
 
-int add_file_entry(struct file_entry **head, char *path, fsize_t size);
+int add_file_entry(struct file_entry **head, char *path, fsize_t size,
+    struct program_options *options);
 fnum_t init_file_entries(char *file_path, struct file_entry **head,
     struct program_options *options);
 void uninit_file_entries(struct file_entry *head);

@@ -73,13 +73,15 @@
      entry to it
    - returns with head set to the newly added element */
 int
-add_file_entry(struct file_entry **head, char *path, fsize_t size)
+add_file_entry(struct file_entry **head, char *path, fsize_t size,
+    struct program_options *options)
 {
     struct file_entry **current = head; /* current file_entry pointer address */
     struct file_entry *previous = NULL; /* previous file_entry pointer */
 
     assert(head != NULL);
     assert(path != NULL);
+    assert(options != NULL);
 
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
@@ -177,20 +179,22 @@ init_file_entries(char *file_path, struct file_entry **head,
                FTS_D (dir_depth reached), FTS_F, FTS_SL, FTS_SLNONE,
                FTS_DEFAULT */
             {
-                /* compute current file entry's path */
                 char *file_entry_path = NULL;
                 fsize_t file_entry_size = 0;
 
+                /* compute current file entry's path */
+                size_t fts_path_len = strnlen(p->fts_path, FILENAME_MAX);
+
                 /* count ending '/' and '\0', even if an ending '/' is not
                    added */
-                if((file_entry_path = malloc(strnlen(p->fts_path, FILENAME_MAX) + 1 + 1)) == NULL) {
+                if((file_entry_path = malloc(fts_path_len + 1 + 1)) == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     return (num_files);
                 }
                 if(S_ISDIR(p->fts_statp->st_mode) &&
                     (options->add_slash == OPT_ADDSLASH) &&
-                    (file_path_len > 0) &&
-                    (p->fts_path[file_path_len - 1] != '/'))
+                    (fts_path_len > 0) &&
+                    (p->fts_path[fts_path_len - 1] != '/'))
                     /* file is a directory, user requested to add a slash and
                        file_path does not already end with a '/' so we can
                        add one */
@@ -213,7 +217,7 @@ init_file_entries(char *file_path, struct file_entry **head,
                         get_size(p->fts_path, p->fts_statp, options);
 
                 /* add it */
-                if(add_file_entry(head, file_entry_path, file_entry_size) == 0)
+                if(add_file_entry(head, file_entry_path, file_entry_size, options) == 0)
                     num_files++;
 
                 /* free stuff */
