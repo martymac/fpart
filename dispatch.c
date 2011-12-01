@@ -195,7 +195,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
     /* when max_size is used, create a default partition (partition 0) 
        that will hold files that does not match criteria */
     if(max_size > 0) {
-        if(init_partitions(part_head, 1) != 0) {
+        if(add_partitions(part_head, 1) != 0) {
             fprintf(stderr, "%s(): cannot init default partition\n", __func__);
             return (num_parts_created);
         }
@@ -205,7 +205,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
     pnum_t default_partition_index = 0;
 
     /* create a first data partition and keep a pointer to it */
-    if(init_partitions(part_head, 1) != 0) {
+    if(add_partitions(part_head, 1) != 0) {
         fprintf(stderr, "%s(): cannot create partition\n", __func__);
         return (num_parts_created);
     }
@@ -236,7 +236,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
                     ((max_size > 0) && (((*part_head)->size + head->size) > max_size))) {
                     /* and we reached last partition, chain a new one */
                     if((*part_head)->nextp == NULL) {
-                        if(init_partitions(part_head, 1) != 0) {
+                        if(add_partitions(part_head, 1) != 0) {
                             fprintf(stderr, "%s(): cannot create partition\n",
                                 __func__);
                             return (num_parts_created);

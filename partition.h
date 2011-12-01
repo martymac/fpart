@@ -41,7 +41,7 @@ struct partition {
     struct partition* prevp;    /* previous one */
 };
 
-int init_partitions(struct partition **head, pnum_t num_parts);
+int add_partitions(struct partition **head, pnum_t num_parts);
 void uninit_partitions(struct partition *head);
 pnum_t find_smallest_partition_index(struct partition *head);
 struct partition * get_partition_at(struct partition *head, pnum_t index);

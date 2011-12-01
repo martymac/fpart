@@ -386,7 +386,7 @@ int main(int argc, char** argv)
     
         /* create a double_linked list of partitions
            which will hold dispatched files */
-        if(init_partitions(&part_head, options.num_parts) != 0) {
+        if(add_partitions(&part_head, options.num_parts) != 0) {
                 fprintf(stderr, "%s(): cannot init list of partitions\n",
                     __func__);
                 uninit_partitions(part_head);

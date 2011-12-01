@@ -44,11 +44,12 @@
  Double-linked list of partitions manipulation functions
  *******************************************************/
 
-/* Initialize a double-linked list of num_parts partitions from head
+/* Add num_parts empty partitions to a double-linked list of partitions
+   from head
    - if head is NULL, creates a new list ; if not, chains a new list to it
    - returns with head set to the last element */
 int
-init_partitions(struct partition **head, pnum_t num_parts)
+add_partitions(struct partition **head, pnum_t num_parts)
 {
     assert(head != NULL);
     assert(num_parts > 0);
