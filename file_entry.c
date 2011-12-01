@@ -292,7 +292,7 @@ print_file_entries(struct file_entry *head, char *out_template,
             /* compute out_filename  "out_template.i\0" */
             char *out_filename;
             if((out_filename = 
-                (char *)malloc(strnlen(out_template, FILENAME_MAX) + 1 +
+                malloc(strnlen(out_template, FILENAME_MAX) + 1 +
                 get_num_digits((current_chunk * PRINT_FE_CHUNKS) +
                 current_file_entry) + 1)) == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
