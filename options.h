@@ -48,6 +48,10 @@ struct program_options {
     fsize_t max_size;
 /* input file (option -i); NULL = undefined, "-" = stdout, "filename" */
     char *in_filename;
+#define OPT_NOARBITRARYVALUES       0
+#define OPT_ARBITRARYVALUES         1
+#define DFLT_OPT_ARBITRARYVALUES    OPT_NOARBITRARYVALUES
+    unsigned char arbitrary_values;
 /* output file (option -o); NULL = stdout, "filename" */
     char *out_filename;
 /* display directories after certain depth (option -d) */

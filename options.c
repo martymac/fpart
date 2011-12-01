@@ -42,6 +42,7 @@ init_options(struct program_options *options)
     options->max_entries = DFLT_OPT_MAX_ENTRIES;
     options->max_size = DFLT_OPT_MAX_SIZE;
     options->in_filename = NULL;
+    options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;
     options->out_filename = NULL;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->add_slash = DFLT_OPT_ADDSLASH;
@@ -61,6 +62,7 @@ uninit_options(struct program_options *options)
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     if(options->out_filename != NULL)
         free(options->out_filename);
+    options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;
     if(options->in_filename != NULL)
         free(options->in_filename);
     options->max_size = DFLT_OPT_MAX_SIZE;

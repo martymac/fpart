@@ -80,7 +80,7 @@ regular partition, given the provided
 limit. This option can be used in conjunction with
 .Fl f .
 .El
-.Sh INPUT/OUTPUT CONTROL
+.Sh INPUT CONTROL
 .Bl -tag -width indent
 .It Ic -i Ar file
 Read file or directory list from
@@ -90,6 +90,16 @@ If
 is
 .Dq Li "-" ,
 then list is read from stdin.
+.It Fl a
+Input contains arbitrary values; just sort them (do not examine file system).
+Input must follow the
+.Dq Li "size(blank)path"
+scheme. One can this way use
+.Xr du 1
+output as input (for example).
+.El
+.Sh OUTPUT CONTROL
+.Bl -tag -width indent
 .It Ic -o Ar file
 Output partitions' content to
 .Ar file
@@ -147,6 +157,7 @@ Produce partitions containing 10000 files each by examining /usr first and then
 .Xr packo 1 ,
 .Xr rsync 1 ,
 .Xr find 1 ,
+.Xr du 1 ,
 .Xr grep 1
 .Sh AUTHOR, AVAILABILITY
 Fpart has been written by Ganaël LAPLANCHE and is available under the BSD

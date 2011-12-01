@@ -67,8 +67,9 @@ void
 usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
-        "[-i infile] [-o outfile]\n"
-        "             [-d depth] [-e] [-v] [-l] [-x] [file or dir ...]\n");
+        "[-i infile] [-a]\n"
+        "             [-o outfile] [-d depth] [-e] [-v] [-l] [-x] "
+        "[file or dir ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
@@ -81,8 +82,11 @@ usage(void)
     fprintf(stderr, "  -f\tlimit files per partition\n");
     fprintf(stderr, "  -s\tlimit partition size\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "Input/output control:\n");
+    fprintf(stderr, "Input control:\n");
     fprintf(stderr, "  -i\tinput file (stdin if '-' is specified)\n");
+    fprintf(stderr, "  -a\tinput contains arbitrary values\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Output control:\n");
     fprintf(stderr, "  -o\toutput file template "
         "(stdout if '-' is specified)\n");
     fprintf(stderr, "  -d\tswitch to directory names display "
@@ -100,13 +104,13 @@ usage(void)
     return;
 }
 
-/****
- Main
- ****/
-
 int main(int argc, char** argv)
 {
     fnum_t totalfiles = 0;
+
+/******************
+  Handle options
+ ******************/
 
     /* Program options */
     struct program_options options;
@@ -118,7 +122,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:o:d:evlx")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlx")) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -206,6 +210,9 @@ int main(int argc, char** argv)
                 }
                 snprintf(options.in_filename, FILENAME_MAX + 1, "%s", optarg);
                 break;
+            case 'a':
+                options.arbitrary_values = OPT_ARBITRARYVALUES;
+                break;
             case 'o':
                 if((optarg[0] == '-') && (optarg[1] == '\0'))
                     /* output goes to stdout */
@@ -271,6 +278,10 @@ int main(int argc, char** argv)
         snprintf(options.in_filename, FILENAME_MAX + 1, "%s", opt_input);
     }
 
+/**************
+  Handle stdin
+***************/
+
     /* our main double-linked file list */
     struct file_entry *head = NULL;
 
@@ -295,37 +306,70 @@ int main(int argc, char** argv)
 
         /* read fd and do the work */
         char line[MAX_LINE_LENGTH];
+        char *line_end_p;
         bzero(line, MAX_LINE_LENGTH);
         while(fgets(line, MAX_LINE_LENGTH, in_fp) != NULL) {
-            char *input_path = NULL;
-            size_t input_path_len = strnlen(line, FILENAME_MAX);
-            input_path  = malloc(input_path_len + 1);
-            if(input_path == NULL) {
-                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
-            }
-            snprintf(input_path, FILENAME_MAX + 1, "%s", line);
-    
-            /* remove ending junk */
-            while((input_path_len > 0) &&
-                ((input_path[input_path_len - 1] == '\n') ||
-                ((input_path_len > 1) && (input_path[input_path_len - 1] == '/')  && (input_path[input_path_len - 2] == '/')))) {
-                input_path[input_path_len - 1] = '\0';
-                input_path_len--;
-            }
+            /* replace '\n' with '\0' */
+            if ((line_end_p = strchr(line, '\n')) != NULL)
+                *line_end_p = '\0';
 
-            /* crawl path */
-            if(input_path[0] != '\0') {
+            if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
+            /* handle arbitrary values */
+                fsize_t input_size = 0;
+                char *input_path = NULL;
+                input_path  = malloc(strnlen(line, MAX_LINE_LENGTH) + 1);
+                if(input_path == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    uninit_file_entries(head);
+                    uninit_options(&options);
+                    return (1);
+                }
+
+                if(sscanf(line, "%lld %[^\n]", &input_size, input_path) == 2) {
+                    add_file_entry(&head, input_path, input_size, &options);
+                    totalfiles++;
+                }
+                else
+                    fprintf(stderr, "error parsing input values: %s\n", line);
+
+                /* cleanup */
+                free(input_path);
+            }
+            else {
+            /* handle paths, must examine filesystem */
+                char *input_path = NULL;
+                size_t input_path_len = strnlen(line, FILENAME_MAX);
+                input_path  = malloc(input_path_len + 1);
+                if(input_path == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    uninit_file_entries(head);
+                    uninit_options(&options);
+                    return (1);
+                }
+                snprintf(input_path, FILENAME_MAX + 1, "%s", line);
+    
+                /* remove ending junk */
+                while((input_path_len > 0) &&
+                    ((input_path[input_path_len - 1] == '\n') ||
+                    ((input_path_len > 1) && (input_path[input_path_len - 1] == '/')  && (input_path[input_path_len - 2] == '/')))) {
+                    input_path[input_path_len - 1] = '\0';
+                    input_path_len--;
+                }
+
+                /* crawl path */
+                if(input_path[0] != '\0') {
 #if defined(DEBUG) 
-                fprintf(stderr, "init_file_entries(): examining %s\n", input_path); 
+                    fprintf(stderr, "init_file_entries(): examining %s\n",
+                        input_path); 
 #endif
-                totalfiles += init_file_entries(input_path, &head, &options);
+                    totalfiles += init_file_entries(input_path, &head, &options);
+                }
+
+                /* cleanup */
+                free(input_path);
             }
 
             /* cleanup */
-            free(input_path);
             bzero(line, MAX_LINE_LENGTH);
         }
 
@@ -339,25 +383,56 @@ int main(int argc, char** argv)
             fclose(in_fp);
     }
 
-    /* now, work on each path provided through CLI */
+/******************
+  Handle arguments
+*******************/
+
+    /* now, work on each path provided as arguments */
     unsigned int i;
     for(i = 0 ; i < argc ; i++) {
-        /* remove ending slashes, if any */
-        size_t argv_len = strnlen(argv[i], FILENAME_MAX);
-        while((argv_len > 1) && (argv[i][argv_len - 1] == '/') &&
-            (argv[i][argv_len - 2] == '/')) {
-            argv[i][argv_len - 1] = '\0';
-            argv_len--;
+        if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
+            /* handle arbitrary values */
+            fsize_t input_size = 0;
+            char *input_path = NULL;
+            input_path  = malloc(strnlen(argv[i], FILENAME_MAX) + 1);
+            if(input_path == NULL) {
+                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                uninit_file_entries(head);
+                uninit_options(&options);
+                return (1);
+            }
+
+            if(sscanf(argv[i], "%lld %[^\n]", &input_size, input_path) == 2) {
+                add_file_entry(&head, input_path, input_size, &options);
+                totalfiles++;
+            }
+            else
+                fprintf(stderr, "error parsing input values: %s\n", argv[i]);
+
+            /* cleanup */
+            free(input_path);
         }
-        if(argv[i][0] != '\0') {
+        else {
+            /* handle paths, must examine filesystem */
+            /* remove ending slashes, if any */
+            size_t argv_len = strnlen(argv[i], FILENAME_MAX);
+            while((argv_len > 1) && (argv[i][argv_len - 1] == '/') &&
+                (argv[i][argv_len - 2] == '/')) {
+                argv[i][argv_len - 1] = '\0';
+                argv_len--;
+            }
+            if(argv[i][0] != '\0') {
 #if defined(DEBUG) 
-            fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
+                fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
 #endif
-            totalfiles += init_file_entries(argv[i], &head, &options);
+                totalfiles += init_file_entries(argv[i], &head, &options);
+            }
         }
     }
-    /* come back to the first element and display status */
+    /* come back to the first element */
     rewind_list(head);
+
+    /* display status */
     fprintf(stderr, "%lld file(s) found.\n", totalfiles);
 
     /* no file found */
@@ -366,6 +441,10 @@ int main(int argc, char** argv)
         uninit_options(&options);
         return (0);
     }
+
+/************************************************
+  Sort entries with a fixed number of partitions
+*************************************************/
 
     /* our list of partitions */
     struct partition *part_head = NULL;
@@ -417,6 +496,11 @@ int main(int argc, char** argv)
                 return (1);
         }
     }
+
+/***************************************************
+  Sort entries with a variable number of partitions
+****************************************************/
+
     /* sort files with a file number or size limit per-partitions.
        In this case, partitions are dynamically-created */
     else {
@@ -433,6 +517,10 @@ int main(int argc, char** argv)
            after default partition) */
         rewind_list(part_head);
     }
+
+/***********************
+  Print result and exit
+************************/
 
     /* print result summary */
     print_partitions(part_head);
