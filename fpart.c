@@ -53,6 +53,9 @@
 /* errno */
 #include <errno.h>
 
+/* assert(3) */
+#include <assert.h>
+
 /* Print version */
 void
 version(void)
@@ -102,6 +105,77 @@ usage(void)
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
         "<ganael.laplanche@martymac.org>\n");
     return;
+}
+
+/* Handle one argument (either a path to crawl or an arbitrary
+   value) and update file entries (head)
+   - returns != 0 if a malloc() error occurred
+   - returns with head set to the last element added
+   - updates totalfiles with the number of elements added */
+int
+handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
+    struct program_options *options)
+{
+    assert(argument != NULL);
+    assert(totalfiles != NULL);
+    assert(head != NULL);
+    assert(options != NULL);
+
+    if(options->arbitrary_values == OPT_ARBITRARYVALUES) {
+    /* handle arbitrary values */
+        fsize_t input_size = 0;
+        char *input_path = NULL;
+        input_path  = malloc(strlen(argument) + 1);
+        if(input_path == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            return (1);
+        }
+
+        if(sscanf(argument, "%lld %[^\n]", &input_size, input_path) == 2) {
+            add_file_entry(head, input_path, input_size, options);
+            (*totalfiles)++;
+        }
+        else
+            fprintf(stderr, "error parsing input values: %s\n", argument);
+
+        /* cleanup */
+        free(input_path);
+    }
+    else {
+    /* handle paths, must examine filesystem */
+        char *input_path = NULL;
+        size_t input_path_len = strlen(argument);
+        size_t malloc_size = input_path_len + 1;
+        input_path  = malloc(malloc_size);
+        if(input_path == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            return (1);
+        }
+        snprintf(input_path, malloc_size, "%s", argument);
+    
+        /* remove multiple ending slashes */
+        while((input_path_len > 1) &&
+            (input_path[input_path_len - 1] == '/')  &&
+            (input_path[input_path_len - 2] == '/')) {
+            input_path[input_path_len - 1] = '\0';
+            input_path_len--;
+        }
+
+        /* crawl path */
+        if(input_path[0] != '\0') {
+#if defined(DEBUG)
+            fprintf(stderr, "init_file_entries(): examining %s\n",
+                input_path); 
+#endif
+            (*totalfiles) += init_file_entries(input_path, head,
+                options);
+        }
+
+        /* cleanup */
+        free(input_path);
+    }
+
+    return(0);
 }
 
 int main(int argc, char** argv)
@@ -318,62 +392,10 @@ int main(int argc, char** argv)
             if ((line_end_p = strchr(line, '\n')) != NULL)
                 *line_end_p = '\0';
 
-            if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
-            /* handle arbitrary values */
-                fsize_t input_size = 0;
-                char *input_path = NULL;
-                input_path  = malloc(strlen(line) + 1);
-                if(input_path == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    uninit_file_entries(head);
-                    uninit_options(&options);
-                    return (1);
-                }
-
-                if(sscanf(line, "%lld %[^\n]", &input_size, input_path) == 2) {
-                    add_file_entry(&head, input_path, input_size, &options);
-                    totalfiles++;
-                }
-                else
-                    fprintf(stderr, "error parsing input values: %s\n", line);
-
-                /* cleanup */
-                free(input_path);
-            }
-            else {
-            /* handle paths, must examine filesystem */
-                char *input_path = NULL;
-                size_t input_path_len = strlen(line);
-                size_t malloc_size = input_path_len + 1;
-                input_path  = malloc(malloc_size);
-                if(input_path == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    uninit_file_entries(head);
-                    uninit_options(&options);
-                    return (1);
-                }
-                snprintf(input_path, malloc_size, "%s", line);
-    
-                /* remove multiple ending slashes */
-                while((input_path_len > 1) &&
-                    (input_path[input_path_len - 1] == '/')  &&
-                    (input_path[input_path_len - 2] == '/')) {
-                    input_path[input_path_len - 1] = '\0';
-                    input_path_len--;
-                }
-
-                /* crawl path */
-                if(input_path[0] != '\0') {
-#if defined(DEBUG) 
-                    fprintf(stderr, "init_file_entries(): examining %s\n",
-                        input_path); 
-#endif
-                    totalfiles += init_file_entries(input_path, &head,
-                        &options);
-                }
-
-                /* cleanup */
-                free(input_path);
+            if(handle_argument(line, &totalfiles, &head, &options) != 0) {
+                uninit_file_entries(head);
+                uninit_options(&options);
+                return (1);
             }
 
             /* cleanup */
@@ -397,47 +419,17 @@ int main(int argc, char** argv)
     /* now, work on each path provided as arguments */
     unsigned int i;
     for(i = 0 ; i < argc ; i++) {
-        if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
-            /* handle arbitrary values */
-            fsize_t input_size = 0;
-            char *input_path = NULL;
-            input_path  = malloc(strlen(argv[i]) + 1);
-            if(input_path == NULL) {
-                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
-            }
-
-            if(sscanf(argv[i], "%lld %[^\n]", &input_size, input_path) == 2) {
-                add_file_entry(&head, input_path, input_size, &options);
-                totalfiles++;
-            }
-            else
-                fprintf(stderr, "error parsing input values: %s\n", argv[i]);
-
-            /* cleanup */
-            free(input_path);
-        }
-        else {
-            /* handle paths, must examine filesystem */
-
-            /* remove multiple ending slashes, if any */
-            size_t argv_len = strlen(argv[i]);
-            while((argv_len > 1) &&
-                (argv[i][argv_len - 1] == '/') &&
-                (argv[i][argv_len - 2] == '/')) {
-                argv[i][argv_len - 1] = '\0';
-                argv_len--;
-            }
-            if(argv[i][0] != '\0') {
-#if defined(DEBUG) 
-                fprintf(stderr, "init_file_entries(): examining %s\n", argv[i]); 
-#endif
-                totalfiles += init_file_entries(argv[i], &head, &options);
-            }
+        if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
         }
     }
+
+/****************
+  Display status
+*****************/
+
     /* come back to the first element */
     rewind_list(head);
 

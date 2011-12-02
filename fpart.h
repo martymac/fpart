@@ -27,9 +27,16 @@
 #ifndef _FPART_H
 #define _FPART_H
 
+#include "types.h"
+#include "options.h"
+#include "file_entry.h"
+
 #define FPART_VERSION "0.3"
 
 /* maximum input line length, including '\n' and '\0' */
 #define MAX_LINE_LENGTH 2048
+
+int handle_argument(char *argument, fnum_t *totalfiles,
+    struct file_entry **head, struct program_options *options);
 
 #endif /* _FPART_H */
