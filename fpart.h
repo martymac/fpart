@@ -30,6 +30,6 @@
 #define FPART_VERSION "0.3"
 
 /* maximum input line length, including '\n' and '\0' */
-#define MAX_LINE_LENGTH (FILENAME_MAX + 128)
+#define MAX_LINE_LENGTH 2048
 
 #endif /* _FPART_H */

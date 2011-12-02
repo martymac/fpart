@@ -36,7 +36,7 @@
 /* fprintf(3) */
 #include <stdio.h>
 
-/* strerror(3) */
+/* strerror(3), strlen(3) */
 #include <string.h>
 
 /* errno */
@@ -95,12 +95,12 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
         *head = *current;
 
     /* set current file data */
-    if(((*current)->path = (char *)malloc(strnlen(path, FILENAME_MAX) + 1))
-        == NULL) {
+    size_t malloc_size = strlen(path) + 1;
+    if(((*current)->path = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
     }
-    snprintf((*current)->path, FILENAME_MAX + 1, "%s", path);
+    snprintf((*current)->path, malloc_size, "%s", path);
     (*current)->size = size;
 
     /* set current file entry's index and pointers */
@@ -152,7 +152,8 @@ init_file_entries(char *file_path, struct file_entry **head,
             case FTS_DNR:   /* un-readable directory */
             case FTS_ERR:   /* misc error */
             case FTS_NS:    /* stat() error */
-                fprintf(stderr, "%s: %s\n", p->fts_path, strerror(p->fts_errno));
+                fprintf(stderr, "%s: %s\n", p->fts_path,
+                    strerror(p->fts_errno));
                 continue;
 
             case FTS_DC:
@@ -182,26 +183,25 @@ init_file_entries(char *file_path, struct file_entry **head,
                 char *file_entry_path = NULL;
                 fsize_t file_entry_size = 0;
 
-                /* compute current file entry's path */
-                size_t fts_path_len = strnlen(p->fts_path, FILENAME_MAX);
-
                 /* count ending '/' and '\0', even if an ending '/' is not
                    added */
-                if((file_entry_path = malloc(fts_path_len + 1 + 1)) == NULL) {
+                size_t malloc_size = p->fts_pathlen + 1 + 1;
+                if((file_entry_path = malloc(malloc_size)) == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     return (num_files);
                 }
+
                 if(S_ISDIR(p->fts_statp->st_mode) &&
                     (options->add_slash == OPT_ADDSLASH) &&
-                    (fts_path_len > 0) &&
-                    (p->fts_path[fts_path_len - 1] != '/'))
+                    (p->fts_pathlen > 0) &&
+                    (p->fts_path[p->fts_pathlen - 1] != '/'))
                     /* file is a directory, user requested to add a slash and
                        file_path does not already end with a '/' so we can
                        add one */
-                    snprintf(file_entry_path, FILENAME_MAX + 1, "%s/",
+                    snprintf(file_entry_path, malloc_size, "%s/",
                         p->fts_path);
                 else
-                    snprintf(file_entry_path, FILENAME_MAX + 1, "%s",
+                    snprintf(file_entry_path, malloc_size, "%s",
                         p->fts_path);
 
                 /* compute current file entry's size */
@@ -217,10 +217,11 @@ init_file_entries(char *file_path, struct file_entry **head,
                         get_size(p->fts_path, p->fts_statp, options);
 
                 /* add it */
-                if(add_file_entry(head, file_entry_path, file_entry_size, options) == 0)
+                if(add_file_entry
+                    (head, file_entry_path, file_entry_size, options) == 0)
                     num_files++;
 
-                /* free stuff */
+                /* cleanup */
                 free(file_entry_path);
 
                 continue;
@@ -294,11 +295,11 @@ print_file_entries(struct file_entry *head, char *out_template,
         while((current_file_entry < PRINT_FE_CHUNKS) &&
               (((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) < num_parts)) {
             /* compute out_filename  "out_template.i\0" */
-            char *out_filename;
-            if((out_filename = 
-                malloc(strnlen(out_template, FILENAME_MAX) + 1 +
-                get_num_digits((current_chunk * PRINT_FE_CHUNKS) +
-                current_file_entry) + 1)) == NULL) {
+            char *out_filename = NULL;
+            size_t malloc_size = strlen(out_template) + 1 +
+                get_num_digits
+                ((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) + 1;
+            if((out_filename = malloc(malloc_size)) == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 /* close all open descriptors and return */
                 pnum_t i;
@@ -306,7 +307,7 @@ print_file_entries(struct file_entry *head, char *out_template,
                      close(fd[i]);
                 return (1);
             }
-            snprintf(out_filename, FILENAME_MAX + 1, "%s.%d", out_template,
+            snprintf(out_filename, malloc_size, "%s.%d", out_template,
                 (current_chunk * PRINT_FE_CHUNKS) + current_file_entry);
 
             if((fd[current_file_entry] =
@@ -326,7 +327,7 @@ print_file_entries(struct file_entry *head, char *out_template,
         while(head != NULL) {
             if((head->partition_index >= (current_chunk * PRINT_FE_CHUNKS)) &&
                (head->partition_index < ((current_chunk + 1) * PRINT_FE_CHUNKS))) {
-                size_t to_write = strnlen(head->path, FILENAME_MAX);
+                size_t to_write = strlen(head->path);
                 if((write(fd[head->partition_index % PRINT_FE_CHUNKS], head->path, to_write) != to_write) ||
                     (write(fd[head->partition_index % PRINT_FE_CHUNKS], "\n", 1) != 1)) {
                     fprintf(stderr, "%s\n", strerror(errno));

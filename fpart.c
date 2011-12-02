@@ -44,7 +44,7 @@
 /* getopt(3) */
 #include <getopt.h>
 
-/* strnlen(3) */
+/* strlen(3) */
 #include <string.h>
 
 /* bzero(3) */
@@ -202,13 +202,16 @@ int main(int argc, char** argv)
             }
                 break;
             case 'i':
-                options.in_filename = malloc(strnlen(optarg, FILENAME_MAX) + 1);
+            {
+                size_t malloc_size = strlen(optarg) + 1;
+                options.in_filename = malloc(malloc_size);
                 if(options.in_filename == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(options.in_filename, FILENAME_MAX + 1, "%s", optarg);
+                snprintf(options.in_filename, malloc_size, "%s", optarg);
+            }
                 break;
             case 'a':
                 options.arbitrary_values = OPT_ARBITRARYVALUES;
@@ -217,15 +220,16 @@ int main(int argc, char** argv)
                 if((optarg[0] == '-') && (optarg[1] == '\0'))
                     /* output goes to stdout */
                     break;
-
-                options.out_filename =
-                    malloc(strnlen(optarg, FILENAME_MAX) + 1);
+            {
+                size_t malloc_size = strlen(optarg) + 1;
+                options.out_filename = malloc(malloc_size);
                 if(options.out_filename == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(options.out_filename, FILENAME_MAX + 1, "%s", optarg);
+                snprintf(options.out_filename, malloc_size, "%s", optarg);
+            }
                 break;
             case 'd':
             {
@@ -269,13 +273,14 @@ int main(int argc, char** argv)
     if((options.in_filename == NULL) && (argc <= 0)) {
         /* no file specified, force stdin */
         char *opt_input = "-";
-        options.in_filename = malloc(strnlen(opt_input, FILENAME_MAX) + 1);
+        size_t malloc_size = strlen(opt_input) + 1;
+        options.in_filename = malloc(malloc_size);
         if(options.in_filename == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             uninit_options(&options);
             return (1);
         }
-        snprintf(options.in_filename, FILENAME_MAX + 1, "%s", opt_input);
+        snprintf(options.in_filename, malloc_size, "%s", opt_input);
     }
 
 /**************
@@ -306,7 +311,7 @@ int main(int argc, char** argv)
 
         /* read fd and do the work */
         char line[MAX_LINE_LENGTH];
-        char *line_end_p;
+        char *line_end_p = NULL;
         bzero(line, MAX_LINE_LENGTH);
         while(fgets(line, MAX_LINE_LENGTH, in_fp) != NULL) {
             /* replace '\n' with '\0' */
@@ -317,7 +322,7 @@ int main(int argc, char** argv)
             /* handle arbitrary values */
                 fsize_t input_size = 0;
                 char *input_path = NULL;
-                input_path  = malloc(strnlen(line, MAX_LINE_LENGTH) + 1);
+                input_path  = malloc(strlen(line) + 1);
                 if(input_path == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_file_entries(head);
@@ -338,20 +343,21 @@ int main(int argc, char** argv)
             else {
             /* handle paths, must examine filesystem */
                 char *input_path = NULL;
-                size_t input_path_len = strnlen(line, FILENAME_MAX);
-                input_path  = malloc(input_path_len + 1);
+                size_t input_path_len = strlen(line);
+                size_t malloc_size = input_path_len + 1;
+                input_path  = malloc(malloc_size);
                 if(input_path == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_file_entries(head);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(input_path, FILENAME_MAX + 1, "%s", line);
+                snprintf(input_path, malloc_size, "%s", line);
     
-                /* remove ending junk */
-                while((input_path_len > 0) &&
-                    ((input_path[input_path_len - 1] == '\n') ||
-                    ((input_path_len > 1) && (input_path[input_path_len - 1] == '/')  && (input_path[input_path_len - 2] == '/')))) {
+                /* remove multiple ending slashes */
+                while((input_path_len > 1) &&
+                    (input_path[input_path_len - 1] == '/')  &&
+                    (input_path[input_path_len - 2] == '/')) {
                     input_path[input_path_len - 1] = '\0';
                     input_path_len--;
                 }
@@ -362,7 +368,8 @@ int main(int argc, char** argv)
                     fprintf(stderr, "init_file_entries(): examining %s\n",
                         input_path); 
 #endif
-                    totalfiles += init_file_entries(input_path, &head, &options);
+                    totalfiles += init_file_entries(input_path, &head,
+                        &options);
                 }
 
                 /* cleanup */
@@ -394,7 +401,7 @@ int main(int argc, char** argv)
             /* handle arbitrary values */
             fsize_t input_size = 0;
             char *input_path = NULL;
-            input_path  = malloc(strnlen(argv[i], FILENAME_MAX) + 1);
+            input_path  = malloc(strlen(argv[i]) + 1);
             if(input_path == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 uninit_file_entries(head);
@@ -414,9 +421,11 @@ int main(int argc, char** argv)
         }
         else {
             /* handle paths, must examine filesystem */
-            /* remove ending slashes, if any */
-            size_t argv_len = strnlen(argv[i], FILENAME_MAX);
-            while((argv_len > 1) && (argv[i][argv_len - 1] == '/') &&
+
+            /* remove multiple ending slashes, if any */
+            size_t argv_len = strlen(argv[i]);
+            while((argv_len > 1) &&
+                (argv[i][argv_len - 1] == '/') &&
                 (argv[i][argv_len - 2] == '/')) {
                 argv[i][argv_len - 1] = '\0';
                 argv_len--;
@@ -466,34 +475,36 @@ int main(int argc, char** argv)
         /* create a double_linked list of partitions
            which will hold dispatched files */
         if(add_partitions(&part_head, options.num_parts) != 0) {
-                fprintf(stderr, "%s(): cannot init list of partitions\n",
-                    __func__);
-                uninit_partitions(part_head);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
+            fprintf(stderr, "%s(): cannot init list of partitions\n",
+                __func__);
+            uninit_partitions(part_head);
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
         }
         /* come back to the first element */
         rewind_list(part_head);
     
         /* dispatch files */
-        if(dispatch_file_entry_p_by_size(file_entry_p, totalfiles, part_head, options.num_parts) != 0) {
-                fprintf(stderr, "%s(): unable to dispatch file entries\n",
-                    __func__);
-                uninit_partitions(part_head);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
+        if(dispatch_file_entry_p_by_size
+            (file_entry_p, totalfiles, part_head, options.num_parts) != 0) {
+            fprintf(stderr, "%s(): unable to dispatch file entries\n",
+                __func__);
+            uninit_partitions(part_head);
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
         }
     
         /* re-dispatch empty files */
-        if(dispatch_empty_file_entries(head, totalfiles, part_head, options.num_parts) != 0) {
-                fprintf(stderr, "%s(): unable to dispatch empty file entries\n",
-                    __func__);
-                uninit_partitions(part_head);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
+        if(dispatch_empty_file_entries
+            (head, totalfiles, part_head, options.num_parts) != 0) {
+            fprintf(stderr, "%s(): unable to dispatch empty file entries\n",
+                __func__);
+            uninit_partitions(part_head);
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
         }
     }
 
@@ -504,13 +515,14 @@ int main(int argc, char** argv)
     /* sort files with a file number or size limit per-partitions.
        In this case, partitions are dynamically-created */
     else {
-        if((num_parts = dispatch_file_entries_by_limits(head, &part_head, options.max_entries, options.max_size)) == 0) {
-                fprintf(stderr, "%s(): unable to dispatch file entries\n",
-                    __func__);
-                uninit_partitions(part_head);
-                uninit_file_entries(head);
-                uninit_options(&options);
-                return (1);
+        if((num_parts = dispatch_file_entries_by_limits
+            (head, &part_head, options.max_entries, options.max_size)) == 0) {
+            fprintf(stderr, "%s(): unable to dispatch file entries\n",
+                __func__);
+            uninit_partitions(part_head);
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
         }
         /* come back to the first element
            (we may have exited with part_head set to partition 1, 
