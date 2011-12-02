@@ -34,6 +34,7 @@
 .Op Fl V
 .Fl n Ar num | Fl f Ar files | Fl s Ar size
 .Op Fl i Ar infile
+.Op Fl a
 .Op Fl o Ar outfile
 .Op Fl d Ar depth
 .Op Fl e
@@ -94,9 +95,7 @@ then list is read from stdin.
 Input contains arbitrary values; just sort them (do not examine file system).
 Input must follow the
 .Dq Li "size(blank)path"
-scheme. One can this way use
-.Xr du 1
-output as input (for example).
+scheme.
 .El
 .Sh OUTPUT CONTROL
 .Bl -tag -width indent
@@ -152,6 +151,13 @@ music-parts.0 to music-parts.n, are generated as output.
 .It Li "find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'"
 Produce partitions containing 10000 files each by examining /usr first and then
 /home and display only partition 0 on stdout.
+.It Li "du * | fpart -n 2 -a"
+Produce two partitions by re-using
+.Xr du 1
+output. Fpart will not examine the file
+system but instead re-use arbitrary values printed by
+.Xr du 1
+and sort them.
 .El
 .Sh SEE ALSO
 .Xr packo 1 ,
