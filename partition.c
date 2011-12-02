@@ -92,7 +92,7 @@ uninit_partitions(struct partition *head)
     rewind_list(head);
 
     struct partition *current = head;
-    struct partition *next;
+    struct partition *next = NULL;
 
     while(current != NULL) {
         next = current->nextp;

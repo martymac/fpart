@@ -246,7 +246,7 @@ uninit_file_entries(struct file_entry *head)
     rewind_list(head);
 
     struct file_entry *current = head;
-    struct file_entry *next;
+    struct file_entry *next = NULL;
 
     while(current != NULL) {
         if(current->path != NULL)
