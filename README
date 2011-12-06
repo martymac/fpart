@@ -33,6 +33,12 @@ The following will produce partitions containing 10000 files each by examining
 
 $ find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'
 
+The following will produce two partitions by re-using du(1) output. Fpart will
+not examine the file system but instead re-use arbitrary values printed by du(1)
+and sort them :
+
+$ du * | fpart -n 2 -a
+
 See also :
 **********
 
@@ -62,7 +68,8 @@ General process :
 Here is a technical overview of how the program works :
 
 Start
-Read program arguments and path list (either from stdin or as argument)
+Read program arguments and path list
+(or arbitrary values, either from stdin or as argument)
     /path/to/dir1  -> double-linked list of files found
     /path/to/file1 -> double-linked list of files found (linked to previous)
     /path/to/dir2  -> double-linked list of files found (linked to previous)
