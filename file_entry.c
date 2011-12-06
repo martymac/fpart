@@ -63,11 +63,6 @@
  Double-linked list of file_entries manipulation functions
  *********************************************************/
 
-#define print_file_entry(file_entry) \
-    { if(file_entry) printf("@%p : path = %s, size = %lld, \
-        partindex = %d\n", file_entry, (file_entry)->path, \
-        (file_entry)->size, (file_entry)->partition_index); }
-
 /* Add a file entry to a double-linked list of file_entries
    - if head is NULL, creates a new file entry ; if not, chains a new file
      entry to it
