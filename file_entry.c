@@ -71,12 +71,12 @@ int
 add_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options)
 {
-    struct file_entry **current = head; /* current file_entry pointer address */
-    struct file_entry *previous = NULL; /* previous file_entry pointer */
-
     assert(head != NULL);
     assert(path != NULL);
     assert(options != NULL);
+
+    struct file_entry **current = head; /* current file_entry pointer address */
+    struct file_entry *previous = NULL; /* previous file_entry pointer */
 
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
@@ -122,11 +122,11 @@ fnum_t
 init_file_entries(char *file_path, struct file_entry **head,
     struct program_options *options)
 {
-    fnum_t num_files = 0;   /* number of files added to the list */
-
     assert(file_path != NULL);
     assert(head != NULL);
     assert(options != NULL);
+
+    fnum_t num_files = 0;   /* number of files added to the list */
 
     /* prepare fts */
     FTS *ftsp = NULL;

@@ -74,11 +74,11 @@ fsize_t
 get_size(char *file_path, struct stat *file_stat,
     struct program_options *options)
 {
-    fsize_t file_size = 0;  /* current return value */
-
     assert(file_path != NULL);
     assert(file_stat != NULL);
     assert(options != NULL);
+
+    fsize_t file_size = 0;  /* current return value */
 
     /* if file_path is not a directory,
        return st_size for regular files (only) */
