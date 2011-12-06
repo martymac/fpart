@@ -1,6 +1,7 @@
 TODO (ideas) :
 **************
 
+- Display total size in status ?
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...) ?
 - Make the program multithread for FS analysis ?
