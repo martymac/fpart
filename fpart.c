@@ -40,8 +40,6 @@
 
 /* getopt(3) */
 #include <unistd.h>
-
-/* getopt(3) */
 #include <getopt.h>
 
 /* strlen(3) */
@@ -63,6 +61,17 @@ version(void)
     fprintf(stderr, "fpart v." FPART_VERSION "\n"
         "Copyright (c) 2011 Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
         "WWW: http://contribs.martymac.org\n");
+    fprintf(stderr, "Build options: debug=");
+#if defined(DEBUG)
+    fprintf(stderr, "yes, fts=");
+#else
+    fprintf(stderr, "no, fts=");
+#endif
+#if defined(EMBED_FTS)
+    fprintf(stderr, "embedded\n");
+#else
+    fprintf(stderr, "system\n");
+#endif
 }
 
 /* Print usage */

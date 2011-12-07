@@ -40,7 +40,11 @@
 /* fts(3) */
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(EMBED_FTS)
+#include "fts.h"
+#else
 #include <fts.h>
+#endif
 
 /* strerror(3) */
 #include <string.h>
