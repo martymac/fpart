@@ -39,6 +39,20 @@ and sort them :
 
 $ du * | fpart -n 2 -a
 
+Installing :
+************
+
+To install fpart, get the 'Makefile' symlink point to the right Makefile,
+e.g. :
+
+# rm Makefile
+# ln -s Makefile.linux Makefile
+
+then, type in :
+
+# make
+# make install
+
 See also :
 **********
 
@@ -61,6 +75,14 @@ Fpart has been written by Ganaël LAPLANCHE <ganael.laplanche@martymac.org>
 and is available under the BSD license (see COPYING for details).
 
 Thanks to jbd for having given me the idea of this program !
+
+Contributions :
+***************
+
+FTS code comes from FreeBSD sources (8.2-RELEASE) :
+    lib/libc/gen/fts.c -> fts.c
+    include/fts.h -> fts.h
+It is available under the BSD license.
 
 General process :
 *****************
