@@ -3,11 +3,11 @@ Fpart - README
 What is fpart ?
 ***************
 
-Fpart is a tool that helps you sort files and divide them into bags
-("partitions"). It is developped in C and available under the BSD license.
+Fpart is a tool that helps you sort file trees and divide them into bags (called
+"partitions"). It is developped in C and available under the BSD license.
 
-It splits a list of directories and files into a certain number of partitions,
-trying to produce partitions with the same size and number of files.
+It splits a list of directories and file trees into a certain number of
+partitions, trying to produce partitions with the same size and number of files.
 It can also produce partitions with a given number of files or a limited size.
 
 Once generated, partitions are either printed as file lists to stdout (default)
@@ -22,11 +22,11 @@ commands in parallel. 3 files, "var-parts.[0-2]", are generated as output :
 
 $ fpart -n 3 -o var-parts /var
 
-The following will produce partitions of 4.4 GB, containing music files ready
+The following will produce partitions of 4.3 GB, containing music files ready
 to be burnt to a DVD (for example). Files "music-parts.[0-n]", are generated
 as output :
 
-$ fpart -s 4724464025 -o music-parts /path/to/my/music
+$ fpart -s 4617089843 -o music-parts /path/to/my/music
 
 The following will produce partitions containing 10000 files each by examining
 /usr first and then /home and display only partition 0 on stdout :
