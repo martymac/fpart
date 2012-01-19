@@ -7,3 +7,7 @@ TODO (ideas) :
 - Make the program multithread for FS analysis ?
 - Display progress during FS analysis ?
 - Display/accept size in a human-friendly format ?
+- Add loading/rounding options :
+  - Pre-load partitions with n bytes
+  - Over-load each file size with n bytes
+  - Round-up each file size to a multiple of n bytes
