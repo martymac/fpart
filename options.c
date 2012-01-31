@@ -38,7 +38,7 @@ void
 init_options(struct program_options *options)
 {
     /* set default options */
-    options->num_parts = DFLT_OPT_NUM_PART;
+    options->num_parts = DFLT_OPT_NUM_PARTS;
     options->max_entries = DFLT_OPT_MAX_ENTRIES;
     options->max_size = DFLT_OPT_MAX_SIZE;
     options->in_filename = NULL;
@@ -67,5 +67,5 @@ uninit_options(struct program_options *options)
         free(options->in_filename);
     options->max_size = DFLT_OPT_MAX_SIZE;
     options->max_entries = DFLT_OPT_MAX_ENTRIES;
-    options->num_parts = DFLT_OPT_NUM_PART;
+    options->num_parts = DFLT_OPT_NUM_PARTS;
 }

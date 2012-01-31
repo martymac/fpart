@@ -243,7 +243,7 @@ int main(int argc, char** argv)
                 break;
             case 'f':
             {
-                if(options.num_parts != DFLT_OPT_NUM_PART) {
+                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
                     fprintf(stderr,
                         "Option -f is incompatible with option -n.\n");
                     usage();
@@ -265,7 +265,7 @@ int main(int argc, char** argv)
                 break;
             case 's':
             {
-                if(options.num_parts != DFLT_OPT_NUM_PART) {
+                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
                     fprintf(stderr,
                         "Option -s is incompatible with option -n.\n");
                     usage();
@@ -344,7 +344,7 @@ int main(int argc, char** argv)
     argc -= optind;
     argv += optind;
 
-    if((options.num_parts == DFLT_OPT_NUM_PART) &&
+    if((options.num_parts == DFLT_OPT_NUM_PARTS) &&
         (options.max_entries == DFLT_OPT_MAX_ENTRIES) &&
         (options.max_size == DFLT_OPT_MAX_SIZE)) {
         fprintf(stderr, "Please specify either -n, -f or -s.\n");
@@ -461,7 +461,7 @@ int main(int argc, char** argv)
     pnum_t num_parts = options.num_parts;
 
     /* sort files with a fixed size of partitions */
-    if(options.num_parts != DFLT_OPT_NUM_PART) {
+    if(options.num_parts != DFLT_OPT_NUM_PARTS) {
         /* create a fixed-size array of pointers to sort */
         struct file_entry *file_entry_p[totalfiles];
         bzero(file_entry_p, sizeof(struct file_entry *) * totalfiles);

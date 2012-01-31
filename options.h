@@ -38,7 +38,7 @@
 /* Program options */
 struct program_options {
 /* number of partitions (option -n) */
-#define DFLT_OPT_NUM_PART           0
+#define DFLT_OPT_NUM_PARTS          0
     pnum_t num_parts;
 /* maximum files per partition (option -f) */
 #define DFLT_OPT_MAX_ENTRIES        0
