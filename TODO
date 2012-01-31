@@ -11,3 +11,5 @@ TODO (ideas) :
   - Pre-load partitions with n bytes
   - Over-load each file size with n bytes
   - Round-up each file size to a multiple of n bytes
+- Use a temp file to store file entries and reduce memory usage
+- 
