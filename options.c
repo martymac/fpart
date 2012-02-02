@@ -29,6 +29,9 @@
 /* NULL */
 #include <stdlib.h>
 
+/* assert(3) */
+#include <assert.h>
+
 /*************************
  Program options functions
  *************************/
@@ -37,6 +40,25 @@
 void
 init_options(struct program_options *options)
 {
+    /* check our default values */
+    assert(DFLT_OPT_NUM_PARTS >= 0);
+    assert(DFLT_OPT_MAX_ENTRIES >= 0);
+    assert(DFLT_OPT_MAX_SIZE >= 0);
+    assert((DFLT_OPT_ARBITRARYVALUES == OPT_NOARBITRARYVALUES) ||
+           (DFLT_OPT_ARBITRARYVALUES == OPT_ARBITRARYVALUES));
+    assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
+    assert((DFLT_OPT_ADDSLASH == OPT_NOADDSLASH) ||
+           (DFLT_OPT_ADDSLASH == OPT_ADDSLASH));
+    assert((DFLT_OPT_VERBOSE == OPT_NOVERBOSE) ||
+           (DFLT_OPT_VERBOSE == OPT_VERBOSE));
+    assert((DFLT_OPT_FOLLOWSYMLINKS == OPT_FOLLOWSYMLINKS) ||
+           (DFLT_OPT_FOLLOWSYMLINKS == OPT_NOFOLLOWSYMLINKS));
+    assert((DFLT_OPT_CROSSFSBOUNDARIES == OPT_NOCROSSFSBOUNDARIES) ||
+           (DFLT_OPT_CROSSFSBOUNDARIES == OPT_CROSSFSBOUNDARIES));
+    assert(DFLT_OPT_PRELOAD_SIZE >= 0);
+    assert(DFLT_OPT_OVERLOAD_SIZE >= 0);
+    assert(DFLT_OPT_ROUND_SIZE >= 1);
+
     /* set default options */
     options->num_parts = DFLT_OPT_NUM_PARTS;
     options->max_entries = DFLT_OPT_MAX_ENTRIES;
@@ -49,12 +71,18 @@ init_options(struct program_options *options)
     options->verbose = DFLT_OPT_VERBOSE;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
+    options->preload_size = DFLT_OPT_PRELOAD_SIZE;
+    options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
+    options->round_size = DFLT_OPT_ROUND_SIZE;
 }
 
 /* Un-initialize global options structure */
 void
 uninit_options(struct program_options *options)
 {
+    options->round_size = DFLT_OPT_ROUND_SIZE;
+    options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
+    options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->verbose = DFLT_OPT_VERBOSE;

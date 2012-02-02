@@ -100,7 +100,12 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
         return (1);
     }
     snprintf((*current)->path, malloc_size, "%s", path);
-    (*current)->size = size;
+    (*current)->size = size + options->overload_size;
+    if(((*current)->size % options->round_size) != 0)
+        (*current)->size =
+            (fsize_t)((*current)->size / options->round_size)
+            * options->round_size
+            + options->round_size;
 
     /* set current file entry's index and pointers */
     (*current)->partition_index = 0;    /* set during dispatch */

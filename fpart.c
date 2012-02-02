@@ -80,10 +80,10 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-v] [-l] [-x] "
+        "             [-o outfile] [-d depth] [-e] [-v] [-l] [-x]\n"
+        "             [-p num] [-q num] [-r num] "
         "[file or dir ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
-    fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "General:\n");
     fprintf(stderr, "  -h\tthis help\n");
@@ -110,6 +110,14 @@ usage(void)
     fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
     fprintf(stderr, "  -x\tdo not cross file system boundaries "
         "(default: cross)\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Size handling:\n");
+    fprintf(stderr, "  -p\tpreload each partition with num bytes\n");
+    fprintf(stderr, "  -q\toverload each file with num bytes\n");
+    fprintf(stderr, "  -r\tround each file size up to next num bytes "
+        "multiple\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
         "<ganael.laplanche@martymac.org>\n");
@@ -205,7 +213,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlx")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlxp:q:r:")) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -338,6 +346,54 @@ int main(int argc, char** argv)
                 break;
             case 'x':
                 options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
+                break;
+            case 'p':
+            {
+                char *endptr = NULL;
+                long long preload_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (preload_size <= 0)) {
+                    fprintf(stderr,
+                        "Option -p requires a value greater than 0.\n");
+                    usage();
+                    uninit_options(&options);
+                    return (1);
+                }
+                options.preload_size = (fsize_t)preload_size;
+            }
+                break;
+            case 'q':
+            {
+                char *endptr = NULL;
+                long long overload_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (overload_size <= 0)) {
+                    fprintf(stderr,
+                        "Option -q requires a value greater than 0.\n");
+                    usage();
+                    uninit_options(&options);
+                    return (1);
+                }
+                options.overload_size = (fsize_t)overload_size;
+            }
+                break;
+            case 'r':
+            {
+                char *endptr = NULL;
+                long long round_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 1 and partially converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (round_size <= 1)) {
+                    fprintf(stderr,
+                        "Option -r requires a value greater than 1.\n");
+                    usage();
+                    uninit_options(&options);
+                    return (1);
+                }
+                options.round_size = (fsize_t)round_size;
+            }
                 break;
         }
     }
@@ -475,7 +531,7 @@ int main(int argc, char** argv)
     
         /* create a double_linked list of partitions
            which will hold dispatched files */
-        if(add_partitions(&part_head, options.num_parts) != 0) {
+        if(add_partitions(&part_head, options.num_parts, &options) != 0) {
             fprintf(stderr, "%s(): cannot init list of partitions\n",
                 __func__);
             uninit_partitions(part_head);
@@ -517,7 +573,8 @@ int main(int argc, char** argv)
        In this case, partitions are dynamically-created */
     else {
         if((num_parts = dispatch_file_entries_by_limits
-            (head, &part_head, options.max_entries, options.max_size)) == 0) {
+            (head, &part_head, options.max_entries, options.max_size,
+            &options)) == 0) {
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);

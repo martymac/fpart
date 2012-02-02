@@ -135,6 +135,22 @@ Follow symbolic links (default: do not follow)
 .It Fl x
 Do not cross file system boundaries (default: cross)
 .El
+.Sh SIZE HANDLING
+.Bl -tag -width indent
+.It Ic -p Ar num
+Preload each partition with
+.Ar num
+bytes
+.It Ic -q Ar num
+Overload each file size with
+.Ar num
+bytes
+.It Ic -r Ar num
+Round each file size up to next
+.Ar num
+bytes multiple. This option can be used in conjunction with overloading, which
+is done *before* rounding
+.El
 .Sh EXAMPLES
 Here are some examples :
 .Bl -tag -width indent

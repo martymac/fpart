@@ -78,6 +78,15 @@ struct program_options {
 #define OPT_CROSSFSBOUNDARIES       1
 #define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES
     unsigned char cross_fs_boundaries;
+/* preload partitions (option -p) */
+#define DFLT_OPT_PRELOAD_SIZE       0
+    fsize_t preload_size;
+/* overload file entries (option -q) */
+#define DFLT_OPT_OVERLOAD_SIZE      0
+    fsize_t overload_size;
+/* round file size up (option -r) */
+#define DFLT_OPT_ROUND_SIZE         1
+    fsize_t round_size;
 };
 
 void init_options(struct program_options *options);

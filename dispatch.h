@@ -30,6 +30,7 @@
 #include "types.h"
 #include "partition.h"
 #include "file_entry.h"
+#include "options.h"
 
 int sort_file_entry_p(const void *a, const void *b);
 int dispatch_file_entry_p_by_size(struct file_entry **file_entry_p,
@@ -37,6 +38,7 @@ int dispatch_file_entry_p_by_size(struct file_entry **file_entry_p,
 int dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
     struct partition *part_head, pnum_t num_parts);
 pnum_t dispatch_file_entries_by_limits(struct file_entry *head,
-    struct partition **part_head, fnum_t max_entries, fsize_t max_size);
+    struct partition **part_head, fnum_t max_entries, fsize_t max_size,
+    struct program_options *options);
 
 #endif /* _DISPATCH_H */

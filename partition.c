@@ -25,17 +25,15 @@
  */
 
 #include "types.h"
-#include "partition.h"
 #include "utils.h"
+#include "options.h"
+#include "partition.h"
 
 /* fprintf(3) */
 #include <stdio.h>
 
 /* malloc(3) */
 #include <stdlib.h>
-
-/* bzero(3) */
-#include <strings.h>
 
 /* assert(3) */
 #include <assert.h>
@@ -49,10 +47,12 @@
    - if head is NULL, creates a new list ; if not, chains a new list to it
    - returns with head set to the last element */
 int
-add_partitions(struct partition **head, pnum_t num_parts)
+add_partitions(struct partition **head, pnum_t num_parts,
+    struct program_options *options)
 {
     assert(head != NULL);
     assert(num_parts > 0);
+    assert(options != NULL);
 
     struct partition **current = head; /* current partition pointer address */
     struct partition *previous = NULL; /* previous partition pointer */
@@ -71,7 +71,8 @@ add_partitions(struct partition **head, pnum_t num_parts)
             *head = *current;
 
         /* initialize partition data */
-        bzero(*current, sizeof(struct partition));
+        (*current)->size = options->preload_size;
+        (*current)->num_files = 0;
         (*current)->nextp = NULL;   /* will be set in next pass (see below) */
         (*current)->prevp = previous;
 
