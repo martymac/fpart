@@ -519,7 +519,14 @@ int main(int argc, char** argv)
     /* sort files with a fixed size of partitions */
     if(options.num_parts != DFLT_OPT_NUM_PARTS) {
         /* create a fixed-size array of pointers to sort */
-        struct file_entry *file_entry_p[totalfiles];
+        struct file_entry **file_entry_p = NULL;
+        file_entry_p = malloc(sizeof(struct file_entry *) * totalfiles);
+        if(file_entry_p == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            uninit_file_entries(head);
+            uninit_options(&options);
+            return (1);
+        }
         bzero(file_entry_p, sizeof(struct file_entry *) * totalfiles);
     
         /* initialize array */
@@ -535,6 +542,7 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): cannot init list of partitions\n",
                 __func__);
             uninit_partitions(part_head);
+            free(file_entry_p);
             uninit_file_entries(head);
             uninit_options(&options);
             return (1);
@@ -548,6 +556,7 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
+            free(file_entry_p);
             uninit_file_entries(head);
             uninit_options(&options);
             return (1);
@@ -559,10 +568,14 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): unable to dispatch empty file entries\n",
                 __func__);
             uninit_partitions(part_head);
+            free(file_entry_p);
             uninit_file_entries(head);
             uninit_options(&options);
             return (1);
         }
+
+        /* cleanup */
+        free(file_entry_p);
     }
 
 /***************************************************

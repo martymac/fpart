@@ -369,6 +369,8 @@ void
 init_file_entry_p(struct file_entry **file_entry_p, fnum_t num_entries,
     struct file_entry *head)
 {
+    assert(file_entry_p != NULL);
+
     fnum_t i = 0;
     while((head != NULL) && (file_entry_p != NULL) && (i < num_entries)) {
         file_entry_p[i] = head;
