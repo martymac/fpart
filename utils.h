@@ -34,6 +34,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/* getpagesize(2) */
+#include <unistd.h>
+#define PAGE_MASK     (getpagesize() - 1)
+#define round_page(x) ((((unsigned long)(x)) + PAGE_MASK) & ~(PAGE_MASK))
+
 #define rewind_list(head) \
     { while((head) && (head)->prevp) { (head) = (head)->prevp; } }
 #define fastfw_list(head) \
