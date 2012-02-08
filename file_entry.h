@@ -32,6 +32,11 @@
 
 #include <sys/types.h>
 
+#if !defined(PRINT_FE_CHUNKS)
+#define PRINT_FE_CHUNKS 32          /* files per chunk when flushing
+                                       partitions to disk */
+#endif
+
 /* A file entry */
 struct file_entry;
 struct file_entry {

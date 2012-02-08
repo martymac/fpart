@@ -283,7 +283,6 @@ print_file_entries(struct file_entry *head, char *out_template,
 
     /* a template has been provided; to avoid opening too many files,
        open chunks of FDs and do as many passes as necessary */
-#define PRINT_FE_CHUNKS     32          /* files per chunk */
     struct file_entry *start = head;
     pnum_t current_chunk = 0;           /* current chunk */
     pnum_t current_file_entry = 0;      /* current file entry within chunk */
