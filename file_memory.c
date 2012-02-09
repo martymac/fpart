@@ -223,7 +223,7 @@ file_malloc(size_t size)
     /* if first call... */
     if((mem.currentp == NULL) ||
         /* ...or not enough space in current chunk */
-        ((mem.currentp->next_free_offset + round_page(size)) >
+        ((mem.currentp->next_free_offset + round_num(size, sizeof(void *))) >
         (mem.currentp->size))) {
         /* allocate a new chunk, can we proceed ? */
         if ((mem.max_chunks > 0) && (mem.next_chunk_index > (mem.max_chunks - 1))) {
@@ -256,7 +256,7 @@ file_malloc(size_t size)
 
     /* current chunk OK, return value and increment next offset */
     void *malloc_value = (void *)((char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
-    mem.currentp->next_free_offset += round_page(size);
+    mem.currentp->next_free_offset += round_num(size, sizeof(void *));
 
     return (malloc_value);
 }
