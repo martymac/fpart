@@ -24,6 +24,8 @@
  * SUCH DAMAGE.
  */
 
+#if defined(WITH_FILE_MEMORY)
+
 #include "utils.h"
 #include "file_memory.h"
 
@@ -44,14 +46,34 @@
 /* assert */
 #include <assert.h>
 
-/* Our main memory state descriptor instance */
-static struct mem_manager mem;
+/* Describes a file memory chunk */
+struct file_memory;
+struct file_memory {
+    char *path;                     /* file name */
+    int fd;                         /* file descriptor */
+
+    size_t size;                    /* mmap size */
+    void *start_addr;               /* mmap addr */
+    size_t next_free_offset;        /* next free area offset within map */
+
+    struct file_memory* nextp;      /* next file_entry */
+    struct file_memory* prevp;      /* previous one */
+};
+
+/* Our main memory state descriptor */
+static struct mem_manager {
+    char *base_path;                /* base path name for each file memory */
+
+    struct file_memory *currentp;   /* pointer to current (last) file_memory allocated */
+    fnum_t next_chunk_index;        /* next file memory entry index */
+    fnum_t max_chunks;              /* maximum number of file memory entries allowed (0 == illimited) */
+} mem;
 
 /* Add a file memory entry to a double-linked list of file_memories
    - if head is NULL, creates a new file memory entry ; if not, chains a new
      entry to it
    - returns with head set to the newly added element */
-int
+static int
 add_file_memory(struct file_memory **head, char *path, size_t size)
 {
     assert(head != NULL);
@@ -120,14 +142,14 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 }
 
 /* Un-initialize a double-linked list of file_memories */
-void
+static void
 uninit_file_memories(struct file_memory *head)
 {
-    /* be sure to start at first entry */
-    rewind_list(head);
+    /* be sure to start from last entry */
+    fastfw_list(head);
 
     struct file_memory *current = head;
-    struct file_memory *next = NULL;
+    struct file_memory *prev = NULL;
 
     while(current != NULL) {
         if(current->start_addr != NULL)
@@ -135,13 +157,14 @@ uninit_file_memories(struct file_memory *head)
         if(current->fd >= 0)
             close(current->fd);
         if(current->path != NULL) {
-            unlink(current->path);
+            /* TODO : uncomment */
+            //unlink(current->path);
             free(current->path);
         }
 
-        next = current->nextp;
+        prev = current->prevp;
         free(current);
-        current = next;
+        current = prev;
     }
     return;
 }
@@ -241,6 +264,8 @@ file_malloc(size_t size)
 void
 file_free(void *ptr)
 {
-    /* does nothing */
+    /* nothing to do */
     return;
 }
+
+#endif /* WITH_FILE_MEMORY */

@@ -27,6 +27,7 @@
 #include "fpart.h"
 #include "types.h"
 #include "utils.h"
+#include "file_memory.h"
 #include "options.h"
 #include "partition.h"
 #include "file_entry.h"
@@ -422,6 +423,16 @@ int main(int argc, char** argv)
         snprintf(options.in_filename, malloc_size, "%s", opt_input);
     }
 
+#if defined(WITH_FILE_MEMORY)
+    /* TODO gestion du nom via option */
+    if(init_memory("/tmp/.fpart_mem", MAX_FILE_MEMORY_CHUNKS) != 0) {
+        fprintf(stderr, "%s(): cannot init memory manager\n",
+            __func__);
+        uninit_options(&options);
+        return (1);
+    }
+#endif
+
 /**************
   Handle stdin
 ***************/
@@ -443,6 +454,9 @@ int main(int argc, char** argv)
             if((in_fp = fopen(options.in_filename, "r")) == NULL) {
                 fprintf(stderr, "%s: %s\n", options.in_filename,
                     strerror(errno));
+#if defined(WITH_FILE_MEMORY)
+                uninit_memory();
+#endif
                 uninit_options(&options);
                 return (1);
             }
@@ -459,6 +473,9 @@ int main(int argc, char** argv)
 
             if(handle_argument(line, &totalfiles, &head, &options) != 0) {
                 uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+                uninit_memory();
+#endif
                 uninit_options(&options);
                 return (1);
             }
@@ -486,6 +503,9 @@ int main(int argc, char** argv)
     for(i = 0 ; i < argc ; i++) {
         if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -504,6 +524,9 @@ int main(int argc, char** argv)
     /* no file found */
     if(totalfiles <= 0) {
         uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+        uninit_memory();
+#endif
         uninit_options(&options);
         return (0);
     }
@@ -524,6 +547,9 @@ int main(int argc, char** argv)
         if(file_entry_p == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -544,6 +570,9 @@ int main(int argc, char** argv)
             uninit_partitions(part_head);
             free(file_entry_p);
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -558,6 +587,9 @@ int main(int argc, char** argv)
             uninit_partitions(part_head);
             free(file_entry_p);
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -570,6 +602,9 @@ int main(int argc, char** argv)
             uninit_partitions(part_head);
             free(file_entry_p);
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -592,6 +627,9 @@ int main(int argc, char** argv)
                 __func__);
             uninit_partitions(part_head);
             uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+            uninit_memory();
+#endif
             uninit_options(&options);
             return (1);
         }
@@ -614,6 +652,9 @@ int main(int argc, char** argv)
     /* free stuff */
     uninit_partitions(part_head);
     uninit_file_entries(head);
+#if defined(WITH_FILE_MEMORY)
+    uninit_memory();
+#endif
     uninit_options(&options);
     return (0);
 }

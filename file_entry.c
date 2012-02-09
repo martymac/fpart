@@ -26,6 +26,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "file_memory.h"
 #include "options.h"
 #include "file_entry.h"
 
@@ -84,7 +85,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
-    if((*current = malloc(sizeof(struct file_entry))) == NULL) {
+    if((*current = fmalloc(sizeof(struct file_entry))) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
     }
@@ -95,7 +96,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 
     /* set current file data */
     size_t malloc_size = strlen(path) + 1;
-    if(((*current)->path = malloc(malloc_size)) == NULL) {
+    if(((*current)->path = fmalloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
     }
@@ -254,9 +255,9 @@ uninit_file_entries(struct file_entry *head)
 
     while(current != NULL) {
         if(current->path != NULL)
-            free(current->path);
+            ffree(current->path);
         next = current->nextp;
-        free(current);
+        ffree(current);
         current = next;
     }
     return;

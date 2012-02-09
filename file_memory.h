@@ -27,6 +27,8 @@
 #ifndef _FILE_MEMORY_H
 #define _FILE_MEMORY_H
 
+#if defined(WITH_FILE_MEMORY)
+
 #include "types.h"
 
 /* size_t */
@@ -35,37 +37,25 @@
 #if !defined(FILE_MEMORY_CHUNK_SIZE)
 #define FILE_MEMORY_CHUNK_SIZE (32 * 1024 * 1024) /* 32 MB */
 #endif
+#if !defined(MAX_FILE_MEMORY_CHUNKS)
+#define MAX_FILE_MEMORY_CHUNKS 0    /* maximum number of allowed chunks
+                                       (0 = unlimited) */
+#endif
 
-/* Our main memory state descriptor */
-struct mem_manager {
-    char *base_path;                /* base path name for each file memory */
-
-    struct file_memory *currentp;   /* pointer to current (last) file_memory allocated */
-    fnum_t next_chunk_index;        /* next file memory entry index */
-    fnum_t max_chunks;              /* maximum number of file memory entries allowed (0 == illimited) */
-};
-
-/* Describes a file memory chunk */
-struct file_memory;
-struct file_memory {
-    char *path;                     /* file name */
-    int fd;                         /* file descriptor */
-
-    size_t size;                    /* mmap size */
-    void *start_addr;               /* mmap addr */
-    size_t next_free_offset;        /* next free area offset within map */
-
-    struct file_memory* nextp;      /* next file_entry */
-    struct file_memory* prevp;      /* previous one */
-};
-
-int init_memory(char *base_path, fnum_t max_chunks);   /* entry point */
+int init_memory(char *base_path, fnum_t max_chunks);
 void uninit_memory();
-
-int add_file_memory(struct file_memory **head, char *filename, size_t len);
-void uninit_file_memories(struct file_memory *head);
 
 void *file_malloc(size_t size);     /* simple malloc() */
 void file_free(void *ptr);          /* simple free() */
+
+#define fmalloc file_malloc
+#define ffree   file_free
+
+#else  /* WITH_FILE_MEMORY undefined */
+
+#define fmalloc malloc
+#define ffree   free
+
+#endif /* WITH_FILE_MEMORY */
 
 #endif /* _FILE_MEMORY_H */
