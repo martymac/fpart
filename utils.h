@@ -39,6 +39,9 @@
 #define PAGE_MASK     (getpagesize() - 1)
 #define round_page(x) ((((unsigned long)(x)) + PAGE_MASK) & ~(PAGE_MASK))
 
+#define round_num(x, y) \
+    ((((x) % (y)) != 0) ? ((x / y) * y + y) : x)
+
 #define rewind_list(head) \
     { while((head) && (head)->prevp) { (head) = (head)->prevp; } }
 #define fastfw_list(head) \
