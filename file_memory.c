@@ -214,11 +214,9 @@ file_malloc(size_t size)
         return (NULL);
     }
 
-    /* requested size too big, our malloc() cannot span accross multiple chunks, so reject call */
-    if(size > FILE_MEMORY_CHUNK_SIZE) {
-        errno = ENOMEM;
-        return (NULL);
-    }
+    /* compute needed chunks to store data */
+    size_t needed_chunks =
+        round_num(size, FILE_MEMORY_CHUNK_SIZE) / FILE_MEMORY_CHUNK_SIZE;
 
     /* if first call... */
     if((mem.currentp == NULL) ||
@@ -226,7 +224,7 @@ file_malloc(size_t size)
         ((mem.currentp->next_free_offset + round_num(size, sizeof(void *))) >
         (mem.currentp->size))) {
         /* allocate a new chunk, can we proceed ? */
-        if ((mem.max_chunks > 0) && (mem.next_chunk_index > (mem.max_chunks - 1))) {
+        if ((mem.max_chunks > 0) && ((mem.next_chunk_index + needed_chunks) > (mem.max_chunks))) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             errno = ENOMEM;
             return (NULL);
@@ -244,7 +242,7 @@ file_malloc(size_t size)
         snprintf(tmp_path, malloc_size, "%s.%lld", mem.base_path, mem.next_chunk_index);
 
         /* add chunk */
-        if(add_file_memory(&mem.currentp, tmp_path, FILE_MEMORY_CHUNK_SIZE) != 0) {
+        if(add_file_memory(&mem.currentp, tmp_path, needed_chunks * FILE_MEMORY_CHUNK_SIZE) != 0) {
             free(tmp_path);
             uninit_file_memories(mem.currentp);
             errno = ENOMEM;
@@ -264,7 +262,21 @@ file_malloc(size_t size)
 void
 file_free(void *ptr)
 {
-    /* nothing to do */
+/*
+    XXX Not implemented yet :
+    - Find file memory where ptr is allocated
+    - Decrement a reference counter for this structure
+      (file_malloc() should increment this counter)
+    - Write a remove_file_memory() function that, for a given file memory :
+      - Calls munmap()
+      - Closes fd()
+      - Unlinks file
+      - If necessary, link previous and next file memory chunks
+      (and call this function from uninit_file_memories())
+    - If ref counter is 0 and either there is no byte left in the file memory or nextp is used
+        - Call remove_file_memory() on file memory pointer
+    - Update Memory Manager's currentp if nextp was NULL (last file memory was removed)
+*/
     return;
 }
 
