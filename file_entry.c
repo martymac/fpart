@@ -98,6 +98,8 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     size_t malloc_size = strlen(path) + 1;
     if(((*current)->path = fmalloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        ffree(*current);
+        *current = previous;
         return (1);
     }
     snprintf((*current)->path, malloc_size, "%s", path);
@@ -109,13 +111,13 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     (*current)->nextp = NULL;           /* set in next pass (see below) */
     (*current)->prevp = previous;
 
-    /* display added filename */
-    if(options->verbose == OPT_VERBOSE)
-        fprintf(stderr, "%s\n", (*current)->path);
-
     /* set previous' nextp pointer */
     if(previous != NULL)
         previous->nextp = *current;
+
+    /* display added filename */
+    if(options->verbose == OPT_VERBOSE)
+        fprintf(stderr, "%s\n", (*current)->path);
 
     return (0);
 }
