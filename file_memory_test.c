@@ -21,38 +21,45 @@ int main(void)
     if((ptr = fmalloc(FILE_MEMORY_CHUNK_SIZE)) == NULL) {
         fprintf(stderr, "could not allocate FILE_MEMORY_CHUNK_SIZE bytes\n");
     }
-    ffree(ptr);
+    else
+        ffree(ptr);
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating FILE_MEMORY_CHUNK_SIZE bytes (should fill a full file_memory)\n");
     if(fmalloc(FILE_MEMORY_CHUNK_SIZE) == NULL) {
         fprintf(stderr, "could not allocate FILE_MEMORY_CHUNK_SIZE bytes\n");
     }
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating 1 byte (should create a new file_memory)\n");
     if(fmalloc(1) == NULL) {
         fprintf(stderr, "could not allocate 1 byte\n");
     }
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating 1 byte (should continue within the same file_memory)\n");
-    fprintf(stderr, "allocating 1 byte\n");
     if(fmalloc(1) == NULL) {
         fprintf(stderr, "could not allocate 1 byte\n");
     }
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating 8 bytes (should continue within the same file_memory)\n");
     if(fmalloc(8) == NULL) {
         fprintf(stderr, "could not allocate 8 bytes\n");
     }
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating FILE_MEMORY_CHUNK_SIZE bytes (should create a new file_memory)\n");
     if(fmalloc(FILE_MEMORY_CHUNK_SIZE) == NULL) {
         fprintf(stderr, "could not allocate FILE_MEMORY_CHUNK_SIZE bytes\n");
     }
+    fprintf(stderr, "==\n");
 
     fprintf(stderr, "allocating (FILE_MEMORY_CHUNK_SIZE * 3 + 1) bytes (should create a new file_memory of FILE_MEMORY_CHUNK_SIZE * 4 bytes)\n");
     if(fmalloc(FILE_MEMORY_CHUNK_SIZE * 3 + 1) == NULL) {
         fprintf(stderr, "could not allocate (FILE_MEMORY_CHUNK_SIZE * 3 + 1) bytes\n");
     }
+    fprintf(stderr, "==\n");
 
     uninit_memory();
     return (0);
