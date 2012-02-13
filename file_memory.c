@@ -138,6 +138,10 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     if(previous != NULL)
         previous->nextp = *current;
 
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__, (*current)->path, (*current)->size);
+#endif
+
     return (0);
 }
 
@@ -159,6 +163,9 @@ uninit_file_memories(struct file_memory *head)
         if(current->path != NULL) {
             /* TODO : uncomment */
             //unlink(current->path);
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): memory file '%s' destroyed (%zd bytes)\n", __func__, current->path, current->size);
+#endif
             free(current->path);
         }
 
@@ -256,6 +263,10 @@ file_malloc(size_t size)
     void *malloc_value = (void *)((char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
     mem.currentp->next_free_offset += round_num(size, sizeof(void *));
 
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): %zd bytes malloc'ed @%p\n", __func__, size, malloc_value);
+#endif
+
     return (malloc_value);
 }
 
@@ -264,7 +275,7 @@ file_free(void *ptr)
 {
 /*
     XXX Not implemented yet :
-    - Find file memory where ptr is allocated
+    - Find file memory where ptr is allocated (use a pointer to parent file_memory)
     - Decrement a reference counter for this structure
       (file_malloc() should increment this counter)
     - Write a remove_file_memory() function that, for a given file memory :
@@ -277,6 +288,11 @@ file_free(void *ptr)
         - Call remove_file_memory() on file memory pointer
     - Update Memory Manager's currentp if nextp was NULL (last file memory was removed)
 */
+
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): memory free'ed @%p\n", __func__, ptr);
+#endif
+
     return;
 }
 
