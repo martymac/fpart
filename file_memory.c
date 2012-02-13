@@ -98,6 +98,8 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     size_t malloc_size = strlen(path) + 1;
     if(((*current)->path = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        free(*current);
+        *current = previous;
         return (1);
     }
     snprintf((*current)->path, malloc_size, "%s", path);
@@ -105,6 +107,9 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     /* open and create file, set fd */
     if (((*current)->fd = open((*current)->path, O_RDWR|O_CREAT|O_EXCL, 0660)) < 0) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
+        free((*current)->path);
+        free(*current);
+        *current = previous;
         return (1);
     }
   
@@ -113,11 +118,21 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     (*current)->size = size;
     if(lseek((*current)->fd, (*current)->size - 1, SEEK_SET) != ((*current)->size - 1)) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
+        close((*current)->fd);
+        unlink((*current)->path);
+        free((*current)->path);
+        free(*current);
+        *current = previous;
         return (1);
     }
     char zero = 0;
     if(write((*current)->fd, &zero, 1) != 1) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
+        close((*current)->fd);
+        unlink((*current)->path);
+        free((*current)->path);
+        free(*current);
+        *current = previous;
         return (1);
     }
 
@@ -126,15 +141,22 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
         mmap(0, (*current)->size, PROT_READ|PROT_WRITE, MAP_SHARED, (*current)->fd, 0)) == MAP_FAILED) {
         fprintf(stderr, "%s(): cannot map memory\n", __func__);
         (*current)->start_addr = NULL;
+        close((*current)->fd);
+        unlink((*current)->path);
+        free((*current)->path);
+        free(*current);
+        *current = previous;
         return (1);
     }
 
     /* initialize next free offset */
     (*current)->next_free_offset = 0;
 
-    /* set pointers */
-    (*current)->nextp = NULL;           /* set in next pass (see below) */
+    /* set current pointers */
+    (*current)->nextp = NULL;   /* set in next pass (see below) */
     (*current)->prevp = previous;
+
+    /* set previous' nextp pointer */
     if(previous != NULL)
         previous->nextp = *current;
 
@@ -250,8 +272,8 @@ file_malloc(size_t size)
 
         /* add chunk */
         if(add_file_memory(&mem.currentp, tmp_path, needed_chunks * FILE_MEMORY_CHUNK_SIZE) != 0) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             free(tmp_path);
-            uninit_file_memories(mem.currentp);
             errno = ENOMEM;
             return (NULL);
         }
