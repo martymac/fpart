@@ -55,10 +55,20 @@ struct file_memory {
     size_t size;                    /* mmap size */
     void *start_addr;               /* mmap addr */
     size_t next_free_offset;        /* next free area offset within map */
+    fnum_t ref_count;               /* reference counter */
 
     struct file_memory* nextp;      /* next file_entry */
     struct file_memory* prevp;      /* previous one */
 };
+
+/* Describes a malloc entry within a file_memory chunk */
+struct file_malloc {
+    struct file_memory* parentp;    /* pointer to parent file_memory */
+    unsigned char data[1];          /* data starts here */
+};
+/* XXX keep this function up-to-date with file_malloc structure definition */
+#define FILE_MALLOC_HEADER_SIZE \
+    (sizeof(struct file_memory*))
 
 /* Our main memory state descriptor */
 static struct mem_manager {
@@ -151,6 +161,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
     /* initialize next free offset */
     (*current)->next_free_offset = 0;
+    (*current)->ref_count = 0;
 
     /* set current pointers */
     (*current)->nextp = NULL;   /* set in next pass (see below) */
@@ -162,6 +173,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__, (*current)->path, (*current)->size);
+    fprintf(stderr, "%s(): file mmaped @%p\n", __func__, (*current)->start_addr);
 #endif
 
     return (0);
@@ -184,7 +196,7 @@ uninit_file_memories(struct file_memory *head)
             close(current->fd);
         if(current->path != NULL) {
             /* TODO : uncomment */
-            //unlink(current->path);
+            unlink(current->path);
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' destroyed (%zd bytes)\n", __func__, current->path, current->size);
 #endif
@@ -235,23 +247,36 @@ uninit_memory()
 }
 
 void *
-file_malloc(size_t size)
+file_malloc(size_t requested_size)
 {
-    /* no size specified, reject call */
-    if(size == 0) {
+    /* invalid requested_size specified, reject call */
+    if(requested_size == 0) {
         errno = EINVAL;
         return (NULL);
     }
 
-    /* compute needed chunks to store data */
-    size_t needed_chunks =
-        round_num(size, FILE_MEMORY_CHUNK_SIZE) / FILE_MEMORY_CHUNK_SIZE;
+    /* size aligned on pointer size */
+    size_t aligned_size = round_num(requested_size + FILE_MALLOC_HEADER_SIZE, sizeof(void *));
+    /* full size rounded on chunks' size */
+    size_t chunked_size = round_num(aligned_size, FILE_MEMORY_CHUNK_SIZE);
+    /* needed chunks to store data */
+    size_t needed_chunks = chunked_size / FILE_MEMORY_CHUNK_SIZE;
+
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): FILE_MEMORY_CHUNK_SIZE = %d\n", __func__, FILE_MEMORY_CHUNK_SIZE);
+    fprintf(stderr, "%s(): FILE_MALLOC_HEADER_SIZE = %zd\n", __func__, FILE_MALLOC_HEADER_SIZE);
+    fprintf(stderr, "%s(): requested_size = %zd\n", __func__, requested_size);
+    fprintf(stderr, "%s(): aligned_size (including header) = %zd\n", __func__, aligned_size);
+    fprintf(stderr, "%s(): chunked_size = %zd\n", __func__, chunked_size);
+    fprintf(stderr, "%s(): needed_chunks = %zd\n", __func__, needed_chunks);
+#endif
 
     /* if first call... */
     if((mem.currentp == NULL) ||
         /* ...or not enough space in current chunk */
-        ((mem.currentp->next_free_offset + round_num(size, sizeof(void *))) >
+        ((mem.currentp->next_free_offset + aligned_size) >
         (mem.currentp->size))) {
+
         /* allocate a new chunk, can we proceed ? */
         if ((mem.max_chunks > 0) && ((mem.next_chunk_index + needed_chunks) > (mem.max_chunks))) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
@@ -281,15 +306,21 @@ file_malloc(size_t size)
         mem.next_chunk_index++;
     }
 
-    /* current chunk OK, return value and increment next offset */
-    void *malloc_value = (void *)((char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
-    mem.currentp->next_free_offset += round_num(size, sizeof(void *));
+    /* current chunk OK */
+    struct file_malloc *fmallocp =
+        (struct file_malloc *)((char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
+    fmallocp->parentp = mem.currentp;
+
+    /* update memory manager status */
+    mem.currentp->next_free_offset += aligned_size;
+    mem.currentp->ref_count++;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): %zd bytes malloc'ed @%p\n", __func__, size, malloc_value);
+    fprintf(stderr, "%s(): %zd bytes requested\n", __func__, requested_size);
+    fprintf(stderr, "%s(): %zd bytes allocated @%p in %zd chunk(s)\n", __func__, aligned_size, &(fmallocp->data[0]), needed_chunks);
 #endif
 
-    return (malloc_value);
+    return (&(fmallocp->data[0]));
 }
 
 void
@@ -309,6 +340,7 @@ file_free(void *ptr)
     - If ref counter is 0 and either there is no byte left in the file memory or nextp is used
         - Call remove_file_memory() on file memory pointer
     - Update Memory Manager's currentp if nextp was NULL (last file memory was removed)
+    - If last file_malloc removed, reuse-space by changing next_free_offset
 */
 
 #if defined(DEBUG)
