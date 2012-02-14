@@ -34,20 +34,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-/* getpagesize(2) */
-#include <unistd.h>
-#define PAGE_MASK     (getpagesize() - 1)
-#define round_page(x) ((((unsigned long)(x)) + PAGE_MASK) & ~(PAGE_MASK))
-
 #define round_num(x, y) \
-    ((((x) % (y)) != 0) ? ((x / y) * y + y) : x)
+    ((((x) % (y)) != 0) ? (((x) / (y)) * (y) + (y)) : (x))
 
 #define rewind_list(head) \
     { while((head) && (head)->prevp) { (head) = (head)->prevp; } }
 #define fastfw_list(head) \
     { while((head) && (head)->nextp) { (head) = (head)->nextp; } }
 
-#define min(x, y) ((x <= y) ? x : y)
+#define min(x, y) (((x) <= (y)) ? (x) : (y))
 
 unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
