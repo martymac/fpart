@@ -65,10 +65,13 @@ struct file_memory {
 struct file_malloc {
     struct file_memory* parentp;    /* pointer to parent file_memory */
     unsigned char data[1];          /* data starts here */
-};
-/* XXX keep this function up-to-date with file_malloc structure definition */
+/* XXX keep the following definitions up-to-date with structure definition */
 #define FILE_MALLOC_HEADER_SIZE \
     (sizeof(struct file_memory*))
+#define get_parentp(data_addr) \
+    ((size_t)(data_addr) < sizeof(struct file_memory *) ? \
+     NULL : (void*)(*((struct file_memory **)((unsigned char *)(data_addr) - (unsigned char*)(sizeof(struct file_memory*))))))
+};
 
 /* Our main memory state descriptor */
 static struct mem_manager {
@@ -108,6 +111,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     size_t malloc_size = strlen(path) + 1;
     if(((*current)->path = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        /* XXX use delete_file_memory here and for next failures */
         free(*current);
         *current = previous;
         return (1);
@@ -159,7 +163,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
         return (1);
     }
 
-    /* initialize next free offset */
+    /* initialize next free offset and counter */
     (*current)->next_free_offset = 0;
     (*current)->ref_count = 0;
 
@@ -171,12 +175,60 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     if(previous != NULL)
         previous->nextp = *current;
 
+    /* update memory manager status */
+    mem.next_chunk_index++;
+
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__, (*current)->path, (*current)->size);
-    fprintf(stderr, "%s(): file mmaped @%p\n", __func__, (*current)->start_addr);
+    fprintf(stderr, "%s(): struct malloc'ed @%p\n", __func__, *current);
+    fprintf(stderr, "%s(): file mmap'ed @%p\n", __func__, (*current)->start_addr);
 #endif
 
     return (0);
+}
+
+/* Remove a file_memory entry */
+static void
+delete_file_memory(struct file_memory *fm)
+{
+    assert(fm != NULL);
+
+    /* munmap, close and unlink file */
+    if(fm->start_addr != NULL)
+        munmap(fm->start_addr, fm->size);
+    if(fm->fd >= 0)
+        close(fm->fd);
+    if(fm->path != NULL) {
+        unlink(fm->path);
+#if defined(DEBUG)
+        fprintf(stderr, "%s(): memory file '%s' unlinked (%zd bytes)\n", __func__, fm->path, fm->size);
+#endif
+        free(fm->path);
+    }
+
+    /* handle previous and next entries' pointers */
+    if(fm->nextp != NULL) {
+        if(fm->prevp != NULL)
+            fm->nextp->prevp = fm->prevp;
+        else
+            fm->nextp->prevp = NULL;
+    }
+    else {
+        /* last element removed, update memory manager status */
+        mem.currentp = fm->prevp;
+        mem.next_chunk_index--;
+    }
+    if(fm->prevp != NULL) {
+        if(fm->nextp != NULL)
+            fm->prevp->nextp = fm->nextp;
+        else
+            fm->prevp->nextp = NULL;
+    }
+
+    /* free our structure */
+    free(fm);
+
+    return;
 }
 
 /* Un-initialize a double-linked list of file_memories */
@@ -190,21 +242,9 @@ uninit_file_memories(struct file_memory *head)
     struct file_memory *prev = NULL;
 
     while(current != NULL) {
-        if(current->start_addr != NULL)
-            munmap(current->start_addr, current->size);
-        if(current->fd >= 0)
-            close(current->fd);
-        if(current->path != NULL) {
-            /* TODO : uncomment */
-            unlink(current->path);
-#if defined(DEBUG)
-    fprintf(stderr, "%s(): memory file '%s' destroyed (%zd bytes)\n", __func__, current->path, current->size);
-#endif
-            free(current->path);
-        }
-
         prev = current->prevp;
-        free(current);
+        delete_file_memory(current);
+
         current = prev;
     }
     return;
@@ -303,15 +343,14 @@ file_malloc(size_t requested_size)
             return (NULL);
         }
         free(tmp_path);
-        mem.next_chunk_index++;
     }
 
     /* current chunk OK */
     struct file_malloc *fmallocp =
-        (struct file_malloc *)((char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
+        (struct file_malloc *)((unsigned char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
     fmallocp->parentp = mem.currentp;
 
-    /* update memory manager status */
+    /* update current file memory status */
     mem.currentp->next_free_offset += aligned_size;
     mem.currentp->ref_count++;
 
@@ -326,22 +365,31 @@ file_malloc(size_t requested_size)
 void
 file_free(void *ptr)
 {
-/*
-    XXX Not implemented yet :
-    - Find file memory where ptr is allocated (use a pointer to parent file_memory)
-    - Decrement a reference counter for this structure
-      (file_malloc() should increment this counter)
-    - Write a remove_file_memory() function that, for a given file memory :
-      - Calls munmap()
-      - Closes fd()
-      - Unlinks file
-      - If necessary, link previous and next file memory chunks
-      (and call this function from uninit_file_memories())
-    - If ref counter is 0 and either there is no byte left in the file memory or nextp is used
-        - Call remove_file_memory() on file memory pointer
-    - Update Memory Manager's currentp if nextp was NULL (last file memory was removed)
-    - If last file_malloc removed, reuse-space by changing next_free_offset
-*/
+    assert(ptr != NULL);
+
+    /* find parent file_memory */
+    struct file_memory *parent = get_parentp(ptr);
+    assert(parent != NULL);
+
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): freeing address %p (parent @%p)\n", __func__, ptr, parent);
+#endif
+
+    /* update parent's information */
+    assert(parent->ref_count >= 1);
+    parent->ref_count--;
+
+    /* all file_mallocs freed in this file_memory */
+    if(parent->ref_count < 1) {
+        /* if this file_memory cannot be used anymore, remove it */
+        if((parent->nextp != NULL) ||
+            (parent->next_free_offset >= parent->size)) {
+#if defined(DEBUG)
+            fprintf(stderr, "%s(): memory file @%p useless, deleting\n", __func__, parent);
+#endif
+            delete_file_memory(parent);
+        }
+    }
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory free'ed @%p\n", __func__, ptr);
