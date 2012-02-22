@@ -24,6 +24,19 @@
  * SUCH DAMAGE.
  */
 
+/* This library is a simple replacement for malloc(3) and free(3)
+   that operates within files, using mmap(2).
+   Limitatons :
+     - Memory space is sequentially allocated, not re-used within files.
+       Anyway, a useless file is removed to save disk space when a free(3)
+       is performed.
+     - Code is not (yet ?) MP-safe.
+   Usage :
+     init_memory(char *base_path, fnum_t max_chunks)
+       file_malloc(size_t size) [...] file_free(void *ptr) [...]
+     uninit_memory()
+*/
+
 #if defined(WITH_FILE_MEMORY)
 
 #include "utils.h"
@@ -46,7 +59,7 @@
 /* assert */
 #include <assert.h>
 
-/* Describes a file memory chunk */
+/* Describes a file memory chunk (a file) */
 struct file_memory;
 struct file_memory {
     char *path;                     /* file name */
@@ -61,7 +74,7 @@ struct file_memory {
     struct file_memory* prevp;      /* previous one */
 };
 
-/* Describes a malloc entry within a file_memory chunk */
+/* Describes a malloc entry within a file_memory */
 struct file_malloc {
     struct file_memory* parentp;    /* pointer to parent file_memory */
     unsigned char data[1];          /* data starts here */
@@ -263,6 +276,7 @@ uninit_file_memories(struct file_memory *head)
     return;
 }
 
+/* Initialize memory manager */
 int
 init_memory(char *base_path, fnum_t max_chunks)
 {
@@ -283,6 +297,7 @@ init_memory(char *base_path, fnum_t max_chunks)
     return (0);
 }
 
+/* Un-initialize memory manager */
 void
 uninit_memory()
 {
@@ -299,6 +314,7 @@ uninit_memory()
     return;
 }
 
+/* Replacement for malloc(3), allocates memory within a file (file_memory) */
 void *
 file_malloc(size_t requested_size)
 {
@@ -383,6 +399,7 @@ file_malloc(size_t requested_size)
     return (&(fmallocp->data[0]));
 }
 
+/* Replacement for free(3) */
 void
 file_free(void *ptr)
 {
