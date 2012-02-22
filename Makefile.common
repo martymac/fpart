@@ -38,7 +38,7 @@ fpart: $(HEADERS) $(SOURCES)
 	$(CC) $(CFLAGS) -lm $(SOURCES) -o fpart
 
 file_memory_test:  utils.c $(FM_SOURCES) file_memory_test.c
-	$(CC) $(CFLAGS) -lm utils.c $(FM_SOURCES) file_memory_test.c -o file_memory_test
+	$(CC) $(CFLAGS) -g -DDEBUG -DWITH_FILE_MEMORY -lm utils.c $(FM_SOURCES) file_memory_test.c -o file_memory_test
 
 install: installbin installman
 
