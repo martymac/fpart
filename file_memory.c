@@ -183,7 +183,9 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
         previous->nextp = *current;
 
     /* update memory manager status */
-    mem.next_chunk_index++;
+    size_t needed_chunks = round_num((*current)->size, FILE_MEMORY_CHUNK_SIZE) /
+        FILE_MEMORY_CHUNK_SIZE;
+    mem.next_chunk_index += needed_chunks;
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__,
@@ -212,7 +214,9 @@ delete_file_memory(struct file_memory *fm)
     else {
         /* last element removed, update memory manager status */
         mem.currentp = fm->prevp;
-        mem.next_chunk_index--;
+        size_t needed_chunks = round_num(fm->size, FILE_MEMORY_CHUNK_SIZE) /
+            FILE_MEMORY_CHUNK_SIZE;
+        mem.next_chunk_index -= needed_chunks;
     }
     if(fm->prevp != NULL) {
         if(fm->nextp != NULL)
@@ -351,8 +355,7 @@ file_malloc(size_t requested_size)
             mem.next_chunk_index);
 
         /* add chunk */
-        if(add_file_memory(&mem.currentp, tmp_path,
-            needed_chunks * FILE_MEMORY_CHUNK_SIZE) != 0) {
+        if(add_file_memory(&mem.currentp, tmp_path, chunked_size) != 0) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             free(tmp_path);
             errno = ENOMEM;
