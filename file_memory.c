@@ -380,10 +380,17 @@ file_free(void *ptr)
 
     /* all file_mallocs have been freed in this file_memory */
     if(parent->ref_count < 1) {
-        /* if this file_memory will not be used anymore (another is already chained to it), remove it */
-        if(parent->nextp != NULL) {
+        /* if this file_memory will not be used anymore because :
+           - either another one is already chained to it
+           - or there is not enough space to handle a 1-byte malloc request,
+           remove it */
+        if((parent->nextp != NULL) ||
+            ((parent->next_free_offset +
+            round_num(1 + FILE_MALLOC_HEADER_SIZE, sizeof(void *))) >
+            parent->size)) {
 #if defined(DEBUG)
-            fprintf(stderr, "%s(): memory file @%p useless, deleting\n", __func__, parent);
+            fprintf(stderr, "%s(): memory file @%p useless, deleting\n",
+                __func__, parent);
 #endif
             delete_file_memory(parent);
         }
