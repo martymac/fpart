@@ -70,16 +70,20 @@ struct file_malloc {
     (sizeof(struct file_memory*))
 #define get_parentp(data_addr) \
     ((size_t)(data_addr) < sizeof(struct file_memory *) ? \
-     NULL : (void *)(*((struct file_memory **)((unsigned char *)(data_addr) - (unsigned char *)(sizeof(struct file_memory *))))))
+     NULL : (void *)(*((struct file_memory **) \
+        ((unsigned char *)(data_addr) - \
+        (unsigned char *)(sizeof(struct file_memory *))))))
 };
 
 /* Our main memory state descriptor */
 static struct mem_manager {
     char *base_path;                /* base path name for each file memory */
 
-    struct file_memory *currentp;   /* pointer to current (last) file_memory allocated */
+    struct file_memory *currentp;   /* pointer to current (last) file_memory
+                                       allocated */
     fnum_t next_chunk_index;        /* next file memory entry index */
-    fnum_t max_chunks;              /* maximum number of file memory entries allowed (0 == illimited) */
+    fnum_t max_chunks;              /* maximum number of file memory entries
+                                       allowed (0 == illimited) */
 } mem;
 
 /* Add a file memory entry to a double-linked list of file_memories
@@ -93,7 +97,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     assert(path != NULL);
     assert(size > 0);
 
-    struct file_memory **current = head; /* current file_memory pointer address */
+    struct file_memory **current = head; /* current file_memory pointer addr */
     struct file_memory *previous = NULL; /* previous file_memory pointer */
 
     /* backup current structure pointer and initialize a new structure */
@@ -119,7 +123,8 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     snprintf((*current)->path, malloc_size, "%s", path);
 
     /* open and create file, set fd */
-    if (((*current)->fd = open((*current)->path, O_RDWR|O_CREAT|O_EXCL, 0660)) < 0) {
+    if (((*current)->fd =
+        open((*current)->path, O_RDWR|O_CREAT|O_EXCL, 0660)) < 0) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
         free((*current)->path);
         free(*current);
@@ -130,7 +135,8 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     /* set file size
        XXX fill file with zeroes to avoid fragmentation, see mmap(2) ? */
     (*current)->size = size;
-    if(lseek((*current)->fd, (*current)->size - 1, SEEK_SET) != ((*current)->size - 1)) {
+    if(lseek((*current)->fd, (*current)->size - 1, SEEK_SET) !=
+        ((*current)->size - 1)) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
         close((*current)->fd);
         unlink((*current)->path);
@@ -152,7 +158,8 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
     /* mmap() our file */
     if(((*current)->start_addr =
-        mmap(0, (*current)->size, PROT_READ|PROT_WRITE, MAP_SHARED, (*current)->fd, 0)) == MAP_FAILED) {
+        mmap(0, (*current)->size, PROT_READ|PROT_WRITE, MAP_SHARED,
+        (*current)->fd, 0)) == MAP_FAILED) {
         fprintf(stderr, "%s(): cannot map memory\n", __func__);
         (*current)->start_addr = NULL;
         close((*current)->fd);
@@ -179,9 +186,11 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     mem.next_chunk_index++;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__, (*current)->path, (*current)->size);
+    fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__,
+        (*current)->path, (*current)->size);
     fprintf(stderr, "%s(): struct malloc'ed @%p\n", __func__, *current);
-    fprintf(stderr, "%s(): file mmap'ed @%p\n", __func__, (*current)->start_addr);
+    fprintf(stderr, "%s(): file mmap'ed @%p\n", __func__,
+        (*current)->start_addr);
 #endif
 
     return (0);
@@ -220,7 +229,8 @@ delete_file_memory(struct file_memory *fm)
     if(fm->path != NULL) {
         unlink(fm->path);
 #if defined(DEBUG)
-        fprintf(stderr, "%s(): memory file '%s' unlinked (%zd bytes)\n", __func__, fm->path, fm->size);
+        fprintf(stderr, "%s(): memory file '%s' unlinked (%zd bytes)\n",
+            __func__, fm->path, fm->size);
 #endif
         free(fm->path);
     }
@@ -295,17 +305,21 @@ file_malloc(size_t requested_size)
     }
 
     /* size aligned on pointer size */
-    size_t aligned_size = round_num(requested_size + FILE_MALLOC_HEADER_SIZE, sizeof(void *));
+    size_t aligned_size = round_num(requested_size + FILE_MALLOC_HEADER_SIZE,
+        sizeof(void *));
     /* full size rounded on chunks' size */
     size_t chunked_size = round_num(aligned_size, FILE_MEMORY_CHUNK_SIZE);
     /* needed chunks to store data */
     size_t needed_chunks = chunked_size / FILE_MEMORY_CHUNK_SIZE;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): FILE_MEMORY_CHUNK_SIZE = %d\n", __func__, FILE_MEMORY_CHUNK_SIZE);
-    fprintf(stderr, "%s(): FILE_MALLOC_HEADER_SIZE = %zd\n", __func__, FILE_MALLOC_HEADER_SIZE);
+    fprintf(stderr, "%s(): FILE_MEMORY_CHUNK_SIZE = %d\n", __func__,
+        FILE_MEMORY_CHUNK_SIZE);
+    fprintf(stderr, "%s(): FILE_MALLOC_HEADER_SIZE = %zd\n", __func__,
+        FILE_MALLOC_HEADER_SIZE);
     fprintf(stderr, "%s(): requested_size = %zd\n", __func__, requested_size);
-    fprintf(stderr, "%s(): aligned_size (including header) = %zd\n", __func__, aligned_size);
+    fprintf(stderr, "%s(): aligned_size (including header) = %zd\n", __func__,
+        aligned_size);
     fprintf(stderr, "%s(): chunked_size = %zd\n", __func__, chunked_size);
     fprintf(stderr, "%s(): needed_chunks = %zd\n", __func__, needed_chunks);
 #endif
@@ -317,7 +331,8 @@ file_malloc(size_t requested_size)
         (mem.currentp->size))) {
 
         /* allocate a new chunk, can we proceed ? */
-        if ((mem.max_chunks > 0) && ((mem.next_chunk_index + needed_chunks) > (mem.max_chunks))) {
+        if ((mem.max_chunks > 0) &&
+            ((mem.next_chunk_index + needed_chunks) > (mem.max_chunks))) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             errno = ENOMEM;
             return (NULL);
@@ -332,10 +347,12 @@ file_malloc(size_t requested_size)
             errno = ENOMEM;
             return (NULL);
         }
-        snprintf(tmp_path, malloc_size, "%s.%lld", mem.base_path, mem.next_chunk_index);
+        snprintf(tmp_path, malloc_size, "%s.%lld", mem.base_path,
+            mem.next_chunk_index);
 
         /* add chunk */
-        if(add_file_memory(&mem.currentp, tmp_path, needed_chunks * FILE_MEMORY_CHUNK_SIZE) != 0) {
+        if(add_file_memory(&mem.currentp, tmp_path,
+            needed_chunks * FILE_MEMORY_CHUNK_SIZE) != 0) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             free(tmp_path);
             errno = ENOMEM;
@@ -346,7 +363,8 @@ file_malloc(size_t requested_size)
 
     /* current chunk OK */
     struct file_malloc *fmallocp =
-        (struct file_malloc *)((unsigned char *)mem.currentp->start_addr + mem.currentp->next_free_offset);
+        (struct file_malloc *)((unsigned char *)mem.currentp->start_addr +
+        mem.currentp->next_free_offset);
     fmallocp->parentp = mem.currentp;
 
     /* update current file memory status */
@@ -355,7 +373,8 @@ file_malloc(size_t requested_size)
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): %zd bytes requested\n", __func__, requested_size);
-    fprintf(stderr, "%s(): %zd bytes allocated @%p in %zd chunk(s)\n", __func__, aligned_size, &(fmallocp->data[0]), needed_chunks);
+    fprintf(stderr, "%s(): %zd bytes allocated @%p in %zd chunk(s)\n",
+        __func__, aligned_size, &(fmallocp->data[0]), needed_chunks);
 #endif
 
     return (&(fmallocp->data[0]));
@@ -371,7 +390,8 @@ file_free(void *ptr)
     assert(parent != NULL);
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): freeing address %p (parent @%p)\n", __func__, ptr, parent);
+    fprintf(stderr, "%s(): freeing address %p (parent @%p)\n", __func__,
+        ptr, parent);
 #endif
 
     /* update parent's information */
