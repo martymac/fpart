@@ -70,7 +70,7 @@ struct file_malloc {
     (sizeof(struct file_memory*))
 #define get_parentp(data_addr) \
     ((size_t)(data_addr) < sizeof(struct file_memory *) ? \
-     NULL : (void*)(*((struct file_memory **)((unsigned char *)(data_addr) - (unsigned char*)(sizeof(struct file_memory*))))))
+     NULL : (void *)(*((struct file_memory **)((unsigned char *)(data_addr) - (unsigned char *)(sizeof(struct file_memory *))))))
 };
 
 /* Our main memory state descriptor */
@@ -193,19 +193,6 @@ delete_file_memory(struct file_memory *fm)
 {
     assert(fm != NULL);
 
-    /* munmap, close and unlink file */
-    if(fm->start_addr != NULL)
-        munmap(fm->start_addr, fm->size);
-    if(fm->fd >= 0)
-        close(fm->fd);
-    if(fm->path != NULL) {
-        unlink(fm->path);
-#if defined(DEBUG)
-        fprintf(stderr, "%s(): memory file '%s' unlinked (%zd bytes)\n", __func__, fm->path, fm->size);
-#endif
-        free(fm->path);
-    }
-
     /* handle previous and next entries' pointers */
     if(fm->nextp != NULL) {
         if(fm->prevp != NULL)
@@ -223,6 +210,19 @@ delete_file_memory(struct file_memory *fm)
             fm->prevp->nextp = fm->nextp;
         else
             fm->prevp->nextp = NULL;
+    }
+
+    /* munmap, close and unlink file */
+    if(fm->start_addr != NULL)
+        munmap(fm->start_addr, fm->size);
+    if(fm->fd >= 0)
+        close(fm->fd);
+    if(fm->path != NULL) {
+        unlink(fm->path);
+#if defined(DEBUG)
+        fprintf(stderr, "%s(): memory file '%s' unlinked (%zd bytes)\n", __func__, fm->path, fm->size);
+#endif
+        free(fm->path);
     }
 
     /* free our structure */
@@ -244,7 +244,6 @@ uninit_file_memories(struct file_memory *head)
     while(current != NULL) {
         prev = current->prevp;
         delete_file_memory(current);
-
         current = prev;
     }
     return;
@@ -277,11 +276,11 @@ uninit_memory()
     uninit_file_memories(mem.currentp);
 
     /* clean our memory manager up */
+    mem.max_chunks = 0;
+    mem.next_chunk_index = 0;
+    mem.currentp = NULL;
     if(mem.base_path != NULL)
         free(mem.base_path);
-    mem.currentp = NULL;
-    mem.next_chunk_index = 0;
-    mem.max_chunks = 0;
 
     return;
 }
@@ -291,7 +290,7 @@ file_malloc(size_t requested_size)
 {
     /* invalid requested_size specified, reject call */
     if(requested_size == 0) {
-        errno = EINVAL;
+        errno = ENOMEM;
         return (NULL);
     }
 
@@ -379,11 +378,10 @@ file_free(void *ptr)
     assert(parent->ref_count >= 1);
     parent->ref_count--;
 
-    /* all file_mallocs freed in this file_memory */
+    /* all file_mallocs have been freed in this file_memory */
     if(parent->ref_count < 1) {
-        /* if this file_memory cannot be used anymore, remove it */
-        if((parent->nextp != NULL) ||
-            (parent->next_free_offset >= parent->size)) {
+        /* if this file_memory will not be used anymore (another is already chained to it), remove it */
+        if(parent->nextp != NULL) {
 #if defined(DEBUG)
             fprintf(stderr, "%s(): memory file @%p useless, deleting\n", __func__, parent);
 #endif
