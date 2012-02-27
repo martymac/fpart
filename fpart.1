@@ -151,6 +151,14 @@ Round each file size up to next
 bytes multiple. This option can be used in conjunction with overloading, which
 is done *before* rounding
 .El
+.Sh MEMORY USAGE CONTROL
+.Bl -tag -width indent
+.It Ic -m Ar file
+Use disk instead of RAM whenever possible and use
+.Ar file
+as a template for temporary file names. This option saves physical memory while
+making fpart slower and must be activated at compile-time to become available.
+.El
 .Sh EXAMPLES
 Here are some examples :
 .Bl -tag -width indent
