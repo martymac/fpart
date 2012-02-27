@@ -48,14 +48,5 @@ void uninit_memory();
 void *file_malloc(size_t size);     /* simple malloc() */
 void file_free(void *ptr);          /* simple free() */
 
-#define fmalloc file_malloc
-#define ffree   file_free
-
-#else  /* WITH_FILE_MEMORY undefined */
-
-#define fmalloc malloc
-#define ffree   free
-
 #endif /* WITH_FILE_MEMORY */
-
 #endif /* _FILE_MEMORY_H */

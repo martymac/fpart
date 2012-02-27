@@ -52,7 +52,8 @@ int add_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options);
 fnum_t init_file_entries(char *file_path, struct file_entry **head,
     struct program_options *options);
-void uninit_file_entries(struct file_entry *head);
+void uninit_file_entries(struct file_entry *head,
+    struct program_options *options);
 int print_file_entries(struct file_entry *head, char *out_template,
     pnum_t num_parts);
 void init_file_entry_p(struct file_entry **file_entry_p, fnum_t num_entries,

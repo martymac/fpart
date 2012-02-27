@@ -69,9 +69,14 @@ version(void)
     fprintf(stderr, "no, fts=");
 #endif
 #if defined(EMBED_FTS)
-    fprintf(stderr, "embedded\n");
+    fprintf(stderr, "embedded, mem=");
 #else
-    fprintf(stderr, "system\n");
+    fprintf(stderr, "system, mem=");
+#endif
+#if defined(WITH_FILE_MEMORY)
+    fprintf(stderr, "physical+files\n");
+#else
+    fprintf(stderr, "physical\n");
 #endif
 }
 
@@ -83,6 +88,9 @@ usage(void)
         "[-i infile] [-a]\n"
         "             [-o outfile] [-d depth] [-e] [-v] [-l] [-x]\n"
         "             [-p num] [-q num] [-r num] "
+#if defined(WITH_FILE_MEMORY)
+        "[-m tmpfile] "
+#endif
         "[file or dir ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
     fprintf(stderr, "\n");
@@ -118,6 +126,12 @@ usage(void)
     fprintf(stderr, "  -r\tround each file size up to next num bytes "
         "multiple\n");
     fprintf(stderr, "\n");
+#if defined(WITH_FILE_MEMORY)
+    fprintf(stderr, "Memory usage control:\n");
+    fprintf(stderr, "  -m\tuse temporary files and specify template "
+        "(slower)\n");
+    fprintf(stderr, "\n");
+#endif
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
@@ -214,7 +228,11 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlxp:q:r:")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlxp:q:r:"
+#if defined(WITH_FILE_MEMORY)
+    "m:"
+#endif
+        )) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -396,6 +414,20 @@ int main(int argc, char** argv)
                 options.round_size = (fsize_t)round_size;
             }
                 break;
+#if defined(WITH_FILE_MEMORY)
+            case 'm':
+            {
+                size_t malloc_size = strlen(optarg) + 1;
+                options.mem_filename = malloc(malloc_size);
+                if(options.mem_filename == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    uninit_options(&options);
+                    return (1);
+                }
+                snprintf(options.mem_filename, malloc_size, "%s", optarg);
+            }
+                break;
+#endif
         }
     }
     argc -= optind;
@@ -424,12 +456,13 @@ int main(int argc, char** argv)
     }
 
 #if defined(WITH_FILE_MEMORY)
-    /* TODO gestion du nom via option */
-    if(init_memory("/tmp/.fpart_mem", MAX_FILE_MEMORY_CHUNKS) != 0) {
-        fprintf(stderr, "%s(): cannot init memory manager\n",
-            __func__);
-        uninit_options(&options);
-        return (1);
+    if(options.mem_filename != NULL) {
+        if(init_memory(options.mem_filename, MAX_FILE_MEMORY_CHUNKS) != 0) {
+            fprintf(stderr, "%s(): cannot init memory manager\n",
+                __func__);
+            uninit_options(&options);
+            return (1);
+        }
     }
 #endif
 
@@ -455,7 +488,8 @@ int main(int argc, char** argv)
                 fprintf(stderr, "%s: %s\n", options.in_filename,
                     strerror(errno));
 #if defined(WITH_FILE_MEMORY)
-                uninit_memory();
+                if(options.mem_filename != NULL)
+                    uninit_memory();
 #endif
                 uninit_options(&options);
                 return (1);
@@ -472,9 +506,10 @@ int main(int argc, char** argv)
                 *line_end_p = '\0';
 
             if(handle_argument(line, &totalfiles, &head, &options) != 0) {
-                uninit_file_entries(head);
+                uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-                uninit_memory();
+                if(options.mem_filename != NULL)
+                    uninit_memory();
 #endif
                 uninit_options(&options);
                 return (1);
@@ -502,9 +537,10 @@ int main(int argc, char** argv)
     unsigned int i;
     for(i = 0 ; i < argc ; i++) {
         if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
-            uninit_file_entries(head);
+            uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
@@ -523,9 +559,10 @@ int main(int argc, char** argv)
 
     /* no file found */
     if(totalfiles <= 0) {
-        uninit_file_entries(head);
+        uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-        uninit_memory();
+        if(options.mem_filename != NULL)
+            uninit_memory();
 #endif
         uninit_options(&options);
         return (0);
@@ -543,12 +580,20 @@ int main(int argc, char** argv)
     if(options.num_parts != DFLT_OPT_NUM_PARTS) {
         /* create a fixed-size array of pointers to sort */
         struct file_entry **file_entry_p = NULL;
-        file_entry_p = fmalloc(sizeof(struct file_entry *) * totalfiles);
+
+        file_entry_p =
+#if defined(WITH_FILE_MEMORY)
+            (options.mem_filename != NULL) ?
+            file_malloc(sizeof(struct file_entry *) * totalfiles) :
+#endif
+            malloc(sizeof(struct file_entry *) * totalfiles);
+
         if(file_entry_p == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            uninit_file_entries(head);
+            uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
@@ -568,10 +613,16 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): cannot init list of partitions\n",
                 __func__);
             uninit_partitions(part_head);
-            ffree(file_entry_p);
-            uninit_file_entries(head);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                file_free(file_entry_p);
+            else
+#endif
+                free(file_entry_p);
+            uninit_file_entries(head, &options);
+#if defined(WITH_FILE_MEMORY)
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
@@ -585,10 +636,16 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
-            ffree(file_entry_p);
-            uninit_file_entries(head);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                file_free(file_entry_p);
+            else
+#endif
+                free(file_entry_p);
+            uninit_file_entries(head, &options);
+#if defined(WITH_FILE_MEMORY)
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
@@ -600,17 +657,28 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): unable to dispatch empty file entries\n",
                 __func__);
             uninit_partitions(part_head);
-            ffree(file_entry_p);
-            uninit_file_entries(head);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                file_free(file_entry_p);
+            else
+#endif
+                free(file_entry_p);
+            uninit_file_entries(head, &options);
+#if defined(WITH_FILE_MEMORY)
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
         }
 
         /* cleanup */
-        ffree(file_entry_p);
+#if defined(WITH_FILE_MEMORY)
+        if(options.mem_filename != NULL)
+            file_free(file_entry_p);
+        else
+#endif
+            free(file_entry_p);
     }
 
 /***************************************************
@@ -626,9 +694,10 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
-            uninit_file_entries(head);
+            uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-            uninit_memory();
+            if(options.mem_filename != NULL)
+                uninit_memory();
 #endif
             uninit_options(&options);
             return (1);
@@ -651,9 +720,10 @@ int main(int argc, char** argv)
 
     /* free stuff */
     uninit_partitions(part_head);
-    uninit_file_entries(head);
+    uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
-    uninit_memory();
+    if(options.mem_filename != NULL)
+        uninit_memory();
 #endif
     uninit_options(&options);
     return (0);

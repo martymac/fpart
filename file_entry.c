@@ -85,7 +85,15 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
-    if((*current = fmalloc(sizeof(struct file_entry))) == NULL) {
+
+    *current =
+#if defined(WITH_FILE_MEMORY)
+        (options->mem_filename != NULL) ?
+        file_malloc(sizeof(struct file_entry)) :
+#endif
+        malloc(sizeof(struct file_entry));
+
+    if(*current == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
     }
@@ -96,9 +104,22 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 
     /* set current file data */
     size_t malloc_size = strlen(path) + 1;
-    if(((*current)->path = fmalloc(malloc_size)) == NULL) {
+
+    (*current)->path =
+#if defined(WITH_FILE_MEMORY)
+        (options->mem_filename != NULL) ?
+        file_malloc(malloc_size) :
+#endif
+        malloc(malloc_size);
+
+    if((*current)->path == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-        ffree(*current);
+#if defined(WITH_FILE_MEMORY)
+            if(options->mem_filename != NULL)
+                file_free(*current);
+            else
+#endif
+                free(*current);
         *current = previous;
         return (1);
     }
@@ -243,8 +264,10 @@ init_file_entries(char *file_path, struct file_entry **head,
 
 /* Un-initialize a double-linked list of file_entries */
 void
-uninit_file_entries(struct file_entry *head)
+uninit_file_entries(struct file_entry *head, struct program_options *options)
 {
+    assert(options != NULL);
+
     /* be sure to start at first file entry */
     rewind_list(head);
 
@@ -252,10 +275,21 @@ uninit_file_entries(struct file_entry *head)
     struct file_entry *next = NULL;
 
     while(current != NULL) {
-        if(current->path != NULL)
-            ffree(current->path);
+        if(current->path != NULL) {
+#if defined(WITH_FILE_MEMORY)
+            if(options->mem_filename != NULL)
+                file_free(current->path);
+            else
+#endif
+                free(current->path);
+        }
         next = current->nextp;
-        ffree(current);
+#if defined(WITH_FILE_MEMORY)
+            if(options->mem_filename != NULL)
+                file_free(current);
+            else
+#endif
+                free(current);
         current = next;
     }
     return;

@@ -74,12 +74,19 @@ init_options(struct program_options *options)
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->round_size = DFLT_OPT_ROUND_SIZE;
+#if defined(WITH_FILE_MEMORY)
+    options->mem_filename = NULL;
+#endif
 }
 
 /* Un-initialize global options structure */
 void
 uninit_options(struct program_options *options)
 {
+#if defined(WITH_FILE_MEMORY)
+    if(options->mem_filename != NULL)
+        free(options->mem_filename);
+#endif
     options->round_size = DFLT_OPT_ROUND_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;

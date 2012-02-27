@@ -87,6 +87,9 @@ struct program_options {
 /* round file size up (option -r) */
 #define DFLT_OPT_ROUND_SIZE         1
     fsize_t round_size;
+#if defined(WITH_FILE_MEMORY)
+    char *mem_filename;
+#endif
 };
 
 void init_options(struct program_options *options);
