@@ -251,7 +251,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
                     }
                     else {
                         /* examine next partition */
-                        (*part_head) = (*part_head)->nextp;
+                        *part_head = (*part_head)->nextp;
                     }
                     current_partition_index++;
                 }
@@ -279,7 +279,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
 
         /* come back to the first partition */
         current_partition_index = start_partition_index;
-        (*part_head) = start_partition;
+        *part_head = start_partition;
     }
     return (num_parts_created);
 }
