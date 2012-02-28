@@ -280,13 +280,13 @@ init_memory(char *base_path, fnum_t max_chunks)
 {
     assert(base_path != NULL);
 
-    /* set path */
-    size_t malloc_size = strlen(base_path) + 1;
-    if((mem.base_path = malloc(malloc_size)) == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    /* record absolute path */
+    mem.base_path = abs_path(base_path);
+    if(mem.base_path == NULL) {
+        fprintf(stderr, "%s(): cannot determine absolute path for file '%s'\n",
+            __func__, base_path);
         return (1);
     }
-    snprintf(mem.base_path, malloc_size, "%s", base_path);
 
     mem.currentp = NULL;
     mem.next_chunk_index = 0;

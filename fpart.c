@@ -315,14 +315,13 @@ int main(int argc, char** argv)
                 break;
             case 'i':
             {
-                size_t malloc_size = strlen(optarg) + 1;
-                options.in_filename = malloc(malloc_size);
+                options.in_filename = abs_path(optarg);
                 if(options.in_filename == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    fprintf(stderr, "%s(): cannot determine absolute path for "
+                        "file '%s'\n", __func__, optarg);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(options.in_filename, malloc_size, "%s", optarg);
             }
                 break;
             case 'a':
@@ -333,14 +332,13 @@ int main(int argc, char** argv)
                     /* output goes to stdout */
                     break;
             {
-                size_t malloc_size = strlen(optarg) + 1;
-                options.out_filename = malloc(malloc_size);
+                options.out_filename = abs_path(optarg);
                 if(options.out_filename == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    fprintf(stderr, "%s(): cannot determine absolute path for "
+                        "file '%s'\n", __func__, optarg);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(options.out_filename, malloc_size, "%s", optarg);
             }
                 break;
             case 'd':
@@ -419,14 +417,13 @@ int main(int argc, char** argv)
 #if defined(WITH_FILE_MEMORY)
             case 'm':
             {
-                size_t malloc_size = strlen(optarg) + 1;
-                options.mem_filename = malloc(malloc_size);
+                options.mem_filename = abs_path(optarg);
                 if(options.mem_filename == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    fprintf(stderr, "%s(): cannot determine absolute path for "
+                        "file '%s'\n", __func__, optarg);
                     uninit_options(&options);
                     return (1);
                 }
-                snprintf(options.mem_filename, malloc_size, "%s", optarg);
             }
                 break;
 #endif

@@ -34,7 +34,7 @@
 /* malloc(3) */
 #include <stdlib.h>
 
-/* fprintf(3) */
+/* fprintf(3), snprintf(3) */
 #include <stdio.h>
 
 /* fts(3) */
@@ -51,6 +51,15 @@
 
 /* errno */
 #include <errno.h>
+
+/* getcwd(3) */
+#include <unistd.h>
+
+/* MAXPATHLEN */
+#include <sys/param.h>
+
+/* strlen(3) */
+#include <string.h>
 
 /* assert(3) */
 #include <assert.h>
@@ -134,4 +143,47 @@ get_size(char *file_path, struct stat *file_stat,
         fprintf(stderr, "%s: fts_close()\n", file_path);
 
     return (file_size);
+}
+
+/* Return absolute path for given path
+   - returned pointer must be manually freed later */
+char *
+abs_path(const char *path) {
+    assert(path != NULL);
+
+    char *cwd = NULL;       /* current working directory */
+    char *abs = NULL;       /* will be returned */
+    size_t malloc_size = 0;
+
+    if(path[0] == '\0') {
+        errno = ENOENT;
+        return (NULL);
+    }
+
+    if((path[0] != '/') &&
+        ((path[0] != '-') || (path[1] != '\0'))) {
+        /* relative path given */
+        cwd = malloc(MAXPATHLEN);
+        if(cwd == NULL) 
+            return (NULL);
+        if(getcwd(cwd, MAXPATHLEN) == NULL) {
+            free(cwd);
+            return (NULL);
+        }
+        malloc_size += strlen(cwd) + 1; /* cwd + '/' */
+    }   
+    malloc_size += strlen(path) + 1; /* path + '\0' */
+
+    abs = malloc(malloc_size);
+    if(abs != NULL) {
+        if(cwd != NULL)
+            snprintf(abs, malloc_size, "%s/%s", cwd, path);
+        else
+            snprintf(abs, malloc_size, "%s", path);
+    }
+
+    if(cwd != NULL)
+        free(cwd);
+
+    return (abs);
 }
