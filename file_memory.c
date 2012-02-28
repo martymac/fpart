@@ -37,8 +37,6 @@
      uninit_memory()
 */
 
-#if defined(WITH_FILE_MEMORY)
-
 #include "utils.h"
 #include "file_memory.h"
 
@@ -442,5 +440,3 @@ file_free(void *ptr)
 
     return;
 }
-
-#endif /* WITH_FILE_MEMORY */

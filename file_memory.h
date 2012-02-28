@@ -27,8 +27,6 @@
 #ifndef _FILE_MEMORY_H
 #define _FILE_MEMORY_H
 
-#if defined(WITH_FILE_MEMORY)
-
 #include "types.h"
 
 /* size_t */
@@ -48,5 +46,4 @@ void uninit_memory();
 void *file_malloc(size_t size);     /* simple malloc() */
 void file_free(void *ptr);          /* simple free() */
 
-#endif /* WITH_FILE_MEMORY */
 #endif /* _FILE_MEMORY_H */

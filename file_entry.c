@@ -26,7 +26,9 @@
 
 #include "types.h"
 #include "utils.h"
+#if defined(WITH_FILE_MEMORY)
 #include "file_memory.h"
+#endif
 #include "options.h"
 #include "file_entry.h"
 
