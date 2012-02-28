@@ -57,6 +57,9 @@
 /* assert */
 #include <assert.h>
 
+/* signal(3) */
+#include <signal.h>
+
 /* Describes a file memory chunk (a file) */
 struct file_memory;
 struct file_memory {
@@ -274,6 +277,31 @@ uninit_file_memories(struct file_memory *head)
     return;
 }
 
+/* Un-initialize memory manager */
+void
+uninit_memory()
+{
+    /* un-initialize our file memory entries */
+    uninit_file_memories(mem.currentp);
+
+    /* clean our memory manager up */
+    mem.max_chunks = 0;
+    mem.next_chunk_index = 0;
+    mem.currentp = NULL;
+    if(mem.base_path != NULL)
+        free(mem.base_path);
+
+    return;
+}
+
+/* Signal handler */
+void
+exit_on_signal(int sig)
+{
+    uninit_memory();
+    exit(0);
+}
+
 /* Initialize memory manager */
 int
 init_memory(char *base_path, fnum_t max_chunks)
@@ -292,24 +320,13 @@ init_memory(char *base_path, fnum_t max_chunks)
     mem.next_chunk_index = 0;
     mem.max_chunks = max_chunks;
 
+    /* install signal handler to remove temporary files */
+    signal(SIGHUP, exit_on_signal);
+    signal(SIGINT, exit_on_signal);
+    signal(SIGQUIT, exit_on_signal);
+    signal(SIGTERM, exit_on_signal);
+
     return (0);
-}
-
-/* Un-initialize memory manager */
-void
-uninit_memory()
-{
-    /* un-initialize our file memory entries */
-    uninit_file_memories(mem.currentp);
-
-    /* clean our memory manager up */
-    mem.max_chunks = 0;
-    mem.next_chunk_index = 0;
-    mem.currentp = NULL;
-    if(mem.base_path != NULL)
-        free(mem.base_path);
-
-    return;
 }
 
 /* Replacement for malloc(3), allocates memory within a file (file_memory) */
