@@ -475,6 +475,9 @@ int main(int argc, char** argv)
     /* our main double-linked file list */
     struct file_entry *head = NULL;
 
+    if(options.verbose == OPT_VERBOSE)
+        fprintf(stderr, "Examining filesystem...\n");
+
     /* work on each file provided through input file (or stdin) */
     if(options.in_filename != NULL) {
         /* handle fd opening */
@@ -569,6 +572,9 @@ int main(int argc, char** argv)
         uninit_options(&options);
         return (0);
     }
+
+    if(options.verbose == OPT_VERBOSE)
+        fprintf(stderr, "Sorting entries...\n");
 
 /************************************************
   Sort entries with a fixed number of partitions
@@ -717,8 +723,14 @@ int main(int argc, char** argv)
     /* print result summary */
     print_partitions(part_head);
 
+    if(options.verbose == OPT_VERBOSE)
+        fprintf(stderr, "Writing output lists...\n");
+
     /* print file entries */
     print_file_entries(head, options.out_filename, num_parts);
+
+    if(options.verbose == OPT_VERBOSE)
+        fprintf(stderr, "Cleaning up...\n");
 
     /* free stuff */
     uninit_partitions(part_head);
