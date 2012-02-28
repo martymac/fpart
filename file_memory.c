@@ -135,7 +135,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
     /* open and create file, set fd */
     if (((*current)->fd =
-        open((*current)->path, O_RDWR|O_CREAT|O_EXCL, 0660)) < 0) {
+        open((*current)->path, O_RDWR|O_CREAT|O_TRUNC, 0660)) < 0) {
         fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
         free((*current)->path);
         free(*current);
