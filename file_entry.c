@@ -270,11 +270,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 {
     assert(options != NULL);
 
-    /* be sure to start at first file entry */
-    rewind_list(head);
+    /* be sure to start from last file entry */
+    fastfw_list(head);
 
     struct file_entry *current = head;
-    struct file_entry *next = NULL;
+    struct file_entry *prev = NULL;
 
     while(current != NULL) {
         if(current->path != NULL) {
@@ -285,14 +285,14 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 #endif
                 free(current->path);
         }
-        next = current->nextp;
+        prev = current->prevp;
 #if defined(WITH_FILE_MEMORY)
             if(options->mem_filename != NULL)
                 file_free(current);
             else
 #endif
                 free(current);
-        current = next;
+        current = prev;
     }
     return;
 }

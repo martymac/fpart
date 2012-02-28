@@ -89,16 +89,16 @@ add_partitions(struct partition **head, pnum_t num_parts,
 void
 uninit_partitions(struct partition *head)
 {
-    /* be sure to start at first partition */
-    rewind_list(head);
+    /* be sure to start from last partition */
+    fastfw_list(head);
 
     struct partition *current = head;
-    struct partition *next = NULL;
+    struct partition *prev = NULL;
 
     while(current != NULL) {
-        next = current->nextp;
+        prev = current->prevp;
         free(current);
-        current = next;
+        current = prev;
     }
     return;
 }
