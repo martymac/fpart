@@ -129,7 +129,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     size_t malloc_size = strlen(path) + 1;
     if(((*current)->path = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-        /* XXX use delete_file_memory here and for next failures */
+        /* XXX use delete_file_memory here and for next failures ? */
         free(*current);
         *current = previous;
         return (1);
