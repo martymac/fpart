@@ -40,7 +40,7 @@
 #include "utils.h"
 #include "file_memory.h"
 
-/* mmap(2) */
+/* mmap(2), madvise(2), msync(2) */
 #include <sys/mman.h>
 
 /* open(2) */
@@ -200,6 +200,15 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     size_t needed_chunks = round_num((*current)->size, FILE_MEMORY_CHUNK_SIZE) /
         FILE_MEMORY_CHUNK_SIZE;
     mem.next_chunk_index += needed_chunks;
+
+    /* tune memory handling */
+    if(previous != NULL) {
+        /* previous memory range will probably not be needed soon */
+        msync(previous->start_addr, size, MS_SYNC | MS_INVALIDATE);
+        madvise(previous->start_addr, size, MADV_DONTNEED);
+    }
+    /* we will now probably be working on current file_memory */
+    madvise((*current)->start_addr, size, MADV_SEQUENTIAL | MADV_WILLNEED);
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__,
