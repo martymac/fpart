@@ -51,7 +51,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* lseek(2) */
+/* lseek(2), getpagesize(3) */
 #include <unistd.h>
 
 /* assert */
@@ -307,6 +307,7 @@ int
 init_memory(char *base_path, fnum_t max_chunks)
 {
     assert(base_path != NULL);
+    assert((FILE_MEMORY_CHUNK_SIZE % getpagesize()) == 0);
 
     /* record absolute path */
     mem.base_path = abs_path(base_path);
