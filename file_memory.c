@@ -204,11 +204,12 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     /* tune memory handling */
     if(previous != NULL) {
         /* previous memory range will probably not be needed soon */
-        msync(previous->start_addr, size, MS_SYNC | MS_INVALIDATE);
-        madvise(previous->start_addr, size, MADV_DONTNEED);
+        msync(previous->start_addr, previous->size, MS_SYNC | MS_INVALIDATE);
+        madvise(previous->start_addr, previous->size, MADV_DONTNEED);
     }
     /* we will now probably be working on current file_memory */
-    madvise((*current)->start_addr, size, MADV_SEQUENTIAL | MADV_WILLNEED);
+    madvise((*current)->start_addr, (*current)->size,
+        MADV_SEQUENTIAL | MADV_WILLNEED);
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__,
