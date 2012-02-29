@@ -146,6 +146,8 @@ get_size(char *file_path, struct stat *file_stat,
 }
 
 /* Return absolute path for given path
+   - '/xxx' and '-' are considered absolute, e.g.
+     will not be prefixed by cwd. Everything else will.
    - returned pointer must be manually freed later */
 char *
 abs_path(const char *path) {
