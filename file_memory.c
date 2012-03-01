@@ -70,6 +70,7 @@ struct file_memory {
     void *start_addr;               /* mmap addr */
     size_t next_free_offset;        /* next free area offset within map */
     fnum_t ref_count;               /* reference counter */
+    fnum_t access_count;            /* access counter since last msync(2) */
 
     struct file_memory* nextp;      /* next file_entry */
     struct file_memory* prevp;      /* previous one */
@@ -172,7 +173,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
     /* mmap() our file */
     if(((*current)->start_addr =
-        mmap(0, (*current)->size, PROT_READ|PROT_WRITE, MAP_SHARED,
+        mmap(0, (*current)->size, PROT_READ|PROT_WRITE|MAP_NOCORE, MAP_SHARED,
         (*current)->fd, 0)) == MAP_FAILED) {
         fprintf(stderr, "%s(): cannot map memory\n", __func__);
         (*current)->start_addr = NULL;
@@ -187,6 +188,7 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     /* initialize next free offset and counter */
     (*current)->next_free_offset = 0;
     (*current)->ref_count = 0;
+    (*current)->access_count = 0;
 
     /* set current pointers */
     (*current)->nextp = NULL;   /* set in next pass (see below) */
@@ -204,12 +206,13 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
     /* tune memory handling */
     if(previous != NULL) {
         /* previous memory range will probably not be needed soon */
-        msync(previous->start_addr, previous->size, MS_SYNC | MS_INVALIDATE);
+        msync(previous->start_addr, previous->size, MS_SYNC|MS_INVALIDATE);
         madvise(previous->start_addr, previous->size, MADV_DONTNEED);
+        previous->access_count = 0;
     }
     /* we will now probably be working on current file_memory */
     madvise((*current)->start_addr, (*current)->size,
-        MADV_SEQUENTIAL | MADV_WILLNEED);
+        MADV_SEQUENTIAL|MADV_WILLNEED);
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): memory file '%s' created (%zd bytes)\n", __func__,
@@ -424,6 +427,40 @@ file_malloc(size_t requested_size)
 
     return (&(fmallocp->data[0]));
 }
+
+#if 0
+/* Advise memory manager that a region has been accessed.
+   Used as a hint to regularly flush pages and get them out of
+   physical memory. */
+void
+file_advise(void *ptr)
+{
+    assert(ptr != NULL);
+
+    /* find parent file_memory */
+    struct file_memory *parent = get_parentp(ptr);
+    assert(parent != NULL);
+
+    /* update parent's information */
+    parent->access_count++;
+
+    /* XXX Simple heuristic : assume most part of allocated data has been
+       accessed within current file_memory, so try to flush pages.
+       Not optimal, but saves memory ! */
+    if(parent->access_count >= parent->ref_count) {
+        if(parent->nextp != NULL) {
+            /* current memory range will probably not be needed soon */
+            msync(parent->start_addr, parent->size, MS_SYNC|MS_INVALIDATE);
+            madvise(parent->start_addr, parent->size, MADV_DONTNEED);
+
+            /* reset counter */
+            parent->access_count = 0;
+        }
+    }
+
+    return;
+}
+#endif
 
 /* Replacement for free(3) */
 void
