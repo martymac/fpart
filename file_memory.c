@@ -41,6 +41,10 @@
 #include "file_memory.h"
 
 /* mmap(2), madvise(2), msync(2) */
+#if defined(__sun__)
+#include <sys/types.h>
+extern int madvise(caddr_t, size_t, int);
+#endif
 #include <sys/mman.h>
 
 /* open(2) */
@@ -173,8 +177,11 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
 
     /* mmap() our file */
     if(((*current)->start_addr =
-        mmap(0, (*current)->size, PROT_READ|PROT_WRITE|MAP_NOCORE, MAP_SHARED,
-        (*current)->fd, 0)) == MAP_FAILED) {
+        mmap(0, (*current)->size, PROT_READ|PROT_WRITE
+#if defined(__FreeBSD__)
+	|MAP_NOCORE
+#endif
+	, MAP_SHARED, (*current)->fd, 0)) == MAP_FAILED) {
         fprintf(stderr, "%s(): cannot map memory\n", __func__);
         (*current)->start_addr = NULL;
         close((*current)->fd);
