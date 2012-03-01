@@ -130,8 +130,8 @@ usage(void)
     fprintf(stderr, "\n");
 #if defined(WITH_FILE_MEMORY)
     fprintf(stderr, "Memory usage control:\n");
-    fprintf(stderr, "  -m\tuse temporary files and specify template "
-        "(slower)\n");
+    fprintf(stderr, "  -m\ttry to lower physical memory usage by using "
+        "temporary file(s)\n");
     fprintf(stderr, "\n");
 #endif
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
