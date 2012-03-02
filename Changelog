@@ -2,7 +2,9 @@
     - Now builds on Solaris (using FreeBSD's fts(3))
     - Fix stack overflow when allocating file entry pointers' array
     - Added preloading/rounding options -p, -q and -r. See fpart(1)
-    - Add more verbose messages (option '-v')
+    - Added more verbose messages (option '-v')
+    - Better error handling when unable to add file entries
+      (mostly when running out of memory)
     - Added option '-m', that tries to lower physical memory usage (at least
       during FS crawling) by using temporary file(s) and mmap(2) facility
 2011/12/06  0.3
