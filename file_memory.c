@@ -60,6 +60,9 @@ extern int madvise(caddr_t, size_t, int);
 #include <stdio.h>
 #include <string.h>
 
+/* bzero(3) */
+#include <strings.h>
+
 /* assert */
 #include <assert.h>
 
