@@ -612,8 +612,7 @@ int main(int argc, char** argv)
             uninit_options(&options);
             return (1);
         }
-        bzero(file_entry_p, sizeof(struct file_entry *) * totalfiles);
-    
+
         /* initialize array */
         init_file_entry_p(file_entry_p, totalfiles, head);
     
