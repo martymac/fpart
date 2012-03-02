@@ -148,16 +148,17 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 /* Initialize a double-linked list of file_entries from a path
    - file_path may be a file or directory
    - if head is NULL, creates a new list ; if not, chains a new list to it
-   - returns the number of files found with head set to the last element */
-fnum_t
-init_file_entries(char *file_path, struct file_entry **head,
+   - increments *count with the number of files found
+   - returns != 0 if critical error
+   - returns with head set to the last element added */
+int
+init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     struct program_options *options)
 {
     assert(file_path != NULL);
     assert(head != NULL);
+    assert(count != NULL);
     assert(options != NULL);
-
-    fnum_t num_files = 0;   /* number of files added to the list */
 
     /* prepare fts */
     FTS *ftsp = NULL;
@@ -214,7 +215,8 @@ init_file_entries(char *file_path, struct file_entry **head,
                 size_t malloc_size = p->fts_pathlen + 1 + 1;
                 if((file_entry_path = malloc(malloc_size)) == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    return (num_files);
+                    fts_close(ftsp);
+                    return (1);
                 }
 
                 if(S_ISDIR(p->fts_statp->st_mode) &&
@@ -245,7 +247,13 @@ init_file_entries(char *file_path, struct file_entry **head,
                 /* add it */
                 if(add_file_entry
                     (head, file_entry_path, file_entry_size, options) == 0)
-                    num_files++;
+                    (*count)++;
+                else {
+                    fprintf(stderr, "%s(): cannot add file entry\n", __func__);
+                    free(file_entry_path);
+                    fts_close(ftsp);
+                    return (1);
+                }
 
                 /* cleanup */
                 free(file_entry_path);
@@ -255,13 +263,16 @@ init_file_entries(char *file_path, struct file_entry **head,
         }
     }
 
-    if(errno != 0)
+    if(errno != 0) {
         fprintf(stderr, "%s: fts_read()\n", file_path);
+        fts_close(ftsp);
+        return (1);
+    }
 
     if(fts_close(ftsp) < 0)
         fprintf(stderr, "%s: fts_close()\n", file_path);
 
-    return (num_files);
+    return (0);
 }
 
 /* Un-initialize a double-linked list of file_entries */

@@ -143,7 +143,7 @@ usage(void)
 
 /* Handle one argument (either a path to crawl or an arbitrary
    value) and update file entries (head)
-   - returns != 0 if a malloc() error occurred
+   - returns != 0 if a critical error occurred
    - returns with head set to the last element added
    - updates totalfiles with the number of elements added */
 int
@@ -166,8 +166,13 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         }
 
         if(sscanf(argument, "%lld %[^\n]", &input_size, input_path) == 2) {
-            add_file_entry(head, input_path, input_size, options);
-            (*totalfiles)++;
+            if(add_file_entry(head, input_path, input_size, options) == 0)
+                (*totalfiles)++;
+            else {
+                fprintf(stderr, "%s(): cannot add file entry\n", __func__);
+                free(input_path);
+                return (1);
+            }
         }
         else
             fprintf(stderr, "error parsing input values: %s\n", argument);
@@ -199,17 +204,21 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         if(input_path[0] != '\0') {
 #if defined(DEBUG)
             fprintf(stderr, "init_file_entries(): examining %s\n",
-                input_path); 
+                input_path);
 #endif
-            (*totalfiles) += init_file_entries(input_path, head,
-                options);
+            if(init_file_entries(input_path, head, totalfiles, options) != 0) {
+                fprintf(stderr, "%s(): cannot initialize file entries\n",
+                    __func__);
+                free(input_path);
+                return (1);
+            }
         }
 
         /* cleanup */
         free(input_path);
     }
 
-    return(0);
+    return (0);
 }
 
 int main(int argc, char** argv)
