@@ -32,12 +32,15 @@
 /* size_t */
 #include <stdlib.h>
 
+#if !defined(FILE_MEMORY_INIT_BLOCK_SIZE)
+#define FILE_MEMORY_INIT_BLOCK_SIZE (8 * 1024 * 1024)               /*  8 MB */
+#endif
 #if !defined(FILE_MEMORY_CHUNK_SIZE)
-#define FILE_MEMORY_CHUNK_SIZE (32 * 1024 * 1024) /* 32 MB */
+#define FILE_MEMORY_CHUNK_SIZE (4 * FILE_MEMORY_INIT_BLOCK_SIZE)    /* 32 MB */
 #endif
 #if !defined(MAX_FILE_MEMORY_CHUNKS)
 #define MAX_FILE_MEMORY_CHUNKS 0    /* maximum number of allowed chunks
-                                       (0 = unlimited) */
+                                       (not *files*, 0 = unlimited) */
 #endif
 
 int init_memory(char *base_path, fnum_t max_chunks);

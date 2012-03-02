@@ -40,9 +40,14 @@
 #include "utils.h"
 #include "file_memory.h"
 
+/* write(2) */
+#include <sys/types.h>
+
+/* write(2), getpagesize(3) */
+#include <unistd.h>
+
 /* mmap(2), madvise(2), msync(2) */
 #if defined(__sun__)
-#include <sys/types.h>
 extern int madvise(caddr_t, size_t, int);
 #endif
 #include <sys/mman.h>
@@ -54,9 +59,6 @@ extern int madvise(caddr_t, size_t, int);
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-
-/* lseek(2), getpagesize(3) */
-#include <unistd.h>
 
 /* assert */
 #include <assert.h>
@@ -151,12 +153,12 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
         return (1);
     }
   
-    /* set file size
-       XXX fill file with zeroes to avoid fragmentation, see mmap(2) ? */
+    /* set file size and initialize it with zeroes
+       to avoid fragmentation, see mmap(2) */
     (*current)->size = size;
-    if(lseek((*current)->fd, (*current)->size - 1, SEEK_SET) !=
-        ((*current)->size - 1)) {
-        fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
+    char *buf = malloc(FILE_MEMORY_INIT_BLOCK_SIZE);
+    if(buf == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         close((*current)->fd);
         unlink((*current)->path);
         free((*current)->path);
@@ -164,16 +166,26 @@ add_file_memory(struct file_memory **head, char *path, size_t size)
         *current = previous;
         return (1);
     }
-    char zero = 0;
-    if(write((*current)->fd, &zero, 1) != 1) {
-        fprintf(stderr, "%s: %s\n", (*current)->path, strerror(errno));
-        close((*current)->fd);
-        unlink((*current)->path);
-        free((*current)->path);
-        free(*current);
-        *current = previous;
-        return (1);
+    bzero(buf, FILE_MEMORY_INIT_BLOCK_SIZE);
+
+    ssize_t to_write = (*current)->size;
+    size_t write_len = 0;
+    while(to_write > 0) {
+        write_len = (to_write < FILE_MEMORY_INIT_BLOCK_SIZE) ?
+            to_write : FILE_MEMORY_INIT_BLOCK_SIZE;
+        if (write((*current)->fd, buf, write_len) != write_len) {
+            fprintf(stderr, "%s(): cannot initialize file memory\n", __func__);
+            free(buf);
+            close((*current)->fd);
+            unlink((*current)->path);
+            free((*current)->path);
+            free(*current);
+            *current = previous;
+            return (1);
+        }
+        to_write -= write_len;
     }
+    free(buf);
 
     /* mmap() our file */
     if(((*current)->start_addr =
