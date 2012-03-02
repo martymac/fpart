@@ -46,7 +46,7 @@ RM= rm
 CAT= cat
 GZIP= gzip
 
-SOURCES= fts.c
-HEADERS= fts.h
+FTS_SOURCES= fts.c
+FTS_HEADERS= fts.h
 
 include Makefile.common

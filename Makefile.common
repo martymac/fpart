@@ -29,16 +29,16 @@ CFLAGS +=  -DWITH_FILE_MEMORY
 FM_SOURCES= file_memory.c
 FM_HEADERS= file_memory.h
 
-SOURCES += $(FM_SOURCES) utils.c options.c partition.c file_entry.c dispatch.c fpart.c
-HEADERS += $(FM_HEADERS) utils.h options.h partition.h file_entry.h dispatch.h fpart.h
+SOURCES += $(FTS_SOURCES) $(FM_SOURCES) utils.c options.c partition.c file_entry.c dispatch.c fpart.c
+HEADERS += $(FTS_SOURCES) $(FM_HEADERS) utils.h options.h partition.h file_entry.h dispatch.h fpart.h
 
 all: fpart
 
 fpart: $(HEADERS) $(SOURCES)
 	$(CC) $(CFLAGS) $(SOURCES) -lm -o fpart
 
-file_memory_test:  utils.c $(FM_SOURCES) file_memory_test.c
-	$(CC) $(CFLAGS) -g -DDEBUG -DWITH_FILE_MEMORY utils.c $(FM_SOURCES) file_memory_test.c -lm -o file_memory_test
+file_memory_test:  utils.c $(FTS_SOURCES) $(FM_SOURCES) file_memory_test.c
+	$(CC) $(CFLAGS) -g -DDEBUG -DWITH_FILE_MEMORY utils.c $(FTS_SOURCES) $(FM_SOURCES) file_memory_test.c -lm -o file_memory_test
 
 install: installbin installman
 
