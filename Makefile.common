@@ -35,10 +35,10 @@ HEADERS += $(FM_HEADERS) utils.h options.h partition.h file_entry.h dispatch.h f
 all: fpart
 
 fpart: $(HEADERS) $(SOURCES)
-	$(CC) $(CFLAGS) -lm $(SOURCES) -o fpart
+	$(CC) $(CFLAGS) $(SOURCES) -lm -o fpart
 
 file_memory_test:  utils.c $(FM_SOURCES) file_memory_test.c
-	$(CC) $(CFLAGS) -g -DDEBUG -DWITH_FILE_MEMORY -lm utils.c $(FM_SOURCES) file_memory_test.c -o file_memory_test
+	$(CC) $(CFLAGS) -g -DDEBUG -DWITH_FILE_MEMORY utils.c $(FM_SOURCES) file_memory_test.c -lm -o file_memory_test
 
 install: installbin installman
 
