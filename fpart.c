@@ -115,7 +115,7 @@ usage(void)
     fprintf(stderr, "  -d\tswitch to directory names display "
         "after certain <depth>\n");
     fprintf(stderr, "  -e\tadd ending slash to directory names\n");
-    fprintf(stderr, "  -v\tverbose mode\n");
+    fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
     fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
                 options.add_slash = OPT_ADDSLASH;
                 break;
             case 'v':
-                options.verbose = OPT_VERBOSE;
+                options.verbose++;
                 break;
             case 'l':
                 options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
@@ -481,7 +481,7 @@ int main(int argc, char** argv)
     /* our main double-linked file list */
     struct file_entry *head = NULL;
 
-    if(options.verbose == OPT_VERBOSE)
+    if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Examining filesystem...\n");
 
     /* work on each file provided through input file (or stdin) */
@@ -579,7 +579,7 @@ int main(int argc, char** argv)
         return (0);
     }
 
-    if(options.verbose == OPT_VERBOSE)
+    if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Sorting entries...\n");
 
 /************************************************
@@ -728,13 +728,13 @@ int main(int argc, char** argv)
     /* print result summary */
     print_partitions(part_head);
 
-    if(options.verbose == OPT_VERBOSE)
+    if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Writing output lists...\n");
 
     /* print file entries */
     print_file_entries(head, options.out_filename, num_parts);
 
-    if(options.verbose == OPT_VERBOSE)
+    if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Cleaning up...\n");
 
     /* free stuff */

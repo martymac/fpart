@@ -139,7 +139,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
         previous->nextp = *current;
 
     /* display added filename */
-    if(options->verbose == OPT_VERBOSE)
+    if(options->verbose >= OPT_VVERBOSE)
         fprintf(stderr, "%s\n", (*current)->path);
 
     return (0);

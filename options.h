@@ -66,6 +66,7 @@ struct program_options {
 /* verbose output (option -v) */
 #define OPT_NOVERBOSE               0
 #define OPT_VERBOSE                 1
+#define OPT_VVERBOSE                2
 #define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
     unsigned char verbose;
 /* follow symbolic links (option -l) */

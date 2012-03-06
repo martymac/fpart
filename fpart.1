@@ -126,30 +126,30 @@ option), add an ending
 .Dq Li "/"
 to each directory entry.
 .It Fl v
-Verbose mode. Print files while crawling filesystem.
+Verbose mode (may be specified more than once).
 .El
 .Sh BEHAVIOUR CONTROL
 .Bl -tag -width indent
 .It Fl l
-Follow symbolic links (default: do not follow)
+Follow symbolic links (default: do not follow).
 .It Fl x
-Do not cross file system boundaries (default: cross)
+Do not cross file system boundaries (default: cross).
 .El
 .Sh SIZE HANDLING
 .Bl -tag -width indent
 .It Ic -p Ar num
 Preload each partition with
 .Ar num
-bytes
+bytes.
 .It Ic -q Ar num
 Overload each file size with
 .Ar num
-bytes
+bytes.
 .It Ic -r Ar num
 Round each file size up to next
 .Ar num
 bytes multiple. This option can be used in conjunction with overloading, which
-is done *before* rounding
+is done *before* rounding.
 .El
 .Sh MEMORY USAGE CONTROL
 .Bl -tag -width indent
