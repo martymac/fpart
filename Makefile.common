@@ -25,7 +25,7 @@
 # SUCH DAMAGE.
 
 # File memory support
-CFLAGS +=  -DWITH_FILE_MEMORY
+#CFLAGS +=  -DWITH_FILE_MEMORY
 FM_SOURCES= file_memory.c
 FM_HEADERS= file_memory.h
 
