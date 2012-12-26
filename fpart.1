@@ -139,8 +139,11 @@ Verbose mode (may be specified more than once).
 .Bl -tag -width indent
 .It Fl L
 Live mode (default: disabled). When using this mode, partitions will be
-generated while crawling filesystem. This will save time and memory but will
-generate partitions slightly larger than the size specified with option
+generated while crawling filesystem. This option saves time and memory, but does
+not give partition 0 a special meaning (see option
+.Fl s
+). As a consequence, it can generate partitions
+larger than the size specified with option
 .Fl s .
 This option can be used in conjunction with options
 .Fl f
