@@ -66,12 +66,12 @@
 /* assert(3) */
 #include <assert.h>
 
-/* live mode (option -L), current fd */
-static int live_current_fd = STDOUT_FILENO;
+/****************************
+ Live-mode related functions 
+ ****************************/
 
-/*********************************************************
- Double-linked list of file_entries manipulation functions
- *********************************************************/
+/* Live mode (option -L), current fd */
+static int live_current_fd = STDOUT_FILENO;
 
 /* Print or add a file entry (redirector) */
 int
@@ -161,6 +161,10 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
     return (0);
 }
+
+/*********************************************************
+ Double-linked list of file_entries manipulation functions
+ *********************************************************/
 
 /* Add a file entry to a double-linked list of file_entries
    - if head is NULL, creates a new file entry ; if not, chains a new file
