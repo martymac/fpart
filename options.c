@@ -52,6 +52,8 @@ init_options(struct program_options *options)
     assert((DFLT_OPT_VERBOSE == OPT_NOVERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VVERBOSE));
+    assert((DFLT_OPT_LIVEMODE == OPT_NOLIVEMODE) ||
+           (DFLT_OPT_LIVEMODE == OPT_LIVEMODE));
     assert((DFLT_OPT_FOLLOWSYMLINKS == OPT_FOLLOWSYMLINKS) ||
            (DFLT_OPT_FOLLOWSYMLINKS == OPT_NOFOLLOWSYMLINKS));
     assert((DFLT_OPT_CROSSFSBOUNDARIES == OPT_NOCROSSFSBOUNDARIES) ||
@@ -70,6 +72,7 @@ init_options(struct program_options *options)
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->verbose = DFLT_OPT_VERBOSE;
+    options->live_mode = DFLT_OPT_LIVEMODE;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
@@ -93,6 +96,7 @@ uninit_options(struct program_options *options)
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
+    options->live_mode = DFLT_OPT_LIVEMODE;
     options->verbose = DFLT_OPT_VERBOSE;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;

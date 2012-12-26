@@ -66,9 +66,101 @@
 /* assert(3) */
 #include <assert.h>
 
+/* live mode (option -L), current fd */
+static int live_current_fd = STDOUT_FILENO;
+
 /*********************************************************
  Double-linked list of file_entries manipulation functions
  *********************************************************/
+
+/* Print or add a file entry (redirector) */
+int
+handle_file_entry(struct file_entry **head, char *path, fsize_t size,
+    struct program_options *options)
+{
+    assert(options != NULL);
+
+    if(options->live_mode == OPT_LIVEMODE)
+        return (live_print_file_entry(path, size, options->out_filename,
+            options));
+    else
+        return (add_file_entry(head, path, size, options));
+}
+
+/* Print a file entry */
+int
+live_print_file_entry(char *path, fsize_t size, char *out_template,
+    struct program_options *options)
+{
+    assert(path != NULL);
+    assert(options != NULL);
+    assert(options->live_mode == OPT_LIVEMODE);
+
+    static pnum_t current_partition_index = 0;
+    static pnum_t current_partition_size = 0;
+    static pnum_t current_num_files = 0;
+
+    /* first call for current partition */
+    if(current_num_files == 0) {
+        /* preload partition */
+        current_partition_size = options->preload_size;
+
+        if(out_template != NULL) {
+            /* close previous fd (not for the very first call) */
+            if(current_partition_index > 0)
+                close(live_current_fd);
+
+            /* compute out_filename "out_template.i\0" */
+            char *out_filename = NULL;
+            size_t malloc_size = strlen(out_template) + 1 +
+                get_num_digits(current_partition_index) + 1;
+            if((out_filename = malloc(malloc_size)) == NULL) {
+                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                return (1);
+            }
+            snprintf(out_filename, malloc_size, "%s.%d", out_template,
+                current_partition_index);
+
+            /* open file */
+            if((live_current_fd =
+                open(out_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
+                fprintf(stderr, "%s: %s\n", out_filename, strerror(errno));
+                free(out_filename);
+                return (1);
+            }
+            free(out_filename);
+        }
+    }
+
+    /* count file in */
+    current_partition_size +=
+        round_num(size + options->overload_size, options->round_size);
+    current_num_files++;
+
+    if(out_template == NULL) {
+        /* no template provided, just print to stdout */
+        fprintf(stdout, "%d (%lld): %s\n", current_partition_index, size, path);
+        fflush(stdout);
+    }
+    else {
+        /* print to fd */
+        size_t to_write = strlen(path);
+        if((write(live_current_fd, path, to_write) != to_write) ||
+            (write(live_current_fd, "\n", 1) != 1)) {
+            fprintf(stderr, "%s\n", strerror(errno));
+            return (1);
+        }
+    }
+
+    /* update current partition status */
+    if(((options->max_entries > 0) && (current_num_files >= options->max_entries)) ||
+        ((options->max_size > 0) && (current_partition_size >= options->max_size))) {
+        current_num_files = 0;
+        current_partition_index++;
+    }
+
+    return (0);
+}
 
 /* Add a file entry to a double-linked list of file_entries
    - if head is NULL, creates a new file entry ; if not, chains a new file
@@ -81,6 +173,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     assert(head != NULL);
     assert(path != NULL);
     assert(options != NULL);
+    assert(options->live_mode == OPT_NOLIVEMODE);
 
     struct file_entry **current = head; /* current file_entry pointer address */
     struct file_entry *previous = NULL; /* previous file_entry pointer */
@@ -244,8 +337,8 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                     file_entry_size =
                         get_size(p->fts_path, p->fts_statp, options);
 
-                /* add it */
-                if(add_file_entry
+                /* add or display it */
+                if(handle_file_entry
                     (head, file_entry_path, file_entry_size, options) == 0)
                     (*count)++;
                 else {
@@ -304,6 +397,13 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 #endif
                 free(current);
         current = prev;
+    }
+
+    /* live mode */
+    if(options->out_filename != NULL) {
+        /* close current file descriptor */
+        if(live_current_fd > STDERR_FILENO)
+            close(live_current_fd);
     }
     return;
 }

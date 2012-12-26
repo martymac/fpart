@@ -88,12 +88,12 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-v] [-l] [-x]\n"
+        "             [-o outfile] [-d depth] [-e] [-v] [-L] [-l] [-x]\n"
         "             [-p num] [-q num] [-r num] "
 #if defined(WITH_FILE_MEMORY)
         "[-m tmpfile] "
 #endif
-        "[file or dir ...]\n");
+        "[file(s) or dir(s) ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "General:\n");
@@ -118,6 +118,7 @@ usage(void)
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
+    fprintf(stderr, "  -L\tlive mode (default: disabled)\n");
     fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
     fprintf(stderr, "  -x\tdo not cross file system boundaries "
         "(default: cross)\n");
@@ -166,7 +167,7 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         }
 
         if(sscanf(argument, "%lld %[^\n]", &input_size, input_path) == 2) {
-            if(add_file_entry(head, input_path, input_size, options) == 0)
+            if(handle_file_entry(head, input_path, input_size, options) == 0)
                 (*totalfiles)++;
             else {
                 fprintf(stderr, "%s(): cannot add file entry\n", __func__);
@@ -239,7 +240,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evlxp:q:r:"
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evLlxp:q:r:"
 #if defined(WITH_FILE_MEMORY)
     "m:"
 #endif
@@ -259,9 +260,11 @@ int main(int argc, char** argv)
             case 'n':
             {
                 if((options.max_entries != DFLT_OPT_MAX_ENTRIES) ||
-                    (options.max_size != DFLT_OPT_MAX_SIZE)) {
+                    (options.max_size != DFLT_OPT_MAX_SIZE) ||
+                    (options.live_mode != DFLT_OPT_LIVEMODE)) {
                     fprintf(stderr,
-                        "Option -n is incompatible with options -f and -s.\n");
+                        "Option -n is incompatible with options -f, "
+                        "-s and -L.\n");
                     usage();
                     uninit_options(&options);
                     return (1);
@@ -369,6 +372,18 @@ int main(int argc, char** argv)
             case 'v':
                 options.verbose++;
                 break;
+            case 'L':
+            {
+                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
+                    fprintf(stderr,
+                        "Option -L is incompatible with option -n.\n");
+                    usage();
+                    uninit_options(&options);
+                    return (1);
+                }
+                options.live_mode = OPT_LIVEMODE;
+                break;
+            }
             case 'l':
                 options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
                 break;
@@ -568,8 +583,8 @@ int main(int argc, char** argv)
     /* display status */
     fprintf(stderr, "%lld file(s) found.\n", totalfiles);
 
-    /* no file found */
-    if(totalfiles <= 0) {
+    /* no file found or live mode */
+    if((totalfiles <= 0) || (options.live_mode == OPT_LIVEMODE)) {
         uninit_file_entries(head, &options);
 #if defined(WITH_FILE_MEMORY)
         if(options.mem_filename != NULL)

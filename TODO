@@ -8,6 +8,4 @@ TODO (ideas) :
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...) ?
 - Make the program multithreaded for FS analysis ?
-- When working with a file number or a size limit, fill partitions and display
-  results while crawling FS
 - Display/accept size in a human-friendly format ?

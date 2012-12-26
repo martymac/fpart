@@ -39,6 +39,7 @@
 .Op Fl d Ar depth
 .Op Fl e
 .Op Fl v
+.Op Fl L
 .Op Fl l
 .Op Fl x
 .Op Ar file or dir ...
@@ -63,14 +64,18 @@ Cause
 to create
 .Ar num
 partitions and spread files over them by trying to generate partitions with
-the same size and number of files.
+the same size and number of files. This option cannot be used in conjunction
+with
+.Fl L .
 .It Ic -f Ar files
 Cause
 .Nm
 to create partitions containing at most
 .Ar files
 files. This option can be used in conjunction with
-.Fl s .
+.Fl s
+and
+.Fl L .
 .It Ic -s Ar size
 Cause
 .Nm
@@ -80,7 +85,9 @@ With this option, partition 0 may be used to handle files that do not fit in a
 regular partition, given the provided
 .Ar size
 limit. This option can be used in conjunction with
-.Fl f .
+.Fl f
+and
+.Fl L .
 .El
 .Sh INPUT CONTROL
 .Bl -tag -width indent
@@ -130,6 +137,17 @@ Verbose mode (may be specified more than once).
 .El
 .Sh BEHAVIOUR CONTROL
 .Bl -tag -width indent
+.It Fl L
+Live mode (default: disabled). When using this mode, partitions will be
+generated while crawling filesystem. This will save time and memory but will
+generate partitions slightly larger than the size specified with option
+.Fl s .
+This option can be used in conjunction with options
+.Fl f
+and
+.Fl s ,
+but not with option
+.Fl n .
 .It Fl l
 Follow symbolic links (default: do not follow).
 .It Fl x

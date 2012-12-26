@@ -48,6 +48,10 @@ struct file_entry {
     struct file_entry* prevp;       /* previous one */
 };
 
+int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
+    struct program_options *options);
+int live_print_file_entry(char *path, fsize_t size, char *out_template,
+    struct program_options *options);
 int add_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options);
 int init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,

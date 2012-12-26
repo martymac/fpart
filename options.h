@@ -69,6 +69,11 @@ struct program_options {
 #define OPT_VVERBOSE                2
 #define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
     unsigned char verbose;
+/* live mode (option -L) */
+#define OPT_NOLIVEMODE              0
+#define OPT_LIVEMODE                1
+#define DFLT_OPT_LIVEMODE           OPT_NOLIVEMODE
+    unsigned char live_mode;
 /* follow symbolic links (option -l) */
 #define OPT_FOLLOWSYMLINKS          0
 #define OPT_NOFOLLOWSYMLINKS        1
