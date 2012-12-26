@@ -140,7 +140,6 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
         fprintf(stdout, "%d (%lld): %s\n", current_partition_index, size, path);
-        fflush(stdout);
     }
     else {
         /* print to fd */
@@ -152,11 +151,15 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         }
     }
 
-    /* update current partition status */
+    /* if end of partition reached */
     if(((options->max_entries > 0) && (current_num_files >= options->max_entries)) ||
         ((options->max_size > 0) && (current_partition_size >= options->max_size))) {
+        /* reset current partition status */
         current_num_files = 0;
         current_partition_index++;
+        /* flush stdout */
+        if(out_template == NULL)
+            fflush(stdout);
     }
 
     return (0);
