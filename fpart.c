@@ -580,12 +580,11 @@ int main(int argc, char** argv)
     /* come back to the first element */
     rewind_list(head);
 
-    /* display status */
-    fprintf(stderr, "%lld file(s) found.\n", totalfiles);
-
     /* no file found or live mode */
     if((totalfiles <= 0) || (options.live_mode == OPT_LIVEMODE)) {
         uninit_file_entries(head, &options);
+        /* display status */
+        fprintf(stderr, "%lld file(s) found.\n", totalfiles);
 #if defined(WITH_FILE_MEMORY)
         if(options.mem_filename != NULL)
             uninit_memory();
@@ -593,6 +592,9 @@ int main(int argc, char** argv)
         uninit_options(&options);
         return (0);
     }
+
+    /* display status */
+    fprintf(stderr, "%lld file(s) found.\n", totalfiles);
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Sorting entries...\n");

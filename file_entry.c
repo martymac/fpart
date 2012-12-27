@@ -70,8 +70,12 @@
  Live-mode related functions 
  ****************************/
 
-/* Live mode (option -L), current fd */
-static int live_current_fd = STDOUT_FILENO;
+/* Live mode status (option -L) */
+static int live_fd = STDOUT_FILENO;
+static char *live_filename = NULL;
+static pnum_t live_partition_index = 0;
+static fsize_t live_partition_size = 0;
+static fnum_t live_num_files = 0;
 
 /* Print or add a file entry (redirector) */
 int
@@ -96,70 +100,81 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
     assert(options != NULL);
     assert(options->live_mode == OPT_LIVEMODE);
 
-    static pnum_t current_partition_index = 0;
-    static pnum_t current_partition_size = 0;
-    static pnum_t current_num_files = 0;
-
-    /* first call for current partition */
-    if(current_num_files == 0) {
-        /* preload partition */
-        current_partition_size = options->preload_size;
+    /* beginning of a new partition */
+    if(live_num_files == 0) {
+        /* XXX very first pass of first partition, preload first partition */
+        if(live_partition_index == 0)
+            live_partition_size = options->preload_size;
 
         if(out_template != NULL) {
-            /* close previous fd (not for the very first call) */
-            if(current_partition_index > 0)
-                close(live_current_fd);
-
-            /* compute out_filename "out_template.i\0" */
-            char *out_filename = NULL;
+            /* compute live_filename "out_template.i\0" */
             size_t malloc_size = strlen(out_template) + 1 +
-                get_num_digits(current_partition_index) + 1;
-            if((out_filename = malloc(malloc_size)) == NULL) {
+                get_num_digits(live_partition_index) + 1;
+            if((live_filename = malloc(malloc_size)) == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 return (1);
             }
-            snprintf(out_filename, malloc_size, "%s.%d", out_template,
-                current_partition_index);
+            snprintf(live_filename, malloc_size, "%s.%d", out_template,
+                live_partition_index);
 
             /* open file */
-            if((live_current_fd =
-                open(out_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
-                fprintf(stderr, "%s: %s\n", out_filename, strerror(errno));
-                free(out_filename);
+            if((live_fd =
+                open(live_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
+                fprintf(stderr, "%s: %s\n", live_filename, strerror(errno));
+                free(live_filename);
+                live_filename = NULL;
                 return (1);
             }
-            free(out_filename);
         }
     }
 
     /* count file in */
-    current_partition_size +=
+    live_partition_size +=
         round_num(size + options->overload_size, options->round_size);
-    current_num_files++;
+    live_num_files++;
 
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
-        fprintf(stdout, "%d (%lld): %s\n", current_partition_index, size, path);
+        fprintf(stdout, "%d (%lld): %s\n", live_partition_index, size, path);
     }
     else {
         /* print to fd */
         size_t to_write = strlen(path);
-        if((write(live_current_fd, path, to_write) != to_write) ||
-            (write(live_current_fd, "\n", 1) != 1)) {
+        if((write(live_fd, path, to_write) != to_write) ||
+            (write(live_fd, "\n", 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
+            close(live_fd);
+            free(live_filename);
+            live_filename = NULL;
             return (1);
         }
     }
 
+    /* display added filename */
+    if(options->verbose >= OPT_VVERBOSE)
+        fprintf(stderr, "%s\n", path);
+
     /* if end of partition reached */
-    if(((options->max_entries > 0) && (current_num_files >= options->max_entries)) ||
-        ((options->max_size > 0) && (current_partition_size >= options->max_size))) {
-        /* reset current partition status */
-        current_num_files = 0;
-        current_partition_index++;
-        /* flush stdout */
+    if(((options->max_entries > 0) && (live_num_files >= options->max_entries)) ||
+        ((options->max_size > 0) && (live_partition_size >= options->max_size))) {
+        /* display added partition */
+        if(options->verbose >= OPT_VERBOSE)
+            fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
+                live_partition_index, live_partition_size, live_num_files);
+
+        /* close fd or flush buffer */
         if(out_template == NULL)
             fflush(stdout);
+        else {
+            close(live_fd);
+            free(live_filename);
+            live_filename = NULL;
+        }
+
+        /* reset current partition status */
+        live_partition_index++;
+        live_partition_size = options->preload_size;
+        live_num_files = 0;
     }
 
     return (0);
@@ -407,10 +422,21 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
     }
 
     /* live mode */
-    if(options->out_filename != NULL) {
-        /* close current file descriptor */
-        if(live_current_fd > STDERR_FILENO)
-            close(live_current_fd);
+    if(options->live_mode == OPT_LIVEMODE) {
+        /* display added partition */
+        if((options->verbose >= OPT_VERBOSE) && (live_num_files > 0))
+            fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
+                live_partition_index, live_partition_size,
+                live_num_files);
+
+        /* flush buffer or close last file if necessary */
+        if(options->out_filename == NULL)
+            fflush(stdout);
+        else if(live_filename != NULL) {
+            close(live_fd);
+            free(live_filename);
+            live_filename = NULL;
+        }
     }
     return;
 }
