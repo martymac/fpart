@@ -48,5 +48,6 @@ unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);
 char *abs_path(const char *path);
+char *strsubst(const char *str, const char *pattern, const char *subst);
 
 #endif /* _UTILS_H */

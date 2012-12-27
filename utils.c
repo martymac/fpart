@@ -189,3 +189,72 @@ abs_path(const char *path) {
 
     return (abs);
 }
+
+/* Replace all occurences of pattern by subst in str
+   - returns str if no change to str was performed
+   - returns NULL if error
+   - returned pointer must be manually freed later if != str */
+char *
+strsubst(const char *str, const char *pattern, const char *subst)
+{
+    assert(str != NULL);
+    assert(pattern != NULL);
+    assert(subst != NULL);
+
+    if((strlen(str) == 0) || (strlen(pattern) == 0)) {
+        return ((char *)str);
+    }
+
+    char *strp = (char *)str;       /* current lookup start pointer */
+    char *cursp = (char *)str;      /* current lookup result pointer */
+
+    char *ret_str = (char *)str;    /* returned str */
+    char *tmp_str = NULL;           /* temporary str */
+    while(((cursp = strstr(strp, pattern)) != NULL) ||
+        ((strp != str) && (strp < (str + strlen(str))))) {
+        /* very last iteration, nothing matched, but we still have to copy the
+           remaining of the string. Simulate a last substitution */
+        if(cursp == NULL) {
+            cursp = strp;
+            subst = strp;
+            pattern = strp;
+        }
+
+        /* compute size of previous temporary string */
+        size_t tmp_strlen = 0;
+        if(tmp_str != NULL)
+            tmp_strlen = strlen(tmp_str);
+
+        /* compute size of new return string including substitution */
+        size_t malloc_size = tmp_strlen + (cursp - strp) + strlen(subst) + 1;
+
+        /* allocate new return string */
+        ret_str = malloc(malloc_size);
+        if(ret_str == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            if(tmp_str != NULL)
+                free(tmp_str);
+            return (NULL);
+        }
+
+        /* copy previous tmp_str if necessary */
+        if(tmp_str != NULL)
+            bcopy(tmp_str, ret_str, tmp_strlen);
+        /* add string before pattern */
+        bcopy(strp, ret_str + tmp_strlen, (cursp - strp));
+        /* add substitution string */
+        bcopy(subst, ret_str + tmp_strlen + (cursp - strp), strlen(subst));
+        /* force end of string */
+        *(ret_str + tmp_strlen + (cursp - strp) + strlen(subst)) = '\0';
+
+        /* skip pattern for next lookup */
+        strp = cursp + strlen(pattern);
+
+        /* temporary string becomes return string */
+        if(tmp_str != NULL)
+            free(tmp_str);
+        tmp_str = ret_str;
+    }
+
+    return (ret_str);
+}
