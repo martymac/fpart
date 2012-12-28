@@ -73,6 +73,8 @@ init_options(struct program_options *options)
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->verbose = DFLT_OPT_VERBOSE;
     options->live_mode = DFLT_OPT_LIVEMODE;
+    options->pre_part_hook = NULL;
+    options->post_part_hook = NULL;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
@@ -96,6 +98,10 @@ uninit_options(struct program_options *options)
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
+    if(options->post_part_hook != NULL)
+        free(options->post_part_hook);
+    if(options->pre_part_hook != NULL)
+        free(options->pre_part_hook);
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->verbose = DFLT_OPT_VERBOSE;
     options->add_slash = DFLT_OPT_ADDSLASH;

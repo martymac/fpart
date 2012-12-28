@@ -102,7 +102,7 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
     /* beginning of a new partition */
     if(live_num_files == 0) {
-        /* XXX very first pass of first partition, preload first partition */
+        /* very first pass of first partition, preload first partition */
         if(live_partition_index == 0)
             live_partition_size = options->preload_size;
 
@@ -126,6 +126,13 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
                 return (1);
             }
         }
+
+        /* execute pre-partition hook */
+        if(options->pre_part_hook != NULL) {
+            fpart_hook(options->pre_part_hook, options, live_filename,
+                &live_partition_index, &live_partition_size, &live_num_files);
+        }
+
     }
 
     /* count file in */
@@ -143,9 +150,8 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         if((write(live_fd, path, to_write) != to_write) ||
             (write(live_fd, "\n", 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
-            close(live_fd);
-            free(live_filename);
-            live_filename = NULL;
+            /* do not close(livefd) and free(live_filename) here because
+               it will be useful and free'd in uninit_file_entries() below */
             return (1);
         }
     }
@@ -167,6 +173,14 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
             fflush(stdout);
         else {
             close(live_fd);
+
+            /* execute post-partition hook */
+            if(options->post_part_hook != NULL) {
+                fpart_hook(options->post_part_hook, options, live_filename,
+                    &live_partition_index, &live_partition_size,
+                    &live_num_files);
+            }
+
             free(live_filename);
             live_filename = NULL;
         }
@@ -434,6 +448,14 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
             fflush(stdout);
         else if(live_filename != NULL) {
             close(live_fd);
+
+            /* execute post-partition hook */
+            if(options->post_part_hook != NULL) {
+                fpart_hook(options->post_part_hook, options, live_filename,
+                    &live_partition_index, &live_partition_size,
+                    &live_num_files);
+            }
+
             free(live_filename);
             live_filename = NULL;
         }

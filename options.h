@@ -74,6 +74,10 @@ struct program_options {
 #define OPT_LIVEMODE                1
 #define DFLT_OPT_LIVEMODE           OPT_NOLIVEMODE
     unsigned char live_mode;
+/* pre-partition hook (option -w) */
+    char *pre_part_hook;
+/* post-partition hook (option -W) */
+    char *post_part_hook;
 /* follow symbolic links (option -l) */
 #define OPT_FOLLOWSYMLINKS          0
 #define OPT_NOFOLLOWSYMLINKS        1

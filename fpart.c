@@ -119,6 +119,8 @@ usage(void)
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
     fprintf(stderr, "  -L\tlive mode (default: disabled)\n");
+    fprintf(stderr, "  -w\tpre-partition hook (live mode only)\n");
+    fprintf(stderr, "  -W\tpost-partition hook (live mode only)\n");
     fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
     fprintf(stderr, "  -x\tdo not cross file system boundaries "
         "(default: cross)\n");
@@ -240,7 +242,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evLlxp:q:r:"
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evLw:W:lxp:q:r:"
 #if defined(WITH_FILE_MEMORY)
     "m:"
 #endif
@@ -384,6 +386,34 @@ int main(int argc, char** argv)
                 options.live_mode = OPT_LIVEMODE;
                 break;
             }
+            case 'w':
+            {
+                size_t malloc_size = strlen(optarg) + 1;
+                if(malloc_size <= 1)
+                    break;
+                options.pre_part_hook = malloc(malloc_size);
+                if(options.pre_part_hook == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    uninit_options(&options);
+                    return (1);
+                }
+                snprintf(options.pre_part_hook, malloc_size, "%s", optarg);
+            }
+                break;
+            case 'W':
+            {
+                size_t malloc_size = strlen(optarg) + 1;
+                if(malloc_size <= 1)
+                    break;
+                options.post_part_hook = malloc(malloc_size);
+                if(options.post_part_hook == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    uninit_options(&options);
+                    return (1);
+                }
+                snprintf(options.post_part_hook, malloc_size, "%s", optarg);
+            }
+                break;
             case 'l':
                 options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
                 break;
