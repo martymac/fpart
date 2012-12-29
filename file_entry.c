@@ -171,16 +171,17 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         /* close fd or flush buffer */
         if(out_template == NULL)
             fflush(stdout);
-        else {
+        else
             close(live_fd);
 
-            /* execute post-partition hook */
-            if(options->post_part_hook != NULL) {
-                fpart_hook(options->post_part_hook, options, live_filename,
-                    &live_partition_index, &live_partition_size,
-                    &live_num_files);
-            }
+        /* execute post-partition hook */
+        if(options->post_part_hook != NULL) {
+            fpart_hook(options->post_part_hook, options, live_filename,
+                &live_partition_index, &live_partition_size,
+                &live_num_files);
+        }
 
+        if(out_template != NULL) {
             free(live_filename);
             live_filename = NULL;
         }
@@ -446,16 +447,17 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* flush buffer or close last file if necessary */
         if(options->out_filename == NULL)
             fflush(stdout);
-        else if(live_filename != NULL) {
+        else if(live_filename != NULL)
             close(live_fd);
 
-            /* execute post-partition hook */
-            if(options->post_part_hook != NULL) {
-                fpart_hook(options->post_part_hook, options, live_filename,
-                    &live_partition_index, &live_partition_size,
-                    &live_num_files);
-            }
+        /* execute post-partition hook */
+        if(options->post_part_hook != NULL) {
+            fpart_hook(options->post_part_hook, options, live_filename,
+                &live_partition_index, &live_partition_size,
+                &live_num_files);
+        }
 
+        if(live_filename != NULL) {
             free(live_filename);
             live_filename = NULL;
         }
