@@ -451,7 +451,7 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
             close(live_fd);
 
         /* execute post-partition hook */
-        if(options->post_part_hook != NULL) {
+        if((options->post_part_hook != NULL) && (live_num_files > 0)) {
             fpart_hook(options->post_part_hook, options, live_filename,
                 &live_partition_index, &live_partition_size,
                 &live_num_files);
