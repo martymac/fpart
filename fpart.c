@@ -261,17 +261,6 @@ int main(int argc, char** argv)
                 break;
             case 'n':
             {
-                if((options.max_entries != DFLT_OPT_MAX_ENTRIES) ||
-                    (options.max_size != DFLT_OPT_MAX_SIZE) ||
-                    (options.live_mode != DFLT_OPT_LIVEMODE)) {
-                    fprintf(stderr,
-                        "Option -n is incompatible with options -f, "
-                        "-s and -L.\n");
-                    usage();
-                    uninit_options(&options);
-                    return (1);
-                }
-
                 char *endptr = NULL;
                 long num_parts = strtol(optarg, &endptr, 10);
                 /* refuse values <= 0 and partially converted arguments */
@@ -286,14 +275,6 @@ int main(int argc, char** argv)
                 break;
             case 'f':
             {
-                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
-                    fprintf(stderr,
-                        "Option -f is incompatible with option -n.\n");
-                    usage();
-                    uninit_options(&options);
-                    return (1);
-                }
-
                 char *endptr = NULL;
                 long long max_entries = strtoll(optarg, &endptr, 10);
                 /* refuse values <= 0 and partially converted arguments */
@@ -308,14 +289,6 @@ int main(int argc, char** argv)
                 break;
             case 's':
             {
-                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
-                    fprintf(stderr,
-                        "Option -s is incompatible with option -n.\n");
-                    usage();
-                    uninit_options(&options);
-                    return (1);
-                }
-
                 char *endptr = NULL;
                 long long max_size = strtoll(optarg, &endptr, 10);
                 /* refuse values <= 0 and partially converted arguments */
@@ -376,13 +349,6 @@ int main(int argc, char** argv)
                 break;
             case 'L':
             {
-                if(options.num_parts != DFLT_OPT_NUM_PARTS) {
-                    fprintf(stderr,
-                        "Option -L is incompatible with option -n.\n");
-                    usage();
-                    uninit_options(&options);
-                    return (1);
-                }
                 options.live_mode = OPT_LIVEMODE;
                 break;
             }
@@ -486,10 +452,32 @@ int main(int argc, char** argv)
     argc -= optind;
     argv += optind;
 
+    /* check for options consistency */
     if((options.num_parts == DFLT_OPT_NUM_PARTS) &&
         (options.max_entries == DFLT_OPT_MAX_ENTRIES) &&
         (options.max_size == DFLT_OPT_MAX_SIZE)) {
         fprintf(stderr, "Please specify either -n, -f or -s.\n");
+        usage();
+        uninit_options(&options);
+        return (1);
+    }
+
+    if((options.num_parts != DFLT_OPT_NUM_PARTS) &&
+        ((options.max_entries != DFLT_OPT_MAX_ENTRIES) ||
+                    (options.max_size != DFLT_OPT_MAX_SIZE) ||
+                    (options.live_mode != DFLT_OPT_LIVEMODE))) {
+        fprintf(stderr,
+            "Option -n is incompatible with options -f, -s and -L.\n");
+        usage();
+        uninit_options(&options);
+        return (1);
+    }
+
+    if((options.live_mode == OPT_NOLIVEMODE) &&
+        ((options.pre_part_hook != NULL) ||
+        (options.post_part_hook != NULL))) {
+        fprintf(stderr,
+            "Hooks can only be used with option -L.\n");
         usage();
         uninit_options(&options);
         return (1);
