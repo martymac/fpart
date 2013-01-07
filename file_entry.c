@@ -66,6 +66,12 @@
 /* assert(3) */
 #include <assert.h>
 
+/* wait(2) */
+#include <sys/wait.h>
+
+/* _PATH_BSHELL */
+#include <paths.h>
+
 /****************************
  Live-mode related functions 
  ****************************/
@@ -76,6 +82,159 @@ static char *live_filename = NULL;
 static pnum_t live_partition_index = 0;
 static fsize_t live_partition_size = 0;
 static fnum_t live_num_files = 0;
+
+int
+fpart_hook(const char *cmd, const struct program_options *options,
+    const char *live_filename, const pnum_t *live_partition_index,
+    const fsize_t *live_partition_size, const fnum_t *live_num_files)
+{
+    assert(cmd != NULL);
+    assert(options != NULL);
+
+    int retval = 0;
+
+    /* determine the kind of hook we are in */
+    if(cmd == options->pre_part_hook) {
+        assert(live_partition_index != NULL);
+        assert(live_partition_size != NULL);
+        assert(live_num_files != NULL);
+
+        if(options->verbose >= OPT_VERBOSE)
+            fprintf(stderr, "Executing pre-part #%d hook: '%s'\n",
+                *live_partition_index, options->pre_part_hook);
+    }
+    else if(cmd == options->post_part_hook) {
+        assert(live_partition_index != NULL);
+        assert(live_partition_size != NULL);
+        assert(live_num_files != NULL);
+
+        if(options->verbose >= OPT_VERBOSE)
+            fprintf(stderr, "Executing post-part #%d hook: '%s'\n",
+                *live_partition_index, options->post_part_hook);
+    }
+
+    /* prepare environment */
+    char *env_fpart_partfilename_name = "FPART_PARTFILENAME";
+    char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
+    char *env_fpart_partsize_name = "FPART_PARTSIZE";
+    char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
+
+    char *env_fpart_partfilename_string = NULL;
+    char *env_fpart_partnumber_string = NULL;
+    char *env_fpart_partsize_string = NULL;
+    char *env_fpart_partnumfiles_string = NULL;
+
+    size_t malloc_size = 0;
+
+    /* FPART_PARTFILENAME */
+    if(live_filename != NULL)
+        malloc_size = strlen(env_fpart_partfilename_name) + 1 +
+            strlen(live_filename) + 1;
+    else
+        malloc_size = 1; /* empty string */
+    if((env_fpart_partfilename_string = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        retval = 1;
+        goto cleanup;
+    }
+    if(live_filename != NULL)
+        snprintf(env_fpart_partfilename_string, malloc_size, "%s=%s",
+            env_fpart_partfilename_name, live_filename);
+    else
+        snprintf(env_fpart_partfilename_string, malloc_size, "%s", "");
+
+    /* FPART_PARTNUMBER */
+    if(live_partition_index != NULL)
+        malloc_size = strlen(env_fpart_partnumber_name) + 1 +
+            get_num_digits(*live_partition_index) + 1;
+    else
+        malloc_size = 1; /* empty string */
+    if((env_fpart_partnumber_string = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        retval = 1;
+        goto cleanup;
+    }
+    if(live_partition_index != NULL)
+        snprintf(env_fpart_partnumber_string, malloc_size, "%s=%d",
+            env_fpart_partnumber_name, *live_partition_index);
+    else
+        snprintf(env_fpart_partnumber_string, malloc_size, "%s", "");
+
+    /* FPART_PARTSIZE */
+    if(live_partition_size != NULL)
+        malloc_size = strlen(env_fpart_partsize_name) + 1 +
+            get_num_digits(*live_partition_size) + 1;
+    else
+        malloc_size = 1; /* empty string */
+    if((env_fpart_partsize_string = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        retval = 1;
+        goto cleanup;
+    }
+    if(live_partition_size != NULL)
+        snprintf(env_fpart_partsize_string, malloc_size, "%s=%lld",
+            env_fpart_partsize_name, *live_partition_size);
+    else
+        snprintf(env_fpart_partsize_string, malloc_size, "%s", "");
+
+    /* FPART_PARTNUMFILES */
+    if(live_num_files != NULL)
+        malloc_size = strlen(env_fpart_partnumfiles_name) + 1 +
+            get_num_digits(*live_num_files) + 1;
+    else
+        malloc_size = 1; /* empty string */
+    if((env_fpart_partnumfiles_string = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        retval = 1;
+        goto cleanup;
+    }
+    if(live_num_files != NULL)
+        snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%llu",
+            env_fpart_partnumfiles_name, *live_num_files);
+    else
+        snprintf(env_fpart_partnumfiles_string, malloc_size, "%s", "");
+
+    char *envp[] = {
+        env_fpart_partfilename_string,
+        env_fpart_partnumber_string,
+        env_fpart_partsize_string,
+        env_fpart_partnumfiles_string,
+        NULL };
+
+    /* fork child process */
+    pid_t pid;
+    int child_status;
+    switch(pid = fork()) {
+        case -1:            /* error */
+            fprintf(stderr, "fork(): %s\n", strerror(errno));
+            retval = 1;
+            goto cleanup;
+            break;
+        case 0:             /* child */
+        {
+            execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
+            /* if reached, error */
+            exit (1);
+        }
+            break;
+        default:            /* parent */
+        {
+            pid_t wpid;
+            do {
+                wpid = wait(&child_status);
+            } while(wpid != pid);
+            retval = 0;
+        }
+            break;
+    }
+
+cleanup:
+    free(env_fpart_partfilename_string);
+    free(env_fpart_partnumber_string);
+    free(env_fpart_partsize_string);
+    free(env_fpart_partnumfiles_string);
+    return (retval);
+}
 
 /* Print or add a file entry (redirector) */
 int
