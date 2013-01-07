@@ -279,15 +279,6 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
             }
             snprintf(live_filename, malloc_size, "%s.%d", out_template,
                 live_partition_index);
-
-            /* open file */
-            if((live_fd =
-                open(live_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
-                fprintf(stderr, "%s: %s\n", live_filename, strerror(errno));
-                free(live_filename);
-                live_filename = NULL;
-                return (1);
-            }
         }
 
         /* execute pre-partition hook */
@@ -297,6 +288,16 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
                 live_exit_summary = 1;
         }
 
+        if(out_template != NULL) {
+            /* open file */
+            if((live_fd =
+                open(live_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
+                fprintf(stderr, "%s: %s\n", live_filename, strerror(errno));
+                free(live_filename);
+                live_filename = NULL;
+                return (1);
+            }
+        }
     }
 
     /* count file in */
@@ -623,14 +624,15 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
                 live_exit_summary = 1;
         }
 
-        /* print hooks' exit codes summary */
-        if((options->verbose >= OPT_VERBOSE) && (live_exit_summary != 0))
-            fprintf(stderr, "Warning: at least one hook exited with error !\n");
-
         if(live_filename != NULL) {
             free(live_filename);
             live_filename = NULL;
         }
+
+        /* print hooks' exit codes summary */
+        if((options->verbose >= OPT_VERBOSE) && (live_exit_summary != 0))
+            fprintf(stderr, "Warning: at least one hook exited with error !\n");
+
     }
     return;
 }
