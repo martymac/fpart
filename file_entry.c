@@ -82,6 +82,7 @@ static char *live_filename = NULL;
 static pnum_t live_partition_index = 0;
 static fsize_t live_partition_size = 0;
 static fnum_t live_num_files = 0;
+static int live_exit_summary = 0;
 
 int
 fpart_hook(const char *cmd, const struct program_options *options,
@@ -195,7 +196,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     /* fork child process */
     pid_t pid;
-    int child_status;
+    int child_status = 0;
     switch(pid = fork()) {
         case -1:            /* error */
             fprintf(stderr, "fork(): %s\n", strerror(errno));
@@ -217,6 +218,11 @@ fpart_hook(const char *cmd, const struct program_options *options,
             if(wpid == -1) {            
                 fprintf(stderr, "wait(): %s\n", strerror(errno));
                 retval = 1;
+            }
+            else if(WIFEXITED(child_status)) {
+                /* collect exit code */
+                if(WEXITSTATUS(child_status) != 0)
+                    retval = 1;
             }
         }
             break;
@@ -282,8 +288,9 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
         /* execute pre-partition hook */
         if(options->pre_part_hook != NULL) {
-            fpart_hook(options->pre_part_hook, options, live_filename,
-                &live_partition_index, &live_partition_size, &live_num_files);
+            if(fpart_hook(options->pre_part_hook, options, live_filename,
+                &live_partition_index, &live_partition_size, &live_num_files) != 0)
+                live_exit_summary = 1;
         }
 
     }
@@ -329,9 +336,10 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
         /* execute post-partition hook */
         if(options->post_part_hook != NULL) {
-            fpart_hook(options->post_part_hook, options, live_filename,
+            if(fpart_hook(options->post_part_hook, options, live_filename,
                 &live_partition_index, &live_partition_size,
-                &live_num_files);
+                &live_num_files) != 0)
+                live_exit_summary = 1;
         }
 
         if(out_template != NULL) {
@@ -603,12 +611,17 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         else if(live_filename != NULL)
             close(live_fd);
 
-        /* execute post-partition hook */
+        /* execute last post-partition hook */
         if((options->post_part_hook != NULL) && (live_num_files > 0)) {
-            fpart_hook(options->post_part_hook, options, live_filename,
+            if(fpart_hook(options->post_part_hook, options, live_filename,
                 &live_partition_index, &live_partition_size,
-                &live_num_files);
+                &live_num_files) != 0)
+                live_exit_summary = 1;
         }
+
+        /* print hooks' exit codes summary */
+        if((options->verbose >= OPT_VERBOSE) && (live_exit_summary != 0))
+            fprintf(stderr, "Warning: at least one hook exited with error !\n");
 
         if(live_filename != NULL) {
             free(live_filename);
