@@ -40,8 +40,14 @@
 .Op Fl e
 .Op Fl v
 .Op Fl L
+.Op Fl w Ar cmd
+.Op Fl W Ar cmd
 .Op Fl l
 .Op Fl x
+.Op Fl p Ar num
+.Op Fl q Ar num
+.Op Fl r Ar num
+.Op Fl m
 .Op Ar file or dir ...
 .Sh DESCRIPTION
 The
@@ -151,6 +157,31 @@ and
 .Fl s ,
 but not with option
 .Fl n .
+.It Ic -w Ar cmd
+When using live mode, execute
+.Ar cmd
+when starting a new partition (before having opened output file, if any).
+.Ar cmd
+is run in a specific environment that provides several variables describing the
+state of current partition :
+.Ev FPART_PARTFILENAME
+(current partition's output file name),
+.Ev FPART_PARTNUMBER
+(current partition number),
+.Ev FPART_PARTSIZE
+(current partition size),
+.Ev FPART_PARTNUMFILES
+(number of files in current partition). Note that variables may or may not be
+defined, depending of requested options and current partition's state when the
+hook is triggered. Also note that hooks are executed in a synchronous way while
+crawling filesystem, so avoid executing commands that take a long time to
+execute as it slows down filesystem crawling.
+.It Ic -W Ar cmd
+Same as
+.Fl w ,
+but executes
+.Ar cmd
+when finishing a partition (after having closed output file, if any).
 .It Fl l
 Follow symbolic links (default: do not follow).
 .It Fl x
