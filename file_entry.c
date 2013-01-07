@@ -70,7 +70,11 @@
 #include <sys/wait.h>
 
 /* _PATH_BSHELL */
+#if defined(__sun__)
+#define _PATH_BSHELL    "/bin/sh"
+#else
 #include <paths.h>
+#endif
 
 /****************************
  Live-mode related functions 
