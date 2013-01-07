@@ -102,7 +102,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing pre-part #%d hook: '%s'\n",
-                *live_partition_index, options->pre_part_hook);
+                *live_partition_index, cmd);
     }
     else if(cmd == options->post_part_hook) {
         assert(live_partition_index != NULL);
@@ -111,7 +111,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing post-part #%d hook: '%s'\n",
-                *live_partition_index, options->post_part_hook);
+                *live_partition_index, cmd);
     }
 
     /* prepare environment */
@@ -221,8 +221,12 @@ fpart_hook(const char *cmd, const struct program_options *options,
             }
             else if(WIFEXITED(child_status)) {
                 /* collect exit code */
-                if(WEXITSTATUS(child_status) != 0)
+                if(WEXITSTATUS(child_status) != 0) {
+                    if(options->verbose >= OPT_VERBOSE)
+                        fprintf(stderr, "Hook '%s' exited with error %d\n",
+                            cmd, WEXITSTATUS(child_status));
                     retval = 1;
+                }
             }
         }
             break;
