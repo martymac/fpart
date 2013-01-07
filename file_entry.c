@@ -124,14 +124,12 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partsize_string = NULL;
     char *env_fpart_partnumfiles_string = NULL;
 
-    size_t malloc_size = 0;
+    size_t malloc_size = 1; /* empty string */
 
     /* FPART_PARTFILENAME */
     if(live_filename != NULL)
         malloc_size = strlen(env_fpart_partfilename_name) + 1 +
             strlen(live_filename) + 1;
-    else
-        malloc_size = 1; /* empty string */
     if((env_fpart_partfilename_string = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         retval = 1;
@@ -147,8 +145,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_partition_index != NULL)
         malloc_size = strlen(env_fpart_partnumber_name) + 1 +
             get_num_digits(*live_partition_index) + 1;
-    else
-        malloc_size = 1; /* empty string */
     if((env_fpart_partnumber_string = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         retval = 1;
@@ -164,8 +160,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_partition_size != NULL)
         malloc_size = strlen(env_fpart_partsize_name) + 1 +
             get_num_digits(*live_partition_size) + 1;
-    else
-        malloc_size = 1; /* empty string */
     if((env_fpart_partsize_string = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         retval = 1;
@@ -181,8 +175,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_num_files != NULL)
         malloc_size = strlen(env_fpart_partnumfiles_name) + 1 +
             get_num_digits(*live_num_files) + 1;
-    else
-        malloc_size = 1; /* empty string */
     if((env_fpart_partnumfiles_string = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         retval = 1;
@@ -208,7 +200,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
         case -1:            /* error */
             fprintf(stderr, "fork(): %s\n", strerror(errno));
             retval = 1;
-            goto cleanup;
             break;
         case 0:             /* child */
         {
@@ -222,8 +213,11 @@ fpart_hook(const char *cmd, const struct program_options *options,
             pid_t wpid;
             do {
                 wpid = wait(&child_status);
-            } while(wpid != pid);
-            retval = 0;
+            } while((wpid != pid) && (wpid != -1));
+            if(wpid == -1) {            
+                fprintf(stderr, "wait(): %s\n", strerror(errno));
+                retval = 1;
+            }
         }
             break;
     }
