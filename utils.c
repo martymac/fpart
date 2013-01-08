@@ -107,7 +107,7 @@ get_size(char *file_path, struct stat *file_stat,
     fts_options |= (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) ?
         FTS_XDEV : 0;
 
-    char * fts_argv[] = { file_path, NULL };
+    char *fts_argv[] = { file_path, NULL };
     if((ftsp = fts_open(fts_argv, fts_options, NULL)) == NULL) {
         fprintf(stderr, "%s: fts_open()\n", file_path);
         return (0);
