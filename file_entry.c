@@ -224,12 +224,20 @@ fpart_hook(const char *cmd, const struct program_options *options,
                     strerror(errno));
                 retval = 1;
             }
-            else if(WIFEXITED(child_status)) {
-                /* collect exit code */
-                if(WEXITSTATUS(child_status) != 0) {
+            else {
+                if(WIFEXITED(child_status)) {
+                    /* collect exit code */
+                    if(WEXITSTATUS(child_status) != 0) {
+                        if(options->verbose >= OPT_VERBOSE)
+                            fprintf(stderr, "Hook '%s' exited with error %d\n",
+                                cmd, WEXITSTATUS(child_status));
+                        retval = 1;
+                    }
+                }
+                else {
                     if(options->verbose >= OPT_VERBOSE)
-                        fprintf(stderr, "Hook '%s' exited with error %d\n",
-                            cmd, WEXITSTATUS(child_status));
+                        fprintf(stderr, "Hook '%s' terminated prematurely\n",
+                            cmd);
                     retval = 1;
                 }
             }
