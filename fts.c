@@ -49,7 +49,7 @@ __FBSDID("$FreeBSD: src/lib/libc/gen/fts.c,v 1.30.2.2.4.1 2010/12/21 17:09:25 ke
 #include <sys/mount.h>
 #include <sys/stat.h>
 
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
@@ -66,7 +66,7 @@ __FBSDID("$FreeBSD: src/lib/libc/gen/fts.c,v 1.30.2.2.4.1 2010/12/21 17:09:25 ke
 #include "/usr/src/lib/libc/include/un-namespace.h"
 #endif
 
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 void *
 reallocf(void *ptr, size_t size)
 {
@@ -118,7 +118,7 @@ static int	 fts_ufslinks(FTS *, const FTSENT *);
  */
 struct _fts_private {
 	FTS		ftsp_fts;
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 	struct statvfs	ftsp_statvfs;
 #else
 	struct statfs	ftsp_statfs;
@@ -779,7 +779,7 @@ fts_build(sp, type)
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
 	for (head = tail = NULL, nitems = 0; dirp && (dp = readdir(dirp));) {
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 		dnamlen = strlen(dp->d_name);
 #else
 		dnamlen = dp->d_namlen;
@@ -1220,7 +1220,7 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 	 * avoidance.
 	 */
 	if (priv->ftsp_dev != ent->fts_dev) {
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 		if (statvfs(ent->fts_path, &priv->ftsp_statvfs) != -1) {
 #else
 		if (statfs(ent->fts_path, &priv->ftsp_statfs) != -1) {
@@ -1228,7 +1228,7 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 			priv->ftsp_dev = ent->fts_dev;
 			priv->ftsp_linksreliable = 0;
 			for (cpp = ufslike_filesystems; *cpp; cpp++) {
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 				if (strcmp(priv->ftsp_statvfs.f_basetype,
 #else
 				if (strcmp(priv->ftsp_statfs.f_fstypename,

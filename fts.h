@@ -61,7 +61,7 @@ typedef struct {
 #define	FTS_PHYSICAL	0x010		/* physical walk */
 #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
 #define	FTS_XDEV	0x040		/* don't cross devices */
-#if !defined(__sun__)
+#if !defined(__sun) && !defined(__sun__)
 #define	FTS_WHITEOUT	0x080		/* return whiteout information */
 #endif
 #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */

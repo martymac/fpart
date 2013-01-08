@@ -43,7 +43,9 @@
 
 /* getopt(3) */
 #include <unistd.h>
+#if !defined(__SunOS_5_9)
 #include <getopt.h>
+#endif
 
 /* strlen(3) */
 #include <string.h>

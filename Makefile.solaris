@@ -24,9 +24,13 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Compiler options
+# Compiler options (Solaris 10)
 CC=        gcc
 CFLAGS=    -Wall -std=c99 -DEMBED_FTS -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__
+
+# Solaris 9 flags (+ large file support)
+#CC=        cc
+#CFLAGS=    -DEMBED_FTS -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 
 # Use the following to build with debug symbols and messages
 #CFLAGS += -g -DDEBUG

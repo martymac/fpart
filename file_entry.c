@@ -70,7 +70,7 @@
 #include <sys/wait.h>
 
 /* _PATH_BSHELL */
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 #define _PATH_BSHELL    "/bin/sh"
 #else
 #include <paths.h>

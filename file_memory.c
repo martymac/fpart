@@ -47,7 +47,7 @@
 #include <unistd.h>
 
 /* mmap(2), madvise(2), msync(2) */
-#if defined(__sun__)
+#if defined(__sun) || defined(__sun__)
 extern int madvise(caddr_t, size_t, int);
 #endif
 #include <sys/mman.h>
