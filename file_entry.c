@@ -220,7 +220,8 @@ fpart_hook(const char *cmd, const struct program_options *options,
                 wpid = wait(&child_status);
             } while((wpid != pid) && (wpid != -1));
             if(wpid == -1) {            
-                fprintf(stderr, "wait(): %s\n", strerror(errno));
+                fprintf(stderr, "%s(): wait(): %s\n", __func__,
+                    strerror(errno));
                 retval = 1;
             }
             else if(WIFEXITED(child_status)) {
