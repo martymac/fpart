@@ -88,7 +88,7 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-v] [-L [-w cmd] [-W cmd]]\n"
+        "             [-o outfile] [-d depth] [-e] [-v] [-L] [-w cmd] [-W cmd]\n"
         "             [-l] [-x] [-p num] [-q num] [-r num] "
 #if defined(WITH_FILE_MEMORY)
         "[-m tmpfile] "
