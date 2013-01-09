@@ -59,11 +59,12 @@ See also :
 See fpart(1) for more details.
 
 The partition problem is detailed here :
-
 http://en.wikipedia.org/wiki/Partition_problem
 
-I am sure you will also be interested in :
+and here :
+http://en.wikipedia.org/wiki/Bin_packing_problem
 
+I am sure you will also be interested in :
 https://github.com/jbd/packo
 
 which was developped by jbd as the original proof of concept.
