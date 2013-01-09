@@ -2,6 +2,7 @@
     - Added option '-L' (live mode)
     - Added options '-w' and '-W' (hooks to be used with live mode)
     - Fixed build on Solaris 9
+    - Removed option '-m' and associated code
 2012/06/12  0.4
     - Now builds on Solaris (using FreeBSD's fts(3))
     - Fix stack overflow when allocating file entry pointers' array

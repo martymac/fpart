@@ -26,9 +26,6 @@
 
 #include "types.h"
 #include "utils.h"
-#if defined(WITH_FILE_MEMORY)
-#include "file_memory.h"
-#endif
 #include "options.h"
 #include "file_entry.h"
 
@@ -397,13 +394,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
 
-    *current =
-#if defined(WITH_FILE_MEMORY)
-        (options->mem_filename != NULL) ?
-        file_malloc(sizeof(struct file_entry)) :
-#endif
-        malloc(sizeof(struct file_entry));
-
+    *current = malloc(sizeof(struct file_entry));
     if(*current == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
@@ -416,21 +407,10 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     /* set current file data */
     size_t malloc_size = strlen(path) + 1;
 
-    (*current)->path =
-#if defined(WITH_FILE_MEMORY)
-        (options->mem_filename != NULL) ?
-        file_malloc(malloc_size) :
-#endif
-        malloc(malloc_size);
-
+    (*current)->path = malloc(malloc_size);
     if((*current)->path == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-#if defined(WITH_FILE_MEMORY)
-            if(options->mem_filename != NULL)
-                file_free(*current);
-            else
-#endif
-                free(*current);
+        free(*current);
         *current = previous;
         return (1);
     }
@@ -598,20 +578,10 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 
     while(current != NULL) {
         if(current->path != NULL) {
-#if defined(WITH_FILE_MEMORY)
-            if(options->mem_filename != NULL)
-                file_free(current->path);
-            else
-#endif
-                free(current->path);
+            free(current->path);
         }
         prev = current->prevp;
-#if defined(WITH_FILE_MEMORY)
-            if(options->mem_filename != NULL)
-                file_free(current);
-            else
-#endif
-                free(current);
+        free(current);
         current = prev;
     }
 

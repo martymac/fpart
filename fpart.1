@@ -47,7 +47,6 @@
 .Op Fl p Ar num
 .Op Fl q Ar num
 .Op Fl r Ar num
-.Op Fl m
 .Op Ar file or dir ...
 .Sh DESCRIPTION
 The
@@ -202,15 +201,6 @@ Round each file size up to next
 .Ar num
 bytes multiple. This option can be used in conjunction with overloading, which
 is done *before* rounding.
-.El
-.Sh MEMORY USAGE CONTROL
-.Bl -tag -width indent
-.It Ic -m Ar file
-Try to lower physical memory usage (at least during FS crawling) by using
-temporary file(s) and mmap(2) facility.
-.Ar file
-will be used as a template for temporary file names. This option makes fpart
-slower and must be activated at compile-time to become available.
 .El
 .Sh EXAMPLES
 Here are some examples :
