@@ -110,7 +110,7 @@ kill_child(int sig)
         live_status.child_pid);
 #endif
     if(live_status.child_pid > 1) {
-        kill(live_status.child_pid, sig ? sig : SIGTERM);
+        killpg(live_status.child_pid, sig ? sig : SIGTERM);
         waitpid(live_status.child_pid, NULL, 0);
     }
     exit(1);
@@ -238,6 +238,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
             break;
         case 0:             /* child */
         {
+            setpgid(live_status.child_pid, 0); /* become process group leader */
             execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
             /* if reached, error */
             exit (1);
