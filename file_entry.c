@@ -73,6 +73,9 @@
 #include <paths.h>
 #endif
 
+/* signal(3) */
+#include <signal.h>
+
 /****************************
  Live-mode related functions 
  ****************************/
@@ -87,14 +90,31 @@ static struct {
     fnum_t partition_num_files;  /* number of files in current partition */
     int exit_summary;            /* 0 if every single hook exit()ed with 0,
                                     else 1 */
+    pid_t child_pid;
 } live_status = {
     STDOUT_FILENO,
     NULL,
     0,
     0,
     0,
-    0
+    0,
+    -1
 };
+
+/* Signal handler, kills child and exit() */
+void
+kill_child(int sig)
+{
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): killing child process %d\n", __func__,
+        live_status.child_pid);
+#endif
+    if(live_status.child_pid > 1) {
+        kill(live_status.child_pid, sig ? sig : SIGTERM);
+        waitpid(live_status.child_pid, NULL, 0);
+    }
+    exit(1);
+}
 
 /* Executes 'cmd' and waits for it to terminate
    - returns 0 if cmd has been executed and its return code was 0,
@@ -210,9 +230,8 @@ fpart_hook(const char *cmd, const struct program_options *options,
         NULL };
 
     /* fork child process */
-    pid_t pid;
     int child_status = 0;
-    switch(pid = fork()) {
+    switch(live_status.child_pid = fork()) {
         case -1:            /* error */
             fprintf(stderr, "fork(): %s\n", strerror(errno));
             retval = 1;
@@ -226,11 +245,24 @@ fpart_hook(const char *cmd, const struct program_options *options,
             break;
         default:            /* parent */
         {
+            /* child-killer signal handler */
+            signal(SIGTERM, kill_child);
+            signal(SIGINT, kill_child);
+            signal(SIGHUP, kill_child);
+
             pid_t wpid;
             do {
                 wpid = wait(&child_status);
-            } while((wpid != pid) && (wpid != -1));
-            if(wpid == -1) {            
+            } while((wpid != live_status.child_pid) && (wpid != -1));
+
+            /* reset actions for signals */
+            signal(SIGTERM, SIG_DFL);
+            signal(SIGINT, SIG_DFL);
+            signal(SIGHUP, SIG_DFL);
+            /* reset child PID */
+            live_status.child_pid = -1;
+
+            if(wpid == -1) {
                 fprintf(stderr, "%s(): wait(): %s\n", __func__,
                     strerror(errno));
                 retval = 1;
