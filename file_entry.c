@@ -340,7 +340,8 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         /* execute pre-partition hook */
         if(options->pre_part_hook != NULL) {
             if(fpart_hook(options->pre_part_hook, options, live_status.filename,
-                &live_status.partition_index, &live_status.partition_size, &live_status.partition_num_files) != 0)
+                &live_status.partition_index, &live_status.partition_size,
+                &live_status.partition_num_files) != 0)
                 live_status.exit_summary = 1;
         }
 
@@ -348,7 +349,8 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
             /* open file */
             if((live_status.fd =
                 open(live_status.filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
-                fprintf(stderr, "%s: %s\n", live_status.filename, strerror(errno));
+                fprintf(stderr, "%s: %s\n", live_status.filename,
+                    strerror(errno));
                 free(live_status.filename);
                 live_status.filename = NULL;
                 return (1);
@@ -363,7 +365,8 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
-        fprintf(stdout, "%d (%lld): %s\n", live_status.partition_index, size, path);
+        fprintf(stdout, "%d (%lld): %s\n", live_status.partition_index, size,
+            path);
     }
     else {
         /* print to fd */
@@ -387,7 +390,8 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
-                live_status.partition_index, live_status.partition_size, live_status.partition_num_files);
+                live_status.partition_index, live_status.partition_size,
+                live_status.partition_num_files);
 
         /* close fd or flush buffer */
         if(out_template == NULL)
@@ -397,8 +401,9 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
 
         /* execute post-partition hook */
         if(options->post_part_hook != NULL) {
-            if(fpart_hook(options->post_part_hook, options, live_status.filename,
-                &live_status.partition_index, &live_status.partition_size,
+            if(fpart_hook(options->post_part_hook, options,
+                live_status.filename, &live_status.partition_index,
+                &live_status.partition_size,
                 &live_status.partition_num_files) != 0)
                 live_status.exit_summary = 1;
         }
@@ -634,7 +639,8 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
     /* live mode */
     if(options->live_mode == OPT_LIVEMODE) {
         /* display added partition */
-        if((options->verbose >= OPT_VERBOSE) && (live_status.partition_num_files > 0))
+        if((options->verbose >= OPT_VERBOSE) &&
+            (live_status.partition_num_files > 0))
             fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
                 live_status.partition_index, live_status.partition_size,
                 live_status.partition_num_files);
@@ -646,9 +652,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
             close(live_status.fd);
 
         /* execute last post-partition hook */
-        if((options->post_part_hook != NULL) && (live_status.partition_num_files > 0)) {
-            if(fpart_hook(options->post_part_hook, options, live_status.filename,
-                &live_status.partition_index, &live_status.partition_size,
+        if((options->post_part_hook != NULL) &&
+            (live_status.partition_num_files > 0)) {
+            if(fpart_hook(options->post_part_hook, options,
+                live_status.filename, &live_status.partition_index,
+                &live_status.partition_size,
                 &live_status.partition_num_files) != 0)
                 live_status.exit_summary = 1;
         }
