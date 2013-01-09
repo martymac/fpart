@@ -1,4 +1,4 @@
-2012/??/??  0.5
+2013/01/09  0.5
     - Added option '-L' (live mode)
     - Added options '-w' and '-W' (hooks to be used with live mode)
     - Fixed build on Solaris 9
