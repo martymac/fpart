@@ -77,14 +77,28 @@
  Live-mode related functions 
  ****************************/
 
-/* Live mode status (option -L) */
-static int live_fd = STDOUT_FILENO;
-static char *live_filename = NULL;
-static pnum_t live_partition_index = 0;
-static fsize_t live_partition_size = 0;
-static fnum_t live_num_files = 0;
-static int live_exit_summary = 0;
+/* Status */
+static struct {
+    int fd;                      /* current file descriptor
+                                    (if option '-o' used) */
+    char *filename;              /* current file name */
+    pnum_t partition_index;      /* current partition number */
+    fsize_t partition_size;      /* current partition size */
+    fnum_t partition_num_files;  /* number of files in current partition */
+    int exit_summary;            /* 0 if every single hook exit()ed with 0,
+                                    else 1 */
+} live_status = {
+    STDOUT_FILENO,
+    NULL,
+    0,
+    0,
+    0,
+    0
+};
 
+/* Executes 'cmd' and waits for it to terminate
+   - returns 0 if cmd has been executed and its return code was 0,
+     else returns 1 */
 int
 fpart_hook(const char *cmd, const struct program_options *options,
     const char *live_filename, const pnum_t *live_partition_index,
@@ -274,58 +288,58 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
     assert(options->live_mode == OPT_LIVEMODE);
 
     /* beginning of a new partition */
-    if(live_num_files == 0) {
+    if(live_status.partition_num_files == 0) {
         /* very first pass of first partition, preload first partition */
-        if(live_partition_index == 0)
-            live_partition_size = options->preload_size;
+        if(live_status.partition_index == 0)
+            live_status.partition_size = options->preload_size;
 
         if(out_template != NULL) {
-            /* compute live_filename "out_template.i\0" */
+            /* compute live_status.filename "out_template.i\0" */
             size_t malloc_size = strlen(out_template) + 1 +
-                get_num_digits(live_partition_index) + 1;
-            if((live_filename = malloc(malloc_size)) == NULL) {
+                get_num_digits(live_status.partition_index) + 1;
+            if((live_status.filename = malloc(malloc_size)) == NULL) {
                 fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                 return (1);
             }
-            snprintf(live_filename, malloc_size, "%s.%d", out_template,
-                live_partition_index);
+            snprintf(live_status.filename, malloc_size, "%s.%d", out_template,
+                live_status.partition_index);
         }
 
         /* execute pre-partition hook */
         if(options->pre_part_hook != NULL) {
-            if(fpart_hook(options->pre_part_hook, options, live_filename,
-                &live_partition_index, &live_partition_size, &live_num_files) != 0)
-                live_exit_summary = 1;
+            if(fpart_hook(options->pre_part_hook, options, live_status.filename,
+                &live_status.partition_index, &live_status.partition_size, &live_status.partition_num_files) != 0)
+                live_status.exit_summary = 1;
         }
 
         if(out_template != NULL) {
             /* open file */
-            if((live_fd =
-                open(live_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
-                fprintf(stderr, "%s: %s\n", live_filename, strerror(errno));
-                free(live_filename);
-                live_filename = NULL;
+            if((live_status.fd =
+                open(live_status.filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
+                fprintf(stderr, "%s: %s\n", live_status.filename, strerror(errno));
+                free(live_status.filename);
+                live_status.filename = NULL;
                 return (1);
             }
         }
     }
 
     /* count file in */
-    live_partition_size +=
+    live_status.partition_size +=
         round_num(size + options->overload_size, options->round_size);
-    live_num_files++;
+    live_status.partition_num_files++;
 
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
-        fprintf(stdout, "%d (%lld): %s\n", live_partition_index, size, path);
+        fprintf(stdout, "%d (%lld): %s\n", live_status.partition_index, size, path);
     }
     else {
         /* print to fd */
         size_t to_write = strlen(path);
-        if((write(live_fd, path, to_write) != to_write) ||
-            (write(live_fd, "\n", 1) != 1)) {
+        if((write(live_status.fd, path, to_write) != to_write) ||
+            (write(live_status.fd, "\n", 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
-            /* do not close(livefd) and free(live_filename) here because
+            /* do not close(livefd) and free(live_status.filename) here because
                it will be useful and free'd in uninit_file_entries() below */
             return (1);
         }
@@ -336,36 +350,36 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         fprintf(stderr, "%s\n", path);
 
     /* if end of partition reached */
-    if(((options->max_entries > 0) && (live_num_files >= options->max_entries)) ||
-        ((options->max_size > 0) && (live_partition_size >= options->max_size))) {
+    if(((options->max_entries > 0) && (live_status.partition_num_files >= options->max_entries)) ||
+        ((options->max_size > 0) && (live_status.partition_size >= options->max_size))) {
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
-                live_partition_index, live_partition_size, live_num_files);
+                live_status.partition_index, live_status.partition_size, live_status.partition_num_files);
 
         /* close fd or flush buffer */
         if(out_template == NULL)
             fflush(stdout);
         else
-            close(live_fd);
+            close(live_status.fd);
 
         /* execute post-partition hook */
         if(options->post_part_hook != NULL) {
-            if(fpart_hook(options->post_part_hook, options, live_filename,
-                &live_partition_index, &live_partition_size,
-                &live_num_files) != 0)
-                live_exit_summary = 1;
+            if(fpart_hook(options->post_part_hook, options, live_status.filename,
+                &live_status.partition_index, &live_status.partition_size,
+                &live_status.partition_num_files) != 0)
+                live_status.exit_summary = 1;
         }
 
         if(out_template != NULL) {
-            free(live_filename);
-            live_filename = NULL;
+            free(live_status.filename);
+            live_status.filename = NULL;
         }
 
         /* reset current partition status */
-        live_partition_index++;
-        live_partition_size = options->preload_size;
-        live_num_files = 0;
+        live_status.partition_index++;
+        live_status.partition_size = options->preload_size;
+        live_status.partition_num_files = 0;
     }
 
     return (0);
@@ -588,32 +602,32 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
     /* live mode */
     if(options->live_mode == OPT_LIVEMODE) {
         /* display added partition */
-        if((options->verbose >= OPT_VERBOSE) && (live_num_files > 0))
+        if((options->verbose >= OPT_VERBOSE) && (live_status.partition_num_files > 0))
             fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
-                live_partition_index, live_partition_size,
-                live_num_files);
+                live_status.partition_index, live_status.partition_size,
+                live_status.partition_num_files);
 
         /* flush buffer or close last file if necessary */
         if(options->out_filename == NULL)
             fflush(stdout);
-        else if(live_filename != NULL)
-            close(live_fd);
+        else if(live_status.filename != NULL)
+            close(live_status.fd);
 
         /* execute last post-partition hook */
-        if((options->post_part_hook != NULL) && (live_num_files > 0)) {
-            if(fpart_hook(options->post_part_hook, options, live_filename,
-                &live_partition_index, &live_partition_size,
-                &live_num_files) != 0)
-                live_exit_summary = 1;
+        if((options->post_part_hook != NULL) && (live_status.partition_num_files > 0)) {
+            if(fpart_hook(options->post_part_hook, options, live_status.filename,
+                &live_status.partition_index, &live_status.partition_size,
+                &live_status.partition_num_files) != 0)
+                live_status.exit_summary = 1;
         }
 
-        if(live_filename != NULL) {
-            free(live_filename);
-            live_filename = NULL;
+        if(live_status.filename != NULL) {
+            free(live_status.filename);
+            live_status.filename = NULL;
         }
 
         /* print hooks' exit codes summary */
-        if((options->verbose >= OPT_VERBOSE) && (live_exit_summary != 0))
+        if((options->verbose >= OPT_VERBOSE) && (live_status.exit_summary != 0))
             fprintf(stderr, "Warning: at least one hook exited with error !\n");
 
     }
