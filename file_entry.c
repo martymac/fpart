@@ -238,7 +238,12 @@ fpart_hook(const char *cmd, const struct program_options *options,
             break;
         case 0:             /* child */
         {
-            setpgid(live_status.child_pid, 0); /* become process group leader */
+            /* become process group leader */
+            if(setpgid(live_status.child_pid, 0) != 0) {
+                fprintf(stderr, "%s(): setpgid(): %s\n", __func__,
+                    strerror(errno));
+                exit (1);
+            }
             execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
             /* if reached, error */
             exit (1);
