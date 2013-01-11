@@ -46,7 +46,7 @@ struct program_options {
 /* maximum partition size (option -s) */
 #define DFLT_OPT_MAX_SIZE           0
     fsize_t max_size;
-/* input file (option -i); NULL = undefined, "-" = stdout, "filename" */
+/* input file (option -i); NULL = undefined, "-" = stdin, "filename" */
     char *in_filename;
 #define OPT_NOARBITRARYVALUES       0
 #define OPT_ARBITRARYVALUES         1

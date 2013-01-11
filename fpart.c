@@ -252,8 +252,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.num_parts = (pnum_t)num_parts;
-            }
                 break;
+            }
             case 'f':
             {
                 char *endptr = NULL;
@@ -266,8 +266,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.max_entries = (fnum_t)max_entries;
-            }
                 break;
+            }
             case 's':
             {
                 char *endptr = NULL;
@@ -279,10 +279,16 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.max_size = (fsize_t)max_size;
-            }
                 break;
+            }
             case 'i':
             {
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* replace previous filename if '-i' specified multiple times */
+                if(options.in_filename != NULL)
+                    free(options.in_filename);
                 options.in_filename = abs_path(optarg);
                 if(options.in_filename == NULL) {
                     fprintf(stderr, "%s(): cannot determine absolute path for "
@@ -290,25 +296,33 @@ int main(int argc, char** argv)
                     uninit_options(&options);
                     return (1);
                 }
-            }
                 break;
+            }
             case 'a':
                 options.arbitrary_values = OPT_ARBITRARYVALUES;
                 break;
             case 'o':
-                if((optarg[0] == '-') && (optarg[1] == '\0'))
-                    /* output goes to stdout */
-                    break;
             {
-                options.out_filename = abs_path(optarg);
-                if(options.out_filename == NULL) {
-                    fprintf(stderr, "%s(): cannot determine absolute path for "
-                        "file '%s'\n", __func__, optarg);
-                    uninit_options(&options);
-                    return (1);
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* replace previous filename if '-o' specified multiple times */
+                if(options.out_filename != NULL)
+                    free(options.out_filename);
+                /* '-' goes to stdout */
+                if((optarg[0] == '-') && (optarg[1] == '\0')) {
+                    options.out_filename = NULL;
+                } else {
+                    options.out_filename = abs_path(optarg);
+                    if(options.out_filename == NULL) {
+                        fprintf(stderr, "%s(): cannot determine absolute path "
+                            "for file '%s'\n", __func__, optarg);
+                        uninit_options(&options);
+                        return (1);
+                    }
                 }
-            }
                 break;
+            }
             case 'd':
             {
                 char *endptr = NULL;
@@ -320,8 +334,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.dir_depth = (int)dir_depth;
-            }
                 break;
+            }
             case 'e':
                 options.add_slash = OPT_ADDSLASH;
                 break;
@@ -335,9 +349,13 @@ int main(int argc, char** argv)
             }
             case 'w':
             {
+                /* check for empty argument */
                 size_t malloc_size = strlen(optarg) + 1;
                 if(malloc_size <= 1)
                     break;
+                /* replace previous hook if '-w' specified multiple times */
+                if(options.pre_part_hook != NULL)
+                    free(options.pre_part_hook);
                 options.pre_part_hook = malloc(malloc_size);
                 if(options.pre_part_hook == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
@@ -345,13 +363,17 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 snprintf(options.pre_part_hook, malloc_size, "%s", optarg);
-            }
                 break;
+            }
             case 'W':
             {
+                /* check for empty argument */
                 size_t malloc_size = strlen(optarg) + 1;
                 if(malloc_size <= 1)
                     break;
+                /* replace previous hook if '-W' specified multiple times */
+                if(options.post_part_hook != NULL)
+                    free(options.post_part_hook);
                 options.post_part_hook = malloc(malloc_size);
                 if(options.post_part_hook == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
@@ -359,8 +381,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 snprintf(options.post_part_hook, malloc_size, "%s", optarg);
-            }
                 break;
+            }
             case 'l':
                 options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
                 break;
@@ -381,8 +403,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.preload_size = (fsize_t)preload_size;
-            }
                 break;
+            }
             case 'q':
             {
                 char *endptr = NULL;
@@ -397,8 +419,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.overload_size = (fsize_t)overload_size;
-            }
                 break;
+            }
             case 'r':
             {
                 char *endptr = NULL;
@@ -413,8 +435,8 @@ int main(int argc, char** argv)
                     return (1);
                 }
                 options.round_size = (fsize_t)round_size;
-            }
                 break;
+            }
         }
     }
     argc -= optind;
