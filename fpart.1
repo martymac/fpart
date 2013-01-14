@@ -170,11 +170,13 @@ state of current partition :
 .Ev FPART_PARTSIZE
 (current partition size),
 .Ev FPART_PARTNUMFILES
-(number of files in current partition). Note that variables may or may not be
-defined, depending of requested options and current partition's state when the
-hook is triggered. Also note that hooks are executed in a synchronous way while
-crawling filesystem, so avoid executing commands that take a long time to
-execute as it slows down filesystem crawling.
+(number of files in current partition),
+.Ev FPART_PID
+(PID of fpart). Note that variables may or may not be defined, depending of
+requested options and current partition's state when the hook is triggered.
+Also note that hooks are executed in a synchronous way while crawling
+filesystem, so avoid executing commands that take a long time to return as it
+slows down filesystem crawling.
 .It Ic -W Ar cmd
 Same as
 .Fl w ,

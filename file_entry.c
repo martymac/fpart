@@ -154,11 +154,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
     char *env_fpart_partsize_name = "FPART_PARTSIZE";
     char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
+    char *env_fpart_pid_name = "FPART_PID";
 
     char *env_fpart_partfilename_string = NULL;
     char *env_fpart_partnumber_string = NULL;
     char *env_fpart_partsize_string = NULL;
     char *env_fpart_partnumfiles_string = NULL;
+    char *env_fpart_pid_string = NULL;
 
     size_t malloc_size = 1; /* empty string */
 
@@ -222,11 +224,24 @@ fpart_hook(const char *cmd, const struct program_options *options,
     else
         snprintf(env_fpart_partnumfiles_string, malloc_size, "%s", "");
 
+    /* FPART_PID */
+    pid_t fpart_pid = getpid();
+    malloc_size = strlen(env_fpart_pid_name) + 1 +
+        get_num_digits(fpart_pid) + 1;
+    if((env_fpart_pid_string = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        retval = 1;
+        goto cleanup;
+    }
+    snprintf(env_fpart_pid_string, malloc_size, "%s=%d",
+        env_fpart_pid_name, fpart_pid);
+
     char *envp[] = {
         env_fpart_partfilename_string,
         env_fpart_partnumber_string,
         env_fpart_partsize_string,
         env_fpart_partnumfiles_string,
+        env_fpart_pid_string,
         NULL };
 
     /* fork child process */
@@ -299,6 +314,7 @@ cleanup:
     free(env_fpart_partnumber_string);
     free(env_fpart_partsize_string);
     free(env_fpart_partnumfiles_string);
+    free(env_fpart_pid_string);
     return (retval);
 }
 
