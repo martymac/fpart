@@ -129,6 +129,26 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     int retval = 0;
 
+    /* prepare environment */
+    char *env_fpart_hooktype_name = "FPART_HOOKTYPE";
+    char *env_fpart_partfilename_name = "FPART_PARTFILENAME";
+    char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
+    char *env_fpart_partsize_name = "FPART_PARTSIZE";
+    char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
+    char *env_fpart_pid_name = "FPART_PID";
+
+    char *env_fpart_hooktype_string = NULL;
+    char *env_fpart_partfilename_string = NULL;
+    char *env_fpart_partnumber_string = NULL;
+    char *env_fpart_partsize_string = NULL;
+    char *env_fpart_partnumfiles_string = NULL;
+    char *env_fpart_pid_string = NULL;
+
+    size_t malloc_size = 1; /* empty string */
+
+    /* FPART_HOOKTYPE */
+    malloc_size = strlen(env_fpart_hooktype_name) + 1;
+
     /* determine the kind of hook we are in */
     if(cmd == options->pre_part_hook) {
         assert(live_partition_index != NULL);
@@ -138,6 +158,16 @@ fpart_hook(const char *cmd, const struct program_options *options,
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing pre-part #%d hook: '%s'\n",
                 *live_partition_index, cmd);
+
+        /* FPART_HOOKTYPE (continued) */
+        malloc_size += strlen("pre-part") + 1;
+        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            retval = 1;
+            goto cleanup;
+        }
+        snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
+            env_fpart_hooktype_name, "pre-part");
     }
     else if(cmd == options->post_part_hook) {
         assert(live_partition_index != NULL);
@@ -147,22 +177,17 @@ fpart_hook(const char *cmd, const struct program_options *options,
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing post-part #%d hook: '%s'\n",
                 *live_partition_index, cmd);
+
+        /* FPART_HOOKTYPE (continued) */
+        malloc_size += strlen("post-part") + 1;
+        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            retval = 1;
+            goto cleanup;
+        }
+        snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
+            env_fpart_hooktype_name, "post-part");
     }
-
-    /* prepare environment */
-    char *env_fpart_partfilename_name = "FPART_PARTFILENAME";
-    char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
-    char *env_fpart_partsize_name = "FPART_PARTSIZE";
-    char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
-    char *env_fpart_pid_name = "FPART_PID";
-
-    char *env_fpart_partfilename_string = NULL;
-    char *env_fpart_partnumber_string = NULL;
-    char *env_fpart_partsize_string = NULL;
-    char *env_fpart_partnumfiles_string = NULL;
-    char *env_fpart_pid_string = NULL;
-
-    size_t malloc_size = 1; /* empty string */
 
     /* FPART_PARTFILENAME */
     if(live_filename != NULL)
@@ -237,6 +262,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
         env_fpart_pid_name, fpart_pid);
 
     char *envp[] = {
+        env_fpart_hooktype_string,
         env_fpart_partfilename_string,
         env_fpart_partnumber_string,
         env_fpart_partsize_string,
@@ -310,6 +336,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
     }
 
 cleanup:
+    free(env_fpart_hooktype_string);
     free(env_fpart_partfilename_string);
     free(env_fpart_partnumber_string);
     free(env_fpart_partsize_string);

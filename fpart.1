@@ -163,6 +163,8 @@ when starting a new partition (before having opened output file, if any).
 .Ar cmd
 is run in a specific environment that provides several variables describing the
 state of current partition :
+.Ev FPART_HOOKTYPE
+("pre-part" or "post-part"),
 .Ev FPART_PARTFILENAME
 (current partition's output file name),
 .Ev FPART_PARTNUMBER
