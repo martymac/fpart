@@ -633,6 +633,8 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                         /* when using option -x, set size to 0 for mountpoint
                            (non-root) directories */
                         curdir_size = 0;
+                    else if(curdir_empty)
+                        curdir_size = 0;
                     else
                         curdir_size =
                             get_size(p->fts_path, p->fts_statp, options);
