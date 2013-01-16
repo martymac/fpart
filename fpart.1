@@ -169,7 +169,7 @@ When using live mode, execute
 when starting a new partition (before having opened output file, if any).
 .Ar cmd
 is run in a specific environment that provides several variables describing the
-state of current partition :
+state of the program :
 .Ev FPART_HOOKTYPE
 ("pre-part" or "post-part"),
 .Ev FPART_PARTFILENAME
@@ -183,9 +183,11 @@ state of current partition :
 .Ev FPART_PID
 (PID of fpart). Note that variables may or may not be defined, depending of
 requested options and current partition's state when the hook is triggered.
-Also note that hooks are executed in a synchronous way while crawling
-filesystem, so avoid executing commands that take a long time to return as it
-slows down filesystem crawling.
+Also, note that hooks are executed in a synchronous way while crawling
+filesystem, so 1) avoid executing commands that take a long time to return as it
+slows down filesystem crawling and 2) do not presume cwd (PWD) is the one fpart
+has been started in, as it is regularly changed to speed up crawling (use
+abolute paths within hooks).
 .It Ic -W Ar cmd
 Same as
 .Fl w ,
