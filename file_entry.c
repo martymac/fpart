@@ -434,8 +434,10 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         fprintf(stderr, "%s\n", path);
 
     /* if end of partition reached */
-    if(((options->max_entries > 0) && (live_status.partition_num_files >= options->max_entries)) ||
-        ((options->max_size > 0) && (live_status.partition_size >= options->max_size))) {
+    if(((options->max_entries > 0) && 
+            (live_status.partition_num_files >= options->max_entries)) ||
+        ((options->max_size > 0) && 
+            (live_status.partition_size >= options->max_size))) {
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
@@ -563,6 +565,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
         return (0);
     }
 
+    /* current dir state */
+    unsigned char curdir_empty = 1;
+    unsigned char curdir_addme = 0;
+
     while((p = fts_read(ftsp)) != NULL) {
         switch (p->fts_info) {
             case FTS_DNR:   /* un-readable directory */
@@ -575,78 +581,105 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             case FTS_DC:
                 fprintf(stderr, "%s: file system loop detected\n", p->fts_path);
             case FTS_DOT:  /* ignore "." and ".." */
-            case FTS_DP:   /* ignore post-order visits */
             case FTS_NSOK: /* no stat(2) available (not requested) */
                 continue;
 
+            case FTS_DP:
+            {
+                /* if empty_dirs display requested and current dir is empty,
+                   add directory entry */
+                if((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty)
+                    curdir_addme = 1;
+
+                /* add directory if necessary */
+                if(curdir_addme) {
+                    fsize_t curdir_size = 0;
+                    char *curdir_entry_path = NULL;
+
+                    /* count ending '/' and '\0', even if an ending '/' is not
+                       added */
+                    size_t malloc_size = p->fts_pathlen + 1 + 1;
+                    if((curdir_entry_path = malloc(malloc_size)) == NULL) {
+                        fprintf(stderr, "%s(): cannot allocate memory\n",
+                            __func__);
+                        fts_close(ftsp);
+                        return (1);
+                    }
+
+                    /* add slash if requested and necessary */
+                    if((options->add_slash == OPT_ADDSLASH) &&
+                        (p->fts_pathlen > 0) &&
+                        (p->fts_path[p->fts_pathlen - 1] != '/'))
+                        snprintf(curdir_entry_path, malloc_size, "%s/",
+                            p->fts_path);
+                    else
+                        snprintf(curdir_entry_path, malloc_size, "%s",
+                            p->fts_path);
+
+                    /* compute current dir size */
+                    if((p->fts_level > 0) &&
+                        (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
+                        (p->fts_parent->fts_statp->st_dev != p->fts_statp->st_dev))
+                        /* when using option -x, set size to 0 for mountpoint
+                           (non-root) directories */
+                        curdir_size = 0;
+                    else
+                        curdir_size =
+                            get_size(p->fts_path, p->fts_statp, options);
+
+                    /* add or display it */
+                    if(handle_file_entry
+                        (head, curdir_entry_path, curdir_size, options) == 0)
+                        (*count)++;
+                    else {
+                        fprintf(stderr, "%s(): cannot add file entry\n",
+                            __func__);
+                        free(curdir_entry_path);
+                        fts_close(ftsp);
+                        return (1);
+                    }
+
+                    /* cleanup */
+                    free(curdir_entry_path);
+                }
+
+                /* reset parent (now current) dir state */
+                curdir_empty = 0;
+                curdir_addme = 0;
+                continue;
+            }
+
             case FTS_D:
-                /* if dir_depth is reached, skip descendants
-                   but add directory entry */
+            {
+                curdir_empty = 1; /* enter directory, mark it as empty */
+
+                /* if dir_depth requested and reached,
+                   skip descendants but add directory entry (in post order) */
                 if((options->dir_depth != OPT_NODIRDEPTH) &&
-                    (p->fts_level >= options->dir_depth))
+                    (p->fts_level >= options->dir_depth)) {
                     fts_set(ftsp, p, FTS_SKIP);
-                /* else, if dir_depth no requested or not reached,
-                   skip directory entry but continue examining files within */
-                else
-                    continue;
-                /* FALLTHROUGH and add directory to entries */
+                    curdir_addme = 1;
+                }
+                continue;
+            }
 
             default:
             /* XXX default means remaining file types:
-               FTS_D (dir_depth reached), FTS_F, FTS_SL, FTS_SLNONE,
-               FTS_DEFAULT */
+               FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
-                char *file_entry_path = NULL;
-                fsize_t file_entry_size = 0;
-
-                /* count ending '/' and '\0', even if an ending '/' is not
-                   added */
-                size_t malloc_size = p->fts_pathlen + 1 + 1;
-                if((file_entry_path = malloc(malloc_size)) == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    fts_close(ftsp);
-                    return (1);
-                }
-
-                if(S_ISDIR(p->fts_statp->st_mode) &&
-                    (options->add_slash == OPT_ADDSLASH) &&
-                    (p->fts_pathlen > 0) &&
-                    (p->fts_path[p->fts_pathlen - 1] != '/'))
-                    /* file is a directory, user requested to add a slash and
-                       file_path does not already end with a '/' so we can
-                       add one */
-                    snprintf(file_entry_path, malloc_size, "%s/",
-                        p->fts_path);
-                else
-                    snprintf(file_entry_path, malloc_size, "%s",
-                        p->fts_path);
-
-                /* compute current file entry's size */
-                if(S_ISDIR(p->fts_statp->st_mode) &&
-                    (p->fts_level > 0) &&
-                    (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
-                    (p->fts_parent->fts_statp->st_dev != p->fts_statp->st_dev))
-                    /* keep mountpoint for non-root directories
-                       and set size to 0 */
-                    file_entry_size = 0;
-                else
-                    file_entry_size =
-                        get_size(p->fts_path, p->fts_statp, options);
+                curdir_empty = 0; /* mark current dir as non empty */
 
                 /* add or display it */
                 if(handle_file_entry
-                    (head, file_entry_path, file_entry_size, options) == 0)
+                    (head, p->fts_path,
+                    get_size(p->fts_path, p->fts_statp, options),
+                    options) == 0)
                     (*count)++;
                 else {
                     fprintf(stderr, "%s(): cannot add file entry\n", __func__);
-                    free(file_entry_path);
                     fts_close(ftsp);
                     return (1);
                 }
-
-                /* cleanup */
-                free(file_entry_path);
-
                 continue;
             }
         }

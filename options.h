@@ -63,6 +63,11 @@ struct program_options {
 #define OPT_ADDSLASH                1
 #define DFLT_OPT_ADDSLASH           OPT_NOADDSLASH
     unsigned char add_slash;
+/* include empty directories (option -z) */
+#define OPT_NOEMPTYDIRS             0
+#define OPT_EMPTYDIRS               1
+#define DFLT_OPT_EMPTYDIRS          OPT_NOEMPTYDIRS
+    unsigned char empty_dirs;
 /* verbose output (option -v) */
 #define OPT_NOVERBOSE               0
 #define OPT_VERBOSE                 1

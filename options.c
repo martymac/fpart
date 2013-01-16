@@ -71,6 +71,7 @@ init_options(struct program_options *options)
     options->out_filename = NULL;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->add_slash = DFLT_OPT_ADDSLASH;
+    options->empty_dirs = DFLT_OPT_EMPTYDIRS;
     options->verbose = DFLT_OPT_VERBOSE;
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->pre_part_hook = NULL;
@@ -97,6 +98,7 @@ uninit_options(struct program_options *options)
         free(options->pre_part_hook);
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->verbose = DFLT_OPT_VERBOSE;
+    options->empty_dirs = DFLT_OPT_EMPTYDIRS;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     if(options->out_filename != NULL)

@@ -38,6 +38,7 @@
 .Op Fl o Ar outfile
 .Op Fl d Ar depth
 .Op Fl e
+.Op Fl z
 .Op Fl v
 .Op Fl L
 .Op Fl w Ar cmd
@@ -137,6 +138,12 @@ When displaying directories (see
 option), add an ending
 .Dq Li "/"
 to each directory entry.
+.It Fl z
+Include empty directories. By default, fpart will list files only (except when
+using the
+.Fl d
+option). Sometimes, it can be useful to display empty directories too, so that
+the result of partitioning will allow re-creating the full (original) file tree.
 .It Fl v
 Verbose mode (may be specified more than once).
 .El

@@ -192,24 +192,3 @@ abs_path(const char *path) {
 
     return (abs);
 }
-
-/* Checks if a directory is empty
-   - returns 1 if directory is empty
-   - returns 0 if not
-   - returns (-1) if error */
-int
-dir_empty(const char *dir_path) {
-    assert(dir_path != NULL);
-
-    DIR *dir = opendir(dir_path);
-    if (dir == NULL)
-        return (-1);
-
-    struct dirent *d = NULL;
-    unsigned char num_files = 0;
-    while (((d = readdir(dir)) != NULL) && (num_files <= 2))
-        num_files++;
-    closedir(dir);
-
-    return((num_files <= 2) ? 1 : 0);
-}

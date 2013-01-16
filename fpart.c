@@ -82,7 +82,8 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-v] [-L] [-w cmd] [-W cmd]\n"
+        "             [-o outfile] [-d depth] [-e] [-z] [-v] [-L] [-w cmd] "
+        "[-W cmd]\n"
         "             [-l] [-x] [-p num] [-q num] [-r num] "
         "[file(s) or dir(s) ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
@@ -106,13 +107,15 @@ usage(void)
     fprintf(stderr, "  -d\tswitch to directory names display "
         "after certain <depth>\n");
     fprintf(stderr, "  -e\tadd ending slash to directory names\n");
+    fprintf(stderr, "  -z\tinclude empty directories (default: include files "
+        "only)\n");
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
-    fprintf(stderr, "  -L\tlive mode (default: disabled)\n");
+    fprintf(stderr, "  -L\tenable live mode\n");
     fprintf(stderr, "  -w\tpre-partition hook (live mode only)\n");
     fprintf(stderr, "  -W\tpost-partition hook (live mode only)\n");
-    fprintf(stderr, "  -l\tfollow symbolic links (default: do not follow)\n");
+    fprintf(stderr, "  -l\tfollow symbolic links\n");
     fprintf(stderr, "  -x\tdo not cross file system boundaries "
         "(default: cross)\n");
     fprintf(stderr, "\n");
@@ -227,7 +230,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:evLw:W:lxp:q:r:")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezvLw:W:lxp:q:r:")) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -338,6 +341,9 @@ int main(int argc, char** argv)
             }
             case 'e':
                 options.add_slash = OPT_ADDSLASH;
+                break;
+            case 'z':
+                options.empty_dirs = OPT_EMPTYDIRS;
                 break;
             case 'v':
                 options.verbose++;
