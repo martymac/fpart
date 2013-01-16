@@ -571,17 +571,27 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
 
     while((p = fts_read(ftsp)) != NULL) {
         switch (p->fts_info) {
+            /* misc errors */
+            case FTS_ERR:
+                fprintf(stderr, "%s: %s\n", p->fts_path,
+                    strerror(p->fts_errno));
+                continue;
+
+            /* errors for which we know there is a file or directory
+               within current directory */
             case FTS_DNR:   /* un-readable directory */
-            case FTS_ERR:   /* misc error */
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
+            case FTS_NSOK: /* no stat(2) available (not requested) */
+                /* treat dir as not empty if we did not request the -Z option */
+                if(options->empty_errs == OPT_NOEMPTYERRS)
+                    curdir_empty = 0;
                 continue;
 
             case FTS_DC:
                 fprintf(stderr, "%s: file system loop detected\n", p->fts_path);
             case FTS_DOT:  /* ignore "." and ".." */
-            case FTS_NSOK: /* no stat(2) available (not requested) */
                 continue;
 
             case FTS_DP:

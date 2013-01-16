@@ -68,6 +68,11 @@ struct program_options {
 #define OPT_EMPTYDIRS               1
 #define DFLT_OPT_EMPTYDIRS          OPT_NOEMPTYDIRS
     unsigned char empty_dirs;
+/* treat directories with erroneous content only as empty (option -Z) */
+#define OPT_NOEMPTYERRS             0
+#define OPT_EMPTYERRS               1
+#define DFLT_OPT_EMPTYERRS          OPT_NOEMPTYERRS
+    unsigned char empty_errs;
 /* verbose output (option -v) */
 #define OPT_NOVERBOSE               0
 #define OPT_VERBOSE                 1

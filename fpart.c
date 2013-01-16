@@ -82,8 +82,8 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-z] [-v] [-L] [-w cmd] "
-        "[-W cmd]\n"
+        "             [-o outfile] [-d depth] [-e] [-z] [-Z] [-v] [-L] "
+        "[-w cmd] [-W cmd]\n"
         "             [-l] [-x] [-p num] [-q num] [-r num] "
         "[file(s) or dir(s) ...]\n");
     fprintf(stderr, "Sort and divide files into partitions.\n");
@@ -109,6 +109,8 @@ usage(void)
     fprintf(stderr, "  -e\tadd ending slash to directory names\n");
     fprintf(stderr, "  -z\tinclude empty directories (default: include files "
         "only)\n");
+    fprintf(stderr, "  -Z\ttreat directory with erroneous content only as "
+        "empty (implies -z)\n");
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
@@ -230,7 +232,8 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezvLw:W:lxp:q:r:")) != -1) {
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezZvLw:W:lxp:q:r:")) !=
+        -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -343,6 +346,10 @@ int main(int argc, char** argv)
                 options.add_slash = OPT_ADDSLASH;
                 break;
             case 'z':
+                options.empty_dirs = OPT_EMPTYDIRS;
+                break;
+            case 'Z':
+                options.empty_errs = OPT_EMPTYERRS;
                 options.empty_dirs = OPT_EMPTYDIRS;
                 break;
             case 'v':
