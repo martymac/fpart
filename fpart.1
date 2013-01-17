@@ -143,17 +143,16 @@ to each directory entry.
 Include empty directories. By default, fpart will list files only (except when
 using the
 .Fl d
-option). Sometimes, it can be useful to display empty directories too, so that
-the result of partitioning will allow re-creating the full (original) file tree.
+option). This option can be useful for tools such as
+.Xr rsync 1
+to be able to recreate a full file hierarchy when used with fpart (e.g. using
+rsync's --files-from option). See the 
+.Fl Z
+option to also include un-readable directories.
 .It Fl Z
 Implies
 .Fl z .
-Treat directory with erroneous content only (e.g. a directory containing only
-files or directories which we do not have access to) as empty, causing it to be
-included anyway. This option can be useful for tools such as
-.Xr rsync 1
-to be able to recreate a full file hierarchy when used with fpart (see
-rsync's --files-from option).
+Treat un-readable directories as empty, causing them to be included anyway.
 .It Fl v
 Verbose mode (may be specified more than once).
 .El

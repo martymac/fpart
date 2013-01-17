@@ -109,8 +109,8 @@ usage(void)
     fprintf(stderr, "  -e\tadd ending slash to directory names\n");
     fprintf(stderr, "  -z\tinclude empty directories (default: include files "
         "only)\n");
-    fprintf(stderr, "  -Z\ttreat directory with erroneous content only as "
-        "empty (implies -z)\n");
+    fprintf(stderr, "  -Z\ttreat un-readable directories as empty "
+        "(implies -z)\n");
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
@@ -349,7 +349,7 @@ int main(int argc, char** argv)
                 options.empty_dirs = OPT_EMPTYDIRS;
                 break;
             case 'Z':
-                options.empty_errs = OPT_EMPTYERRS;
+                options.dnr_empty = OPT_DNREMPTY;
                 options.empty_dirs = OPT_EMPTYDIRS;
                 break;
             case 'v':

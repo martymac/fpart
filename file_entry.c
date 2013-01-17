@@ -580,13 +580,25 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             /* errors for which we know there is a file or directory
                within current directory */
             case FTS_DNR:   /* un-readable directory */
+            {
+                fprintf(stderr, "%s: %s\n", p->fts_path,
+                    strerror(p->fts_errno));
+                /* if requested by the -Z option,
+                   add directory anyway by simulating FTS_DP */
+                if(options->dnr_empty == OPT_DNREMPTY) {
+                    curdir_empty = 1;
+                    goto add_directory;
+                }
+                /* else, mark current dir as not empty */
+                curdir_empty = 0;
+                continue;
+            }
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
             case FTS_NSOK: /* no stat(2) available (not requested) */
-                /* treat dir as not empty if we did not request the -Z option */
-                if(options->empty_errs == OPT_NOEMPTYERRS)
-                    curdir_empty = 0;
+                /* mark current dir as not empty */
+                curdir_empty = 0;
                 continue;
 
             case FTS_DC:
@@ -596,6 +608,7 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
 
             case FTS_DP:
             {
+add_directory:
                 /* if empty_dirs display requested and current dir is empty,
                    add directory entry */
                 if((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty)
