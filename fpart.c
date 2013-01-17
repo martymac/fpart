@@ -356,10 +356,8 @@ int main(int argc, char** argv)
                 options.verbose++;
                 break;
             case 'L':
-            {
                 options.live_mode = OPT_LIVEMODE;
                 break;
-            }
             case 'w':
             {
                 /* check for empty argument */
