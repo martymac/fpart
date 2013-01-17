@@ -684,6 +684,10 @@ add_directory:
                     (p->fts_level >= options->dir_depth)) {
                     fts_set(ftsp, p, FTS_SKIP);
                     curdir_addme = 1;
+                    /* as we have not crawled into this directory yet,
+                       remove the empty flag to allow a call to get_size() in
+                       FTS_DP */
+                    curdir_empty = 0;
                 }
                 continue;
             }
