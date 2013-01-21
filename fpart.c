@@ -60,7 +60,7 @@
 void
 version(void)
 {
-    fprintf(stderr, "fpart v." FPART_VERSION "\n"
+    fprintf(stderr, "fpart v" FPART_VERSION "\n"
         "Copyright (c) 2011 Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
         "WWW: http://contribs.martymac.org\n");
     fprintf(stderr, "Build options: debug=");
