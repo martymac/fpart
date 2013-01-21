@@ -259,7 +259,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
         goto cleanup;
     }
     snprintf(env_fpart_pid_string, malloc_size, "%s=%d",
-        env_fpart_pid_name, fpart_pid);
+        env_fpart_pid_name, (int)fpart_pid);
 
     char *envp[] = {
         env_fpart_hooktype_string,
