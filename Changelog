@@ -1,3 +1,7 @@
+2013/01/21  0.6
+    - Options handling cleanug and various bugfixes
+    - Added FPART_PID and FPART_HOOKTYPE hook variables
+    - Added -z and -Z options to display empty directories
 2013/01/09  0.5
     - Added option '-L' (live mode)
     - Added options '-w' and '-W' (hooks to be used with live mode)
