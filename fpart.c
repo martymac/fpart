@@ -82,7 +82,7 @@ usage(void)
 {
     fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
         "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-z] [-Z] [-v] [-L] "
+        "             [-o outfile] [-d depth] [-e] [-z] [-Z] [-v] [-D] [-L] "
         "[-w cmd] [-W cmd]\n"
         "             [-l] [-x] [-p num] [-q num] [-r num] "
         "[file(s) or dir(s) ...]\n");
@@ -114,6 +114,7 @@ usage(void)
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Behaviour:\n");
+    fprintf(stderr, "  -D\tgroup leaf directories as single file entries (implies -z)\n");
     fprintf(stderr, "  -L\tenable live mode\n");
     fprintf(stderr, "  -w\tpre-partition hook (live mode only)\n");
     fprintf(stderr, "  -W\tpost-partition hook (live mode only)\n");
@@ -232,7 +233,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezZvLw:W:lxp:q:r:")) !=
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezZvDLw:W:lxp:q:r:")) !=
         -1) {
         switch(ch) {
             case '?':
@@ -354,6 +355,10 @@ int main(int argc, char** argv)
                 break;
             case 'v':
                 options.verbose++;
+                break;
+            case 'D':
+                options.leaf_dirs = OPT_LEAFDIRS;
+                options.empty_dirs = OPT_EMPTYDIRS;
                 break;
             case 'L':
                 options.live_mode = OPT_LIVEMODE;

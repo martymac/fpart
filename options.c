@@ -74,6 +74,7 @@ init_options(struct program_options *options)
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
     options->verbose = DFLT_OPT_VERBOSE;
+    options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->pre_part_hook = NULL;
     options->post_part_hook = NULL;
@@ -98,6 +99,7 @@ uninit_options(struct program_options *options)
     if(options->pre_part_hook != NULL)
         free(options->pre_part_hook);
     options->live_mode = DFLT_OPT_LIVEMODE;
+    options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->verbose = DFLT_OPT_VERBOSE;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;

@@ -41,6 +41,7 @@
 .Op Fl z
 .Op Fl Z
 .Op Fl v
+.Op Fl D
 .Op Fl L
 .Op Fl w Ar cmd
 .Op Fl W Ar cmd
@@ -158,6 +159,10 @@ Verbose mode (may be specified more than once).
 .El
 .Sh BEHAVIOUR CONTROL
 .Bl -tag -width indent
+.It Fl D
+Implies
+.Fl z .
+Group leaf directories as single file entries.
 .It Fl L
 Live mode (default: disabled). When using this mode, partitions will be
 generated while crawling filesystem. This option saves time and memory, but does

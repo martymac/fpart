@@ -79,6 +79,11 @@ struct program_options {
 #define OPT_VVERBOSE                2
 #define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
     unsigned char verbose;
+/* leaf dirs mode (option -D) */
+#define OPT_NOLEAFDIRS               0
+#define OPT_LEAFDIRS                 1
+#define DFLT_OPT_LEAFDIRS            OPT_NOLEAFDIRS
+    unsigned char leaf_dirs;
 /* live mode (option -L) */
 #define OPT_NOLIVEMODE              0
 #define OPT_LIVEMODE                1

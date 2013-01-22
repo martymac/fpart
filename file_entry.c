@@ -536,6 +536,38 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     return (0);
 }
 
+/* Compare entries to list directories first
+   - compar() function used by fts_open() when in leaf dirs mode */
+static int
+fts_dirsfirst(const FTSENT * const *a, const FTSENT * const *b)
+{
+    assert(a != NULL);
+    assert((*a) != NULL);
+    assert(b != NULL);
+    assert((*b) != NULL);
+
+    if(((*a)->fts_info == FTS_NS) ||
+       ((*a)->fts_info == FTS_NSOK) ||
+       ((*b)->fts_info == FTS_NS) ||
+       ((*b)->fts_info == FTS_NSOK))
+        return (0);
+
+    /* place non-directory entries after directory ones */
+    if(S_ISDIR((*a)->fts_statp->st_mode))
+        if(!S_ISDIR((*b)->fts_statp->st_mode))
+            return (-1);
+        else
+            return (0);
+    else
+        if(S_ISDIR((*b)->fts_statp->st_mode))
+            return (1);
+        else
+            return (0);
+
+    /* NOTREACHED */
+    return (0);
+}
+
 /* Initialize a double-linked list of file_entries from a path
    - file_path may be a file or directory
    - if head is NULL, creates a new list ; if not, chains a new list to it
@@ -560,13 +592,15 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
         FTS_XDEV : 0;
 
     char *fts_argv[] = { file_path, NULL };
-    if((ftsp = fts_open(fts_argv, fts_options, NULL)) == NULL) {
+    if((ftsp = fts_open(fts_argv, fts_options,
+        (options->leaf_dirs == OPT_LEAFDIRS) ? &fts_dirsfirst : NULL)) == NULL) {
         fprintf(stderr, "%s: fts_open()\n", file_path);
         return (0);
     }
 
     /* current dir state */
     unsigned char curdir_empty = 1;
+    unsigned char curdir_dirsfound = 0;
     unsigned char curdir_addme = 0;
 
     while((p = fts_read(ftsp)) != NULL) {
@@ -591,6 +625,7 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                 }
                 /* else, mark current dir as not empty */
                 curdir_empty = 0;
+                curdir_dirsfound = 1;
                 continue;
             }
             case FTS_NS:    /* stat() error */
@@ -612,6 +647,11 @@ add_directory:
                 /* if empty_dirs display requested and current dir is empty,
                    add directory entry */
                 if((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty)
+                    curdir_addme = 1;
+
+                /* if leaf dirs mode activated and current directory is a leaf,
+                   add directory entry */
+                if((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))
                     curdir_addme = 1;
 
                 /* add directory if necessary */
@@ -670,6 +710,7 @@ add_directory:
 
                 /* reset parent (now current) dir state */
                 curdir_empty = 0;
+                curdir_dirsfound = 1;
                 curdir_addme = 0;
                 continue;
             }
@@ -677,6 +718,7 @@ add_directory:
             case FTS_D:
             {
                 curdir_empty = 1; /* enter directory, mark it as empty */
+                curdir_dirsfound = 0; /* no dirs found yet */
 
                 /* if dir_depth requested and reached,
                    skip descendants but add directory entry (in post order) */
@@ -697,6 +739,14 @@ add_directory:
                FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
                 curdir_empty = 0; /* mark current dir as non empty */
+
+                /* skip file entry when in leaf dirs mode (option -D) and no
+                   directory has been found in current directory (i.e. we are
+                   in a leaf directory). We must have visited all directories
+                   first ; this is achieved by using a compar() function with
+                   fts_open() */
+                if((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))
+                    continue;
 
                 /* add or display it */
                 if(handle_file_entry
