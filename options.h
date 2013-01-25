@@ -48,21 +48,34 @@ struct program_options {
     fsize_t max_size;
 /* input file (option -i); NULL = undefined, "-" = stdin, "filename" */
     char *in_filename;
+/* arbitrary values (option -a) */
 #define OPT_NOARBITRARYVALUES       0
 #define OPT_ARBITRARYVALUES         1
 #define DFLT_OPT_ARBITRARYVALUES    OPT_NOARBITRARYVALUES
     unsigned char arbitrary_values;
 /* output file (option -o); NULL = stdout, "filename" */
     char *out_filename;
-/* display directories after certain depth (option -d) */
-#define OPT_NODIRDEPTH              -1
-#define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH
-    int dir_depth;
 /* add slash to directories (option -e) */
 #define OPT_NOADDSLASH              0
 #define OPT_ADDSLASH                1
 #define DFLT_OPT_ADDSLASH           OPT_NOADDSLASH
     unsigned char add_slash;
+/* verbose output (option -v) */
+#define OPT_NOVERBOSE               0
+#define OPT_VERBOSE                 1
+#define OPT_VVERBOSE                2
+#define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
+    unsigned char verbose;
+/* follow symbolic links (option -l) */
+#define OPT_FOLLOWSYMLINKS          0
+#define OPT_NOFOLLOWSYMLINKS        1
+#define DFLT_OPT_FOLLOWSYMLINKS     OPT_NOFOLLOWSYMLINKS
+    unsigned char follow_symbolic_links;
+/* cross fs boundaries (option -x) */
+#define OPT_NOCROSSFSBOUNDARIES     0
+#define OPT_CROSSFSBOUNDARIES       1
+#define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES
+    unsigned char cross_fs_boundaries;
 /* include empty directories (option -z) */
 #define OPT_NOEMPTYDIRS             0
 #define OPT_EMPTYDIRS               1
@@ -73,13 +86,11 @@ struct program_options {
 #define OPT_DNREMPTY               1
 #define DFLT_OPT_DNREMPTY          OPT_NODNREMPTY
     unsigned char dnr_empty;
-/* verbose output (option -v) */
-#define OPT_NOVERBOSE               0
-#define OPT_VERBOSE                 1
-#define OPT_VVERBOSE                2
-#define DFLT_OPT_VERBOSE            OPT_NOVERBOSE
-    unsigned char verbose;
-/* leaf dirs mode (option -D) */
+/* display directories after certain depth (option -d) */
+#define OPT_NODIRDEPTH              -1
+#define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH
+    int dir_depth;
+/* pack leaf directories (option -D) */
 #define OPT_NOLEAFDIRS               0
 #define OPT_LEAFDIRS                 1
 #define DFLT_OPT_LEAFDIRS            OPT_NOLEAFDIRS
@@ -93,16 +104,6 @@ struct program_options {
     char *pre_part_hook;
 /* post-partition hook (option -W) */
     char *post_part_hook;
-/* follow symbolic links (option -l) */
-#define OPT_FOLLOWSYMLINKS          0
-#define OPT_NOFOLLOWSYMLINKS        1
-#define DFLT_OPT_FOLLOWSYMLINKS     OPT_NOFOLLOWSYMLINKS
-    unsigned char follow_symbolic_links;
-/* cross fs boundaries (option -x) */
-#define OPT_NOCROSSFSBOUNDARIES     0
-#define OPT_CROSSFSBOUNDARIES       1
-#define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES
-    unsigned char cross_fs_boundaries;
 /* preload partitions (option -p) */
 #define DFLT_OPT_PRELOAD_SIZE       0
     fsize_t preload_size;

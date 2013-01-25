@@ -637,7 +637,7 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                 continue;
 
             case FTS_DC:
-                fprintf(stderr, "%s: file system loop detected\n", p->fts_path);
+                fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
             case FTS_DOT:  /* ignore "." and ".." */
                 continue;
 

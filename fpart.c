@@ -80,52 +80,58 @@ version(void)
 void
 usage(void)
 {
-    fprintf(stderr, "Usage: fpart [-h] [-V] -n num | -f files | -s size "
-        "[-i infile] [-a]\n"
-        "             [-o outfile] [-d depth] [-e] [-z] [-Z] [-v] [-D] [-L] "
-        "[-w cmd] [-W cmd]\n"
-        "             [-l] [-x] [-p num] [-q num] [-r num] "
-        "[file(s) or dir(s) ...]\n");
-    fprintf(stderr, "Sort and divide files into partitions.\n");
+    fprintf(stderr, "Usage: fpart [OPTIONS] -n num | -f files | -s size "
+        "[FILE or DIR...]\n");
+    fprintf(stderr, "Sort and pack files into partitions.\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "General:\n");
+    fprintf(stderr, "General options:\n");
     fprintf(stderr, "  -h\tthis help\n");
     fprintf(stderr, "  -V\tprint version\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Partition control:\n");
-    fprintf(stderr, "  -n\tset number of desired partitions\n");
-    fprintf(stderr, "  -f\tlimit files per partition\n");
-    fprintf(stderr, "  -s\tlimit partition size\n");
+    fprintf(stderr, "  -n\tpack files into <num> partitions\n");
+    fprintf(stderr, "  -f\tlimit partitions to <files> files\n");
+    fprintf(stderr, "  -s\tlimit partitions to <size> bytes\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Input control:\n");
-    fprintf(stderr, "  -i\tinput file (stdin if '-' is specified)\n");
-    fprintf(stderr, "  -a\tinput contains arbitrary values\n");
+    fprintf(stderr, "  -i\tread file list from <infile> "
+        "(stdin if '-' is specified)\n");
+    fprintf(stderr, "  -a\tinput contains arbitrary values "
+        "(do not crawl filesystem)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Output control:\n");
-    fprintf(stderr, "  -o\toutput file template "
+    fprintf(stderr, "  -o\toutput partitions to <outfile> template "
         "(stdout if '-' is specified)\n");
-    fprintf(stderr, "  -d\tswitch to directory names display "
-        "after certain <depth>\n");
-    fprintf(stderr, "  -e\tadd ending slash to directory names\n");
-    fprintf(stderr, "  -z\tinclude empty directories (default: include files "
-        "only)\n");
+    fprintf(stderr, "  -e\tadd ending slash to directories\n");
+    fprintf(stderr, "  -v\tverbose mode (may be specified more than once to "
+        "increase verbosity)\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Filesystem crawling control:\n");
+    fprintf(stderr, "  -l\tfollow symbolic links\n");
+    fprintf(stderr, "  -x\tdo not cross filesystem boundaries\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Directory handling:\n");
+    fprintf(stderr, "  -z\tpack empty directories "
+        "(default: pack files only)\n");
     fprintf(stderr, "  -Z\ttreat un-readable directories as empty "
         "(implies -z)\n");
-    fprintf(stderr, "  -v\tverbose mode (may be specified more than once)\n");
+    fprintf(stderr, "  -d\tpack directories instead of files after a certain "
+        "<depth>\n");
+    fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "
+        "implies -z)\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "Behaviour:\n");
-    fprintf(stderr, "  -D\tgroup leaf directories as single file entries (implies -z)\n");
-    fprintf(stderr, "  -L\tenable live mode\n");
-    fprintf(stderr, "  -w\tpre-partition hook (live mode only)\n");
-    fprintf(stderr, "  -W\tpost-partition hook (live mode only)\n");
-    fprintf(stderr, "  -l\tfollow symbolic links\n");
-    fprintf(stderr, "  -x\tdo not cross file system boundaries "
-        "(default: cross)\n");
+    fprintf(stderr, "Live mode:\n");
+    fprintf(stderr, "  -L\tlive mode: generate partitions during filesystem "
+        "crawling\n");
+    fprintf(stderr, "  -w\tpre-partition hook: execute <cmd> at partition "
+        "start\n");
+    fprintf(stderr, "  -W\tpost-partition hook: execute <cmd> at partition "
+        "end\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Size handling:\n");
-    fprintf(stderr, "  -p\tpreload each partition with num bytes\n");
-    fprintf(stderr, "  -q\toverload each file with num bytes\n");
-    fprintf(stderr, "  -r\tround each file size up to next num bytes "
+    fprintf(stderr, "  -p\tpreload each partition with <num> bytes\n");
+    fprintf(stderr, "  -q\toverload each file with <num> bytes\n");
+    fprintf(stderr, "  -r\tround each file size up to next <num> bytes "
         "multiple\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
@@ -233,7 +239,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:d:ezZvDLw:W:lxp:q:r:")) !=
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:evlxzZd:DLw:W:p:q:r:")) !=
         -1) {
         switch(ch) {
             case '?':
@@ -330,6 +336,25 @@ int main(int argc, char** argv)
                 }
                 break;
             }
+            case 'e':
+                options.add_slash = OPT_ADDSLASH;
+                break;
+            case 'v':
+                options.verbose++;
+                break;
+            case 'l':
+                options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
+                break;
+            case 'x':
+                options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
+                break;
+            case 'z':
+                options.empty_dirs = OPT_EMPTYDIRS;
+                break;
+            case 'Z':
+                options.dnr_empty = OPT_DNREMPTY;
+                options.empty_dirs = OPT_EMPTYDIRS;
+                break;
             case 'd':
             {
                 char *endptr = NULL;
@@ -343,19 +368,6 @@ int main(int argc, char** argv)
                 options.dir_depth = (int)dir_depth;
                 break;
             }
-            case 'e':
-                options.add_slash = OPT_ADDSLASH;
-                break;
-            case 'z':
-                options.empty_dirs = OPT_EMPTYDIRS;
-                break;
-            case 'Z':
-                options.dnr_empty = OPT_DNREMPTY;
-                options.empty_dirs = OPT_EMPTYDIRS;
-                break;
-            case 'v':
-                options.verbose++;
-                break;
             case 'D':
                 options.leaf_dirs = OPT_LEAFDIRS;
                 options.empty_dirs = OPT_EMPTYDIRS;
@@ -399,12 +411,6 @@ int main(int argc, char** argv)
                 snprintf(options.post_part_hook, malloc_size, "%s", optarg);
                 break;
             }
-            case 'l':
-                options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
-                break;
-            case 'x':
-                options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
-                break;
             case 'p':
             {
                 char *endptr = NULL;

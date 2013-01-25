@@ -3,7 +3,7 @@ Fpart - README
 What is fpart ?
 ***************
 
-Fpart is a tool that helps you sort file trees and divide them into bags (called
+Fpart is a tool that helps you sort file trees and pack them into bags (called
 "partitions"). It is developped in C and available under the BSD license.
 
 It splits a list of directories and file trees into a certain number of
@@ -12,6 +12,24 @@ It can also produce partitions with a given number of files or a limited size.
 
 Once generated, partitions are either printed as file lists to stdout (default)
 or to files. Those lists can then be used by third party programs.
+
+Fpart also includes a live mode, which allows it to crawl very large filesystems
+and produce partitions in live. Hooks are available to act on those partitions
+(e.g. immediatly start a transfer using rsync(1)) without having to wait for
+the filesystem traversal job to be finished. Used this way, fpart can be seen
+as a powerful data migration tool.
+
+Compatibility :
+***************
+
+Fpart has been successfully tested on :
+
+* FreeBSD (7x, 8x, 9x, amd64)
+* GNU/Linux (2.6.32, x86_64)
+* Solaris 10 (i386)
+* Solaris 9 (Sparc)
+
+and will probably work on other operating systems too.
 
 Examples :
 **********
@@ -34,7 +52,7 @@ The following will produce partitions containing 10000 files each by examining
 $ find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'
 
 The following will produce two partitions by re-using du(1) output. Fpart will
-not examine the file system but instead re-use arbitrary values printed by du(1)
+not examine the filesystem but instead re-use arbitrary values printed by du(1)
 and sort them :
 
 $ du * | fpart -n 2 -a
@@ -84,31 +102,3 @@ FTS code comes from FreeBSD sources (8.2-RELEASE) :
     lib/libc/gen/fts.c -> fts.c
     include/fts.h -> fts.h
 It is available under the BSD license.
-
-General process :
-*****************
-
-Here is a technical overview of how the program works :
-
-Start
-Read program arguments and path list
-(or arbitrary values, either from stdin or as argument)
-    /path/to/dir1  -> double-linked list of files found
-    /path/to/file1 -> double-linked list of files found (linked to previous)
-    /path/to/dir2  -> double-linked list of files found (linked to previous)
-    /path/to/file2 -> double-linked list of files found (linked to previous)
-If fixed-size number of partitions requested (option -n) :
-    Creation of an array of pointers to file entries
-    Sort that array given file size (qsort)
-    Create a double-linked list of <n> partitions holding partitions
-        information (total number of files, total size per partition)
-    Associate each file entry to one of those partitions
-    As a second pass, redispatch empty files (to try to get partitions with
-        the same number of files)
-Else (partitions limited to a given size or file number, options -s and -f) :
-    Dynamically create our partitions as necessary (by linking new partitions
-        to our double-linked list). Associate each file entry to one of
-        those partitions
-Print result
-Cleanup
-End

@@ -27,7 +27,7 @@
 .Os
 .Sh NAME
 .Nm fpart
-.Nd sort file trees and divide them into partitions
+.Nd Sort and pack files into partitions.
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
@@ -36,25 +36,25 @@
 .Op Fl i Ar infile
 .Op Fl a
 .Op Fl o Ar outfile
-.Op Fl d Ar depth
 .Op Fl e
+.Op Fl v
+.Op Fl l
+.Op Fl x
 .Op Fl z
 .Op Fl Z
-.Op Fl v
+.Op Fl d Ar depth
 .Op Fl D
 .Op Fl L
 .Op Fl w Ar cmd
 .Op Fl W Ar cmd
-.Op Fl l
-.Op Fl x
 .Op Fl p Ar num
 .Op Fl q Ar num
 .Op Fl r Ar num
-.Op Ar file or dir ...
+.Op Ar FILE or DIR...
 .Sh DESCRIPTION
 The
 .Nm
-utility helps you sort file trees and divide them into bags
+utility helps you sort file trees and pack them into bags
 (called "partitions").
 .Pp
 .Sh GENERAL OPTIONS
@@ -67,30 +67,27 @@ Print version
 .Sh PARTITION CONTROL
 .Bl -tag -width indent
 .It Ic -n Ar num
-Cause
-.Nm
-to create
+Create exactly
 .Ar num
-partitions and spread files over them by trying to generate partitions with
-the same size and number of files. This option cannot be used in conjunction
+partitions and try to generate partitions with the same size and number of
+files. This option cannot be used in conjunction
 with
+.Fl f ,
+.Fl s
+or 
 .Fl L .
 .It Ic -f Ar files
-Cause
-.Nm
-to create partitions containing at most
+Create partitions containing at most
 .Ar files
 files. This option can be used in conjunction with
 .Fl s
 and
 .Fl L .
 .It Ic -s Ar size
-Cause
-.Nm
-to create partitions of maximum size
-.Ar size .
-With this option, partition 0 may be used to handle files that do not fit in a
-regular partition, given the provided
+Create partitions with a maximum size of
+.Ar size
+bytes. With this option, partition 0 may be used to handle files that do not
+fit in a regular partition, given the provided
 .Ar size
 limit. This option can be used in conjunction with
 .Fl f
@@ -99,70 +96,83 @@ and
 .El
 .Sh INPUT CONTROL
 .Bl -tag -width indent
-.It Ic -i Ar file
-Read file or directory list from
-.Ar file .
+.It Ic -i Ar infile
+Read file list from
+.Ar infile .
 If
-.Ar file
+.Ar infile
 is
 .Dq Li "-" ,
 then list is read from stdin.
 .It Fl a
-Input contains arbitrary values; just sort them (do not examine file system).
+Input contains arbitrary values; just sort them (do not crawl filesystem).
 Input must follow the
 .Dq Li "size(blank)path"
 scheme.
 .El
 .Sh OUTPUT CONTROL
 .Bl -tag -width indent
-.It Ic -o Ar file
-Output partitions' content to
-.Ar file
+.It Ic -o Ar outfile
+Output partitions' contents to
+.Ar outfile
 template. Multiple files will be
 generated given that template. Each
-.Ar file
+.Ar outfile
 will get partition number as
 a suffix. If
-.Ar file
+.Ar outfile
 is
 .Dq Li "-" ,
 then partitions will be printed to stdout, with partition number used as a
 prefix (so you can grep partitions you are interested in, or do whatever you
 want).
-.It Ic -d Ar depth
-After a certain
-.Ar depth ,
-output directories as file entries (directories themselves will be added to
-partitions, instead of their content).
 .It Fl e
-When displaying directories (see 
-.Fl d
-option), add an ending
+When adding directories (see
+.Sx DIRECTORY HANDLING
+), add an ending
 .Dq Li "/"
 to each directory entry.
-.It Fl z
-Include empty directories. By default, fpart will list files only (except when
-using the
-.Fl d
-option). This option can be useful for tools such as
-.Xr rsync 1
-to be able to recreate a full file hierarchy when used with fpart (e.g. using
-rsync's --files-from option). See the 
-.Fl Z
-option to also include un-readable directories.
-.It Fl Z
-Implies
-.Fl z .
-Treat un-readable directories as empty, causing them to be included anyway.
 .It Fl v
 Verbose mode (may be specified more than once).
 .El
-.Sh BEHAVIOUR CONTROL
+.Sh FILESYSTEM CRAWLING CONTROL
 .Bl -tag -width indent
+.It Fl l
+Follow symbolic links (default: do not follow).
+.It Fl x
+Do not cross filesystem boundaries (default: cross).
+.El
+.Sh DIRECTORY HANDLING
+.Bl -tag -width indent
+.It Fl z
+Pack empty directories. By default, fpart will pack files only (except when
+using the
+.Fl d
+or
+.Fl D
+options). This option can be useful for tools such as
+.Xr rsync 1
+to be able to recreate a full file tree when used with fpart (e.g. using
+rsync's --files-from option). See the 
+.Fl Z
+option to also pack un-readable directories.
+.It Fl Z
+Implies
+.Fl z .
+Treat un-readable directories as empty, causing them to be packed anyway.
+.It Ic -d Ar depth
+After a certain
+.Ar depth ,
+pack directories instead of files (directories themselves will be added to
+partitions, instead of their content).
 .It Fl D
 Implies
 .Fl z .
-Group leaf directories as single file entries.
+Pack leaf directories: if a directory contains files only, it will be packed as
+a single entry.
+.El
+.Sh LIVE MODE
+.Bl -tag -width indent
 .It Fl L
 Live mode (default: disabled). When using this mode, partitions will be
 generated while crawling filesystem. This option saves time and memory, but does
@@ -180,10 +190,10 @@ but not with option
 .It Ic -w Ar cmd
 When using live mode, execute
 .Ar cmd
-when starting a new partition (before having opened output file, if any).
+when starting a new partition (before having opened next output file, if any).
 .Ar cmd
 is run in a specific environment that provides several variables describing the
-state of the program :
+state of the program:
 .Ev FPART_HOOKTYPE
 ("pre-part" or "post-part"),
 .Ev FPART_PARTFILENAME
@@ -207,11 +217,7 @@ Same as
 .Fl w ,
 but executes
 .Ar cmd
-when finishing a partition (after having closed output file, if any).
-.It Fl l
-Follow symbolic links (default: do not follow).
-.It Fl x
-Do not cross file system boundaries (default: cross).
+when finishing a partition (after having closed last output file, if any).
 .El
 .Sh SIZE HANDLING
 .Bl -tag -width indent
@@ -230,27 +236,27 @@ bytes multiple. This option can be used in conjunction with overloading, which
 is done *before* rounding.
 .El
 .Sh EXAMPLES
-Here are some examples :
+Here are some examples:
 .Bl -tag -width indent
 .It Li "fpart -n 3 -o var-parts /var"
 Produce 3 partitions, with (hopefully) the same size and number of files. This
 can be used (for example) to launch several
 .Xr rsync 1
-commands in parallel. 3 files : var-parts.0, var-parts.1 and var-parts.2 are
+commands in parallel. 3 files: var-parts.0, var-parts.1 and var-parts.2 are
 generated as output.
 .It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
 Produce partitions of 4.4 GB, containing music files from /path/to/music as well
-as MP3 files from current directory ; with such a partition size, each partition
+as MP3 files from current directory; with such a partition size, each partition
 content will be ready to be burnt to a DVD. Files
 music-parts.0 to music-parts.n, are generated as output.
 .It Li "find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'"
 Produce partitions containing 10000 files each by examining /usr first and then
 /home and display only partition 0 on stdout.
 .It Li "du * | fpart -n 2 -a"
-Produce two partitions by re-using
+Produce two partitions by using
 .Xr du 1
 output. Fpart will not examine the file
-system but instead re-use arbitrary values printed by
+system but instead use arbitrary values printed by
 .Xr du 1
 and sort them.
 .El
@@ -264,4 +270,4 @@ and sort them.
 Fpart has been written by Ganaël LAPLANCHE and is available under the BSD
 license on \fIhttp://contribs.martymac.org\fR
 .Sh BUGS
-No bug known.
+No bug known (yet).

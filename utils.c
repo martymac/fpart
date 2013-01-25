@@ -126,7 +126,7 @@ get_size(char *file_path, struct stat *file_stat,
                 continue;
 
             case FTS_DC:
-                fprintf(stderr, "%s: file system loop detected\n", p->fts_path);
+                fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
                 continue;
 
             case FTS_F:

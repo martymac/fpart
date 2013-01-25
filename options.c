@@ -46,18 +46,24 @@ init_options(struct program_options *options)
     assert(DFLT_OPT_MAX_SIZE >= 0);
     assert((DFLT_OPT_ARBITRARYVALUES == OPT_NOARBITRARYVALUES) ||
            (DFLT_OPT_ARBITRARYVALUES == OPT_ARBITRARYVALUES));
-    assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
     assert((DFLT_OPT_ADDSLASH == OPT_NOADDSLASH) ||
            (DFLT_OPT_ADDSLASH == OPT_ADDSLASH));
     assert((DFLT_OPT_VERBOSE == OPT_NOVERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VVERBOSE));
-    assert((DFLT_OPT_LIVEMODE == OPT_NOLIVEMODE) ||
-           (DFLT_OPT_LIVEMODE == OPT_LIVEMODE));
     assert((DFLT_OPT_FOLLOWSYMLINKS == OPT_FOLLOWSYMLINKS) ||
            (DFLT_OPT_FOLLOWSYMLINKS == OPT_NOFOLLOWSYMLINKS));
     assert((DFLT_OPT_CROSSFSBOUNDARIES == OPT_NOCROSSFSBOUNDARIES) ||
            (DFLT_OPT_CROSSFSBOUNDARIES == OPT_CROSSFSBOUNDARIES));
+    assert((DFLT_OPT_EMPTYDIRS == OPT_NOEMPTYDIRS) ||
+           (DFLT_OPT_EMPTYDIRS == OPT_EMPTYDIRS));
+    assert((DFLT_OPT_DNREMPTY == OPT_NODNREMPTY) ||
+           (DFLT_OPT_DNREMPTY == OPT_DNREMPTY));
+    assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
+    assert((DFLT_OPT_LEAFDIRS == OPT_NOLEAFDIRS) ||
+           (DFLT_OPT_LEAFDIRS == OPT_LEAFDIRS));
+    assert((DFLT_OPT_LIVEMODE == OPT_NOLIVEMODE) ||
+           (DFLT_OPT_LIVEMODE == OPT_LIVEMODE));
     assert(DFLT_OPT_PRELOAD_SIZE >= 0);
     assert(DFLT_OPT_OVERLOAD_SIZE >= 0);
     assert(DFLT_OPT_ROUND_SIZE >= 1);
@@ -69,17 +75,17 @@ init_options(struct program_options *options)
     options->in_filename = NULL;
     options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;
     options->out_filename = NULL;
-    options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->add_slash = DFLT_OPT_ADDSLASH;
+    options->verbose = DFLT_OPT_VERBOSE;
+    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
+    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
-    options->verbose = DFLT_OPT_VERBOSE;
+    options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->pre_part_hook = NULL;
     options->post_part_hook = NULL;
-    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
-    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->round_size = DFLT_OPT_ROUND_SIZE;
@@ -92,19 +98,19 @@ uninit_options(struct program_options *options)
     options->round_size = DFLT_OPT_ROUND_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
-    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
-    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     if(options->post_part_hook != NULL)
         free(options->post_part_hook);
     if(options->pre_part_hook != NULL)
         free(options->pre_part_hook);
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
-    options->verbose = DFLT_OPT_VERBOSE;
+    options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;
+    options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
+    options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
+    options->verbose = DFLT_OPT_VERBOSE;
     options->add_slash = DFLT_OPT_ADDSLASH;
-    options->dir_depth = DFLT_OPT_DIR_DEPTH;
     if(options->out_filename != NULL)
         free(options->out_filename);
     options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;
