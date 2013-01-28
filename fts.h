@@ -10,11 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -31,16 +27,11 @@
  * SUCH DAMAGE.
  *
  *	@(#)fts.h	8.3 (Berkeley) 8/14/94
- * $FreeBSD: src/include/fts.h,v 1.12.2.1.6.1 2010/12/21 17:09:25 kensmith Exp $
+ * $FreeBSD: head/include/fts.h 203964 2010-02-16 19:39:50Z imp $
  */
 
 #ifndef	_FTS_H_
 #define	_FTS_H_
-
-#if !defined(__FreeBSD__)
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#define dirfd(X) ((X)->d_fd)
-#endif
 
 typedef struct {
 	struct _ftsent *fts_cur;	/* current node */
@@ -61,9 +52,7 @@ typedef struct {
 #define	FTS_PHYSICAL	0x010		/* physical walk */
 #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
 #define	FTS_XDEV	0x040		/* don't cross devices */
-#if !defined(__sun) && !defined(__sun__)
 #define	FTS_WHITEOUT	0x080		/* return whiteout information */
-#endif
 #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
 
 #define	FTS_NAMEONLY	0x100		/* (private) child names only */
@@ -126,13 +115,9 @@ typedef struct _ftsent {
 	FTS *fts_fts;			/* back pointer to main FTS */
 } FTSENT;
 
-#if defined(__FreeBSD__)
 #include <sys/cdefs.h>
-#endif
 
-#if defined(__FreeBSD__)
 __BEGIN_DECLS
-#endif
 FTSENT	*fts_children(FTS *, int);
 int	 fts_close(FTS *);
 void	*fts_get_clientptr(FTS *);
@@ -144,8 +129,6 @@ FTS	*fts_open(char * const *, int,
 FTSENT	*fts_read(FTS *);
 int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
-#if defined(__FreeBSD__)
 __END_DECLS
-#endif
 
 #endif /* !_FTS_H_ */
