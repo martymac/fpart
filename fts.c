@@ -35,24 +35,58 @@ static char sccsid[] = "@(#)fts.c	8.6 (Berkeley) 8/14/94";
 #endif /* LIBC_SCCS and not lint */
 #endif
 
+#if defined(__FreeBSD__)
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 241010 2012-09-27 22:05:54Z jilles $");
 
-#include "namespace.h"
+#include "/usr/src/lib/libc/include/namespace.h"
+#else
+#define _open open
+#define _close close
+#define _fstat fstat
+#define _dirfd dirfd
+#endif
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 
+#if defined(__sun) || defined(__sun__)
+#include <sys/statfs.h>
+#include <sys/statvfs.h>
+#include <sys/types.h>
+#endif
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fts.h>
+#include "fts.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "un-namespace.h"
+#if defined(__FreeBSD__)
+#include "/usr/src/lib/libc/include/un-namespace.h"
+#include "/usr/src/lib/libc/gen/gen-private.h"
+#endif
 
-#include "gen-private.h"
+#if defined(__sun) || defined(__sun__)
+void *
+reallocf(void *ptr, size_t size)
+{
+        void *nptr;
+
+        nptr = realloc(ptr, size);
+
+        /*
+         * When the System V compatibility option (malloc "V" flag) is
+         * in effect, realloc(ptr, 0) frees the memory and returns NULL.
+         * So, to avoid double free, call free() only when size != 0.
+         * realloc(ptr, 0) can't fail when ptr != NULL.
+         */
+        if (!nptr && ptr && size != 0)
+                free(ptr);
+        return (nptr);
+}
+#endif
 
 static FTSENT	*fts_alloc(FTS *, char *, size_t);
 static FTSENT	*fts_build(FTS *, int);
@@ -86,7 +120,11 @@ static int	 fts_ufslinks(FTS *, const FTSENT *);
  */
 struct _fts_private {
 	FTS		ftsp_fts;
+#if defined(__sun) || defined(__sun__)
+	struct statvfs	ftsp_statvfs;
+#else
 	struct statfs	ftsp_statfs;
+#endif
 	dev_t		ftsp_dev;
 	int		ftsp_linksreliable;
 };
@@ -215,7 +253,11 @@ fts_open(argv, options, compar)
 	 * descriptor we run anyway, just more slowly.
 	 */
 	if (!ISSET(FTS_NOCHDIR) &&
-	    (sp->fts_rfd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
+	    (sp->fts_rfd = _open(".", O_RDONLY
+#if !defined(__sun) && !defined(__sun__)
+		| O_CLOEXEC
+#endif
+		, 0)) < 0)
 		SET(FTS_NOCHDIR);
 
 	return (sp);
@@ -340,8 +382,11 @@ fts_read(FTS *sp)
 	    (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
 		p->fts_info = fts_stat(sp, p, 1);
 		if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-			if ((p->fts_symfd = _open(".", O_RDONLY | O_CLOEXEC,
-			    0)) < 0) {
+			if ((p->fts_symfd = _open(".", O_RDONLY
+#if !defined(__sun) && !defined(__sun__)
+				| O_CLOEXEC
+#endif
+			    , 0)) < 0) {
 				p->fts_errno = errno;
 				p->fts_info = FTS_ERR;
 			} else
@@ -432,7 +477,11 @@ next:	tmp = p;
 			p->fts_info = fts_stat(sp, p, 1);
 			if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
 				if ((p->fts_symfd =
-				    _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0) {
+				    _open(".", O_RDONLY
+#if !defined(__sun) && !defined(__sun__)
+					| O_CLOEXEC
+#endif
+					, 0)) < 0) {
 					p->fts_errno = errno;
 					p->fts_info = FTS_ERR;
 				} else
@@ -568,7 +617,11 @@ fts_children(FTS *sp, int instr)
 	    ISSET(FTS_NOCHDIR))
 		return (sp->fts_child = fts_build(sp, instr));
 
-	if ((fd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
+	if ((fd = _open(".", O_RDONLY
+#if !defined(__sun) && !defined(__sun__)
+		| O_CLOEXEC
+#endif
+		, 0)) < 0)
 		return (NULL);
 	sp->fts_child = fts_build(sp, instr);
 	if (fchdir(fd)) {
@@ -630,7 +683,10 @@ fts_build(FTS *sp, int type)
 	DIR *dirp;
 	void *oldaddr;
 	char *cp;
-	int cderrno, descend, oflag, saved_errno, nostat, doadjust;
+	int cderrno, descend, saved_errno, nostat, doadjust;
+#ifdef FTS_WHITEOUT
+	int oflag;
+#endif
 	long level;
 	long nlinks;	/* has to be signed because -1 is a magic value */
 	size_t dnamlen, len, maxlen, nitems;
@@ -737,7 +793,11 @@ fts_build(FTS *sp, int type)
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
 	for (head = tail = NULL, nitems = 0; dirp && (dp = readdir(dirp));) {
+#if defined(__sun) || defined(__sun__)
+		dnamlen = strlen(dp->d_name);
+#else
 		dnamlen = dp->d_namlen;
+#endif
 		if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
 			continue;
 
@@ -1119,7 +1179,11 @@ fts_safe_changedir(FTS *sp, FTSENT *p, int fd, char *path)
 	newfd = fd;
 	if (ISSET(FTS_NOCHDIR))
 		return (0);
-	if (fd < 0 && (newfd = _open(path, O_RDONLY | O_CLOEXEC, 0)) < 0)
+	if (fd < 0 && (newfd = _open(path, O_RDONLY
+#if !defined(__sun) && !defined(__sun__)
+		| O_CLOEXEC
+#endif
+		, 0)) < 0)
 		return (-1);
 	if (_fstat(newfd, &sb)) {
 		ret = -1;
@@ -1156,11 +1220,19 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 	 * avoidance.
 	 */
 	if (priv->ftsp_dev != ent->fts_dev) {
+#if defined(__sun) || defined(__sun__)
+		if (statvfs(ent->fts_path, &priv->ftsp_statvfs) != -1) {
+#else
 		if (statfs(ent->fts_path, &priv->ftsp_statfs) != -1) {
+#endif
 			priv->ftsp_dev = ent->fts_dev;
 			priv->ftsp_linksreliable = 0;
 			for (cpp = ufslike_filesystems; *cpp; cpp++) {
+#if defined(__sun) || defined(__sun__)
+				if (strcmp(priv->ftsp_statvfs.f_basetype,
+#else
 				if (strcmp(priv->ftsp_statfs.f_fstypename,
+#endif
 				    *cpp) == 0) {
 					priv->ftsp_linksreliable = 1;
 					break;
