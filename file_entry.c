@@ -539,7 +539,11 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 /* Compare entries to list directories first
    - compar() function used by fts_open() when in leaf dirs mode */
 static int
+#if defined(__linux__)
+fts_dirsfirst(const FTSENT **a, const FTSENT **b)
+#else
 fts_dirsfirst(const FTSENT * const *a, const FTSENT * const *b)
+#endif
 {
     assert(a != NULL);
     assert((*a) != NULL);
