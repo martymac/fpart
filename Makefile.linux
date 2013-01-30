@@ -28,6 +28,11 @@
 CC?=        gcc
 CFLAGS+=    -Wall -std=c99 -D_GNU_SOURCE
 
+# Un-comment the following to use the embedded, FreeBSD-based version of fts(3)
+#CFLAGS+=    -DEMBED_FTS
+#FTS_SOURCES= fts.c
+#FTS_HEADERS= fts.h
+
 # Use the following to build with debug symbols and messages
 #CFLAGS+= -g -DDEBUG
 

@@ -27,6 +27,13 @@
  * SUCH DAMAGE.
  *
  * $OpenBSD: fts.c,v 1.22 1999/10/03 19:22:22 millert Exp $
+ *
+ * This version of fts has been patched to build on Solaris and GNU/Linux.
+ * Solaris notes : 
+ *   - no FTS_WHITEOUT (sparse files) support
+ * GNU/Linux notes :
+ *   - the FTS_NOSTAT speedup trick is disabled
+ *   - no FTS_WHITEOUT (sparse files) support
  */
 
 #if 0
@@ -56,6 +63,10 @@ __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 241010 2012-09-27 22:05:54Z jilles $
 #include <sys/types.h>
 #endif
 
+#if defined(__linux__)
+#include <sys/vfs.h>
+#endif
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -68,7 +79,7 @@ __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 241010 2012-09-27 22:05:54Z jilles $
 #include "/usr/src/lib/libc/gen/gen-private.h"
 #endif
 
-#if defined(__sun) || defined(__sun__)
+#if defined(__sun) || defined(__sun__) || defined(__linux__)
 void *
 reallocf(void *ptr, size_t size)
 {
@@ -98,7 +109,9 @@ static int	 fts_palloc(FTS *, size_t);
 static FTSENT	*fts_sort(FTS *, FTSENT *, size_t);
 static int	 fts_stat(FTS *, FTSENT *, int);
 static int	 fts_safe_changedir(FTS *, FTSENT *, int, char *);
+#if !defined(__linux__)
 static int	 fts_ufslinks(FTS *, const FTSENT *);
+#endif
 
 #define	ISDOT(a)	(a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])))
 
@@ -129,6 +142,7 @@ struct _fts_private {
 	int		ftsp_linksreliable;
 };
 
+#if !defined(__linux__)
 /*
  * The "FTS_NOSTAT" option can avoid a lot of calls to stat(2) if it
  * knows that a directory could not possibly have subdirectories.  This
@@ -146,6 +160,7 @@ static const char *ufslike_filesystems[] = {
 	"ext2fs",
 	0
 };
+#endif
 
 FTS *
 fts_open(argv, options, compar)
@@ -724,9 +739,11 @@ fts_build(FTS *sp, int type)
 		/* Be quiet about nostat, GCC. */
 		nostat = 0;
 	} else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
+#if !defined(__linux__)
 		if (fts_ufslinks(sp, cur))
 			nlinks = cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
 		else
+#endif
 			nlinks = -1;
 		nostat = 1;
 	} else {
@@ -793,7 +810,7 @@ fts_build(FTS *sp, int type)
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
 	for (head = tail = NULL, nitems = 0; dirp && (dp = readdir(dirp));) {
-#if defined(__sun) || defined(__sun__)
+#if defined(__sun) || defined(__sun__) || defined(__linux__)
 		dnamlen = strlen(dp->d_name);
 #else
 		dnamlen = dp->d_namlen;
@@ -1203,6 +1220,7 @@ bail:
 	return (ret);
 }
 
+#if !defined(__linux__)
 /*
  * Check if the filesystem for "ent" has UFS-style links.
  */
@@ -1244,3 +1262,4 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 	}
 	return (priv->ftsp_linksreliable);
 }
+#endif
