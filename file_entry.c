@@ -687,7 +687,7 @@ add_directory:
                     if((p->fts_level > 0) &&
                         (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
                         (p->fts_parent->fts_statp->st_dev != p->fts_statp->st_dev))
-                        /* when using option -x, set size to 0 for mountpoint
+                        /* when using option -b, set size to 0 for mountpoint
                            (non-root) directories */
                         curdir_size = 0;
                     else if(curdir_empty)

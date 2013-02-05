@@ -71,7 +71,7 @@ struct program_options {
 #define OPT_NOFOLLOWSYMLINKS        1
 #define DFLT_OPT_FOLLOWSYMLINKS     OPT_NOFOLLOWSYMLINKS
     unsigned char follow_symbolic_links;
-/* cross fs boundaries (option -x) */
+/* cross fs boundaries (option -b) */
 #define OPT_NOCROSSFSBOUNDARIES     0
 #define OPT_CROSSFSBOUNDARIES       1
 #define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES

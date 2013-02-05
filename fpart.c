@@ -108,7 +108,7 @@ usage(void)
     fprintf(stderr, "\n");
     fprintf(stderr, "Filesystem crawling control:\n");
     fprintf(stderr, "  -l\tfollow symbolic links\n");
-    fprintf(stderr, "  -x\tdo not cross filesystem boundaries\n");
+    fprintf(stderr, "  -b\tdo not cross filesystem boundaries\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Directory handling:\n");
     fprintf(stderr, "  -z\tpack empty directories "
@@ -239,7 +239,7 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:evlxzZd:DLw:W:p:q:r:")) !=
+    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:evlbzZd:DLw:W:p:q:r:")) !=
         -1) {
         switch(ch) {
             case '?':
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
             case 'l':
                 options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
                 break;
-            case 'x':
+            case 'b':
                 options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
                 break;
             case 'z':
