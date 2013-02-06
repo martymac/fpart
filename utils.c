@@ -67,6 +67,9 @@
 /* opendir(3) */
 #include <dirent.h>
 
+/* fnmatch(3) */
+#include <fnmatch.h>
+
 /****************
  Helper functions
  ****************/
@@ -153,7 +156,8 @@ get_size(char *file_path, struct stat *file_stat,
      will not be prefixed by cwd. Everything else will.
    - returned pointer must be manually freed later */
 char *
-abs_path(const char *path) {
+abs_path(const char *path)
+{
     assert(path != NULL);
 
     char *cwd = NULL;       /* current working directory */
@@ -191,4 +195,132 @@ abs_path(const char *path) {
         free(cwd);
 
     return (abs);
+}
+
+/* Push str into array and update num
+   - allocate memory for array if NULL
+   - return 0 (success) or 1 (failure) */
+int
+str_push(char ***array, unsigned int *num, const char * const str)
+{
+    assert(array != NULL);
+    assert(num != NULL);
+    assert(str != NULL);
+    assert(((*array == NULL) && (*num == 0)) ||
+        ((*num > 0) && (*array != NULL)));
+
+    /* allocate new string */
+    char *tmp_str = NULL;
+    size_t malloc_size = strlen(str) + 1;
+    if((tmp_str = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        return (1);
+    }
+    snprintf(tmp_str, malloc_size, "%s", str);
+
+    /* add new char *pointer to array */
+    *array = realloc(*array, sizeof(char *) * ((*num) + 1));
+    if(*array == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        free(tmp_str);
+        return (1);
+    }
+    (*array)[*num] = tmp_str;
+    *num += 1;
+
+    return (0);
+}
+
+/* Cleanup str array
+   - remove and free() every str from array
+   - free() and NULL'ify array
+   - update num */
+void
+str_cleanup(char ***array, unsigned int *num)
+{
+    assert(num != NULL);
+    assert(array != NULL);
+    assert(((*array == NULL) && (*num == 0)) ||
+        ((*num > 0) && (*array != NULL)));
+
+    while(*num > 0) {
+        if((*array)[(*num) - 1] != NULL) {
+            free((*array)[(*num) - 1]);
+            (*array)[(*num) - 1] = NULL;
+            *num -= 1;
+        }
+    }
+    free(*array);
+    *array = NULL;
+
+    return;
+}
+
+/* Match str against array of str
+   - return 0 (no match) or 1 (match) */
+int
+str_match(const char * const * const array, const unsigned int num,
+    const char * const str, const unsigned char ignore_case)
+{
+    assert(str != NULL);
+
+    if(array == NULL)
+        return (0);
+
+    unsigned int i = 0;
+    while(i < num) {
+        if(fnmatch(array[i], str, ignore_case ? FNM_CASEFOLD : 0) == 0)
+            return(1);
+        i++;
+    }
+    return (0);
+}
+
+/* Validate a file name regarding program options
+   - do not check inclusion lists for directories (we must be able to crawl
+     the entire file hierarchy)
+   - return 0 if file is not valid, 1 if it is */
+int
+valid_filename(char *filename, struct program_options *options,
+    unsigned char file_is_dir)
+{
+    assert(filename != NULL);
+    assert(options != NULL);
+
+    int valid = 1;
+
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): checking name validity for %s: %s\n", __func__,
+        file_is_dir ? "directory" : "file", filename);
+#endif
+
+    /* check for includes (options -y and -Y), for files only */
+    if(!file_is_dir) {
+        if((options->include_files != NULL) ||
+            (options->include_files_ci != NULL)) {
+            /* switch to default exclude, unless file found in lists */
+            valid = 0;
+
+            if(str_match((const char * const * const)(options->include_files),
+                options->ninclude_files, filename, 0) ||
+                str_match((const char * const * const)(options->include_files_ci),
+                options->ninclude_files_ci, filename, 1))
+                valid = 1;
+        }
+    }
+
+    /* check for excludes (options -x and -X) */
+    if(str_match((const char * const * const)(options->exclude_files),
+        options->nexclude_files, filename, 0) ||
+        str_match((const char * const * const)(options->exclude_files_ci),
+        options->nexclude_files_ci, filename, 1))
+        valid = 0;
+
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): %s: %s, validity: %s\n", __func__,
+        file_is_dir ? "directory" : "file", filename,
+        valid ? "valid" : "invalid");
+#endif
+
+    return (valid);
 }

@@ -663,6 +663,13 @@ add_directory:
                     fsize_t curdir_size = 0;
                     char *curdir_entry_path = NULL;
 
+                    /* check for name validity regarding include/exclude
+                       options; consider directory as a file to honour include
+                       rules too */
+                    if(!valid_filename(p->fts_name, options, 0)) {
+                        goto reset_directory;
+                    }
+
                     /* count ending '/' and '\0', even if an ending '/' is not
                        added */
                     size_t malloc_size = p->fts_pathlen + 1 + 1;
@@ -713,6 +720,7 @@ add_directory:
                 }
 
                 /* reset parent (now current) dir state */
+reset_directory:
                 curdir_empty = 0;
                 curdir_dirsfound = 1;
                 curdir_addme = 0;
@@ -723,6 +731,12 @@ add_directory:
             {
                 curdir_empty = 1; /* enter directory, mark it as empty */
                 curdir_dirsfound = 0; /* no dirs found yet */
+
+                /* check for name validity regarding exclude options */
+                if(!valid_filename(p->fts_name, options, 1)) {
+                    fts_set(ftsp, p, FTS_SKIP);
+                    continue;
+                }
 
                 /* if dir_depth requested and reached,
                    skip descendants but add directory entry (in post order) */
@@ -743,6 +757,10 @@ add_directory:
                FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
                 curdir_empty = 0; /* mark current dir as non empty */
+
+                /* check for name validity regarding include/exclude options,*/
+                if(!valid_filename(p->fts_name, options, 0))
+                    continue;
 
                 /* skip file entry when in leaf dirs mode (option -D) and no
                    directory has been found in current directory (i.e. we are

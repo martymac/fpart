@@ -40,6 +40,10 @@
 .Op Fl v
 .Op Fl l
 .Op Fl b
+.Op Fl y Ar pattern
+.Op Fl Y Ar pattern
+.Op Fl x Ar pattern
+.Op Fl X Ar pattern
 .Op Fl z
 .Op Fl Z
 .Op Fl d Ar depth
@@ -141,6 +145,33 @@ Verbose mode (may be specified more than once).
 Follow symbolic links (default: do not follow).
 .It Fl b
 Do not cross filesystem boundaries (default: cross).
+.It Ic -y Ar pattern
+Include files or directories matching
+.Ar pattern
+only (and discard all other files). This option may be specified several times.
+It does not apply when computing size of directories to be added as leaf
+entries (the computed size will then include every file within directory).
+.It Ic -Y Ar pattern
+Same as
+.Fl y
+but case insensitive. This option may not be available on your platform (at
+least FreeBSD and GNU/Linux support it, Solaris does not).
+.It Ic -x Ar pattern
+Exclude files or directories matching
+.Ar pattern .
+This option can be used in conjunction with
+.Fl y
+and
+.Fl Y .
+In this case, exclusion is performed after. This option may be specified
+several times. It does not apply when computing size of directories
+to be added as leaf entries (the computed size will then include every file
+within directory).
+.It Ic -X Ar pattern
+Same as
+.Fl x
+but case insensitive. This option may not be available on your platform (at
+least FreeBSD and GNU/Linux support it, Solaris does not).
 .El
 .Sh DIRECTORY HANDLING
 .Bl -tag -width indent

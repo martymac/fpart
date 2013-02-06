@@ -1,9 +1,10 @@
 2013/??/??  0.7
     - Added option -D to group leaf directories as single file entries
     - Big options and doc update/cleanup
-    - Renamed option '-x' to '-b'
     - Sync'd fts(3) code with current FreeBSD version (svn rev 245505)
     - Embedded fts(3) can now be used on GNU/Linux
+    - Renamed option '-x' to '-b'
+    - Added options '-y', '-Y', '-x' and '-X' to include or exclude files
 2013/01/21  0.6
     - Options handling cleanup and various bugfixes
     - Added FPART_PID and FPART_HOOKTYPE hook variables
@@ -18,8 +19,8 @@
     - Fix stack overflow when allocating file entry pointers' array
     - Added preloading/rounding options -p, -q and -r. See fpart(1)
     - Added more verbose messages (option '-v')
-    - Better error handling when unable to add file entries
-      (mostly when running out of memory)
+    - Better error handling when unable to add file entries (mostly when
+      running out of memory)
     - Verbose mode now accepts several levels
     - Added option '-m' (disabled by default), that tries to lower physical
       memory usage (at least during FS crawling) by using temporary file(s)

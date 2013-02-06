@@ -109,6 +109,16 @@ usage(void)
     fprintf(stderr, "Filesystem crawling control:\n");
     fprintf(stderr, "  -l\tfollow symbolic links\n");
     fprintf(stderr, "  -b\tdo not cross filesystem boundaries\n");
+    fprintf(stderr, "  -y\tinclude files matching <pattern> only (may be "
+        "specified more than once)\n");
+#if defined(_HAS_FNM_CASEFOLD)
+    fprintf(stderr, "  -Y\tsame as -y, but ignore case\n");
+#endif
+    fprintf(stderr, "  -x\texclude files matching <pattern> (may be specified "
+        "more than once)\n");
+#if defined(_HAS_FNM_CASEFOLD)
+    fprintf(stderr, "  -X\tsame as -x, but ignore case\n");
+#endif
     fprintf(stderr, "\n");
     fprintf(stderr, "Directory handling:\n");
     fprintf(stderr, "  -z\tpack empty directories "
@@ -239,8 +249,13 @@ int main(int argc, char** argv)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(argc, argv, "?hVn:f:s:i:ao:evlbzZd:DLw:W:p:q:r:")) !=
-        -1) {
+    while((ch = getopt(argc, argv,
+#if defined(_HAS_FNM_CASEFOLD)
+        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DLw:W:p:q:r:"
+#else
+        "?hVn:f:s:i:ao:evlby:x:zZd:DLw:W:p:q:r:"
+#endif
+        )) != -1) {
         switch(ch) {
             case '?':
             case 'h':
@@ -348,6 +363,41 @@ int main(int argc, char** argv)
             case 'b':
                 options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
                 break;
+            case 'y':
+            case 'Y':   /* needs _HAS_FNM_CASEFOLD */
+            case 'x':
+            case 'X':   /* needs _HAS_FNM_CASEFOLD */
+            {
+                char ***dst_list = NULL;
+                unsigned int *dst_num = NULL;
+                switch(ch) {
+                    case 'y':
+                        dst_list = &options.include_files;
+                        dst_num = &options.ninclude_files;
+                    break;
+                    case 'Y':
+                        dst_list = &options.include_files_ci;
+                        dst_num = &options.ninclude_files_ci;
+                    break;
+                    case 'x':
+                        dst_list = &options.exclude_files;
+                        dst_num = &options.nexclude_files;
+                    break;
+                    case 'X':
+                        dst_list = &options.exclude_files_ci;
+                        dst_num = &options.nexclude_files_ci;
+                    break;
+                }
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* push string */
+                if(str_push(dst_list, dst_num, optarg) != 0) {
+                    uninit_options(&options);
+                    return (1);
+                }
+                break;
+            }
             case 'z':
                 options.empty_dirs = OPT_EMPTYDIRS;
                 break;
@@ -483,6 +533,26 @@ int main(int argc, char** argv)
         usage();
         uninit_options(&options);
         return (1);
+    }
+
+    if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
+        if((options.add_slash != DFLT_OPT_ADDSLASH) ||
+            (options.follow_symbolic_links != DFLT_OPT_FOLLOWSYMLINKS) ||
+            (options.cross_fs_boundaries != DFLT_OPT_CROSSFSBOUNDARIES) ||
+            (options.include_files != NULL) ||
+            (options.include_files_ci != NULL) ||
+            (options.exclude_files != NULL) ||
+            (options.exclude_files_ci != NULL) ||
+            (options.empty_dirs != DFLT_OPT_EMPTYDIRS) ||
+            (options.dnr_empty != DFLT_OPT_DNREMPTY) ||
+            (options.dir_depth != DFLT_OPT_DIR_DEPTH) ||
+            (options.leaf_dirs != DFLT_OPT_LEAFDIRS)) {
+        fprintf(stderr,
+            "Option -a is incompatible with crawling-related options.\n");
+        usage();
+        uninit_options(&options);
+        return (1);
+        }
     }
 
     if((options.live_mode == OPT_NOLIVEMODE) &&

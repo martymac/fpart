@@ -34,6 +34,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/* fnmatch(3) and FNM_CASEFOLD
+   FNM_CASEFOLD is a GNU extension and may not be available */
+#include <fnmatch.h>
+#if defined(FNM_CASEFOLD)
+#define _HAS_FNM_CASEFOLD
+#else
+#define FNM_CASEFOLD        0
+#if defined(DEBUG)
+#warning FNM_CASEFOLD not supported by fnmatch(3), \
+    options '-X' and '-Y' disabled
+#endif
+#endif
+
 #define round_num(x, y) \
     ((((x) % (y)) != 0) ? (((x) / (y)) * (y) + (y)) : (x))
 
@@ -48,5 +61,11 @@ unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);
 char *abs_path(const char *path);
+int str_push(char ***array, unsigned int *num, const char * const str);
+void str_cleanup(char ***array, unsigned int *num);
+int str_match(const char * const * const array, const unsigned int num,
+    const char * const str, const unsigned char ignore_case);
+int valid_filename(char *filename, struct program_options *options,
+    unsigned char file_is_dir);
 
 #endif /* _UTILS_H */

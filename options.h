@@ -76,6 +76,18 @@ struct program_options {
 #define OPT_CROSSFSBOUNDARIES       1
 #define DFLT_OPT_CROSSFSBOUNDARIES  OPT_CROSSFSBOUNDARIES
     unsigned char cross_fs_boundaries;
+/* include files, case sensitive (option -y) */
+    char **include_files;
+    unsigned int ninclude_files;
+/* include files, case insensitive (option -Y) */
+    char **include_files_ci;
+    unsigned int ninclude_files_ci;
+/* exclude files, case sensitive (option -x) */
+    char **exclude_files;
+    unsigned int nexclude_files;
+/* exclude files, case insensitive (option -X) */
+    char **exclude_files_ci;
+    unsigned int nexclude_files_ci;
 /* include empty directories (option -z) */
 #define OPT_NOEMPTYDIRS             0
 #define OPT_EMPTYDIRS               1
