@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include "utils.h"
 #include "options.h"
 
 /* NULL */
@@ -79,6 +80,14 @@ init_options(struct program_options *options)
     options->verbose = DFLT_OPT_VERBOSE;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
+    options->include_files = NULL;
+    options->ninclude_files = 0;
+    options->include_files_ci = NULL;
+    options->ninclude_files_ci = 0;
+    options->exclude_files = NULL;
+    options->nexclude_files = 0;
+    options->exclude_files_ci = NULL;
+    options->nexclude_files_ci = 0;
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
@@ -107,6 +116,18 @@ uninit_options(struct program_options *options)
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->dnr_empty = DFLT_OPT_DNREMPTY;
     options->empty_dirs = DFLT_OPT_EMPTYDIRS;
+    if(options->exclude_files_ci != NULL)
+        str_cleanup(&(options->exclude_files_ci),
+            &(options->nexclude_files_ci));
+    if(options->exclude_files != NULL)
+        str_cleanup(&(options->exclude_files),
+            &(options->nexclude_files));
+    if(options->include_files_ci != NULL)
+        str_cleanup(&(options->include_files_ci),
+            &(options->ninclude_files_ci));
+    if(options->include_files != NULL)
+        str_cleanup(&(options->include_files),
+            &(options->ninclude_files));
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->verbose = DFLT_OPT_VERBOSE;

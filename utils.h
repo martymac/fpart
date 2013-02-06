@@ -48,5 +48,11 @@ unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);
 char *abs_path(const char *path);
+int str_push(char ***array, unsigned int *num, const char * const str);
+void str_cleanup(char ***array, unsigned int *num);
+int str_match(const char * const * const array, const unsigned int num,
+    const char * const str, const unsigned char ignore_case);
+int valid_filename(char *filename, struct program_options *options,
+    unsigned char file_is_dir);
 
 #endif /* _UTILS_H */
