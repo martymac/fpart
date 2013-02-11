@@ -2,12 +2,6 @@ TODO (ideas) :
 **************
 
 - Use autotools or a similar tool
-- Option -D could theoretically be improved by skipping analysis and immediately
-  adding current directory as soon as something other than a directory is found
-  (and no directory has been found within). This would avoid visiting every
-  files of the directory while we already know it has to be added (and a second
-  visit scheduled to compute its size). This improvement implies finding
-  a way to have fts(3) immediately skip a directory *currently* being visited.
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
