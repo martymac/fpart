@@ -282,7 +282,7 @@ str_match(const char * const * const array, const unsigned int num,
    - return 0 if file is not valid, 1 if it is */
 int
 valid_filename(char *filename, struct program_options *options,
-    unsigned char file_is_dir)
+    unsigned char is_leaf)
 {
     assert(filename != NULL);
     assert(options != NULL);
@@ -291,11 +291,11 @@ valid_filename(char *filename, struct program_options *options,
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): checking name validity for %s: %s\n", __func__,
-        file_is_dir ? "directory" : "file", filename);
+        is_leaf ? "leaf" : "directory", filename);
 #endif
 
-    /* check for includes (options -y and -Y), for files only */
-    if(!file_is_dir) {
+    /* check for includes (options -y and -Y), for leaves only */
+    if(is_leaf) {
         if((options->include_files != NULL) ||
             (options->include_files_ci != NULL)) {
             /* switch to default exclude, unless file found in lists */
@@ -318,7 +318,7 @@ valid_filename(char *filename, struct program_options *options,
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): %s: %s, validity: %s\n", __func__,
-        file_is_dir ? "directory" : "file", filename,
+        is_leaf ? "leaf" : "directory", filename,
         valid ? "valid" : "invalid");
 #endif
 

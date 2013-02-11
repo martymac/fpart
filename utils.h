@@ -66,6 +66,6 @@ void str_cleanup(char ***array, unsigned int *num);
 int str_match(const char * const * const array, const unsigned int num,
     const char * const str, const unsigned char ignore_case);
 int valid_filename(char *filename, struct program_options *options,
-    unsigned char file_is_dir);
+    unsigned char is_leaf);
 
 #endif /* _UTILS_H */

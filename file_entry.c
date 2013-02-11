@@ -664,9 +664,8 @@ add_directory:
                     char *curdir_entry_path = NULL;
 
                     /* check for name validity regarding include/exclude
-                       options; consider directory as a file to honour include
-                       rules too */
-                    if(!valid_filename(p->fts_name, options, 0)) {
+                       options; directory is a leaf */
+                    if(!valid_filename(p->fts_name, options, 1)) {
                         goto reset_directory;
                     }
 
@@ -733,7 +732,7 @@ reset_directory:
                 curdir_dirsfound = 0; /* no dirs found yet */
 
                 /* check for name validity regarding exclude options */
-                if(!valid_filename(p->fts_name, options, 1)) {
+                if(!valid_filename(p->fts_name, options, 0)) {
                     fts_set(ftsp, p, FTS_SKIP);
                     continue;
                 }
@@ -759,7 +758,7 @@ reset_directory:
                 curdir_empty = 0; /* mark current dir as non empty */
 
                 /* check for name validity regarding include/exclude options,*/
-                if(!valid_filename(p->fts_name, options, 0))
+                if(!valid_filename(p->fts_name, options, 1))
                     continue;
 
                 /* skip file entry when in leaf dirs mode (option -D) and no
