@@ -700,7 +700,7 @@ add_directory:
                         curdir_size = 0;
                     else
                         curdir_size =
-                            get_size(p->fts_path, p->fts_statp, options);
+                            get_size(p->fts_accpath, p->fts_statp, options);
 
                     /* add or display it */
                     if(handle_file_entry
@@ -772,7 +772,7 @@ reset_directory:
                 /* add or display it */
                 if(handle_file_entry
                     (head, p->fts_path,
-                    get_size(p->fts_path, p->fts_statp, options),
+                    get_size(p->fts_accpath, p->fts_statp, options),
                     options) == 0)
                     (*count)++;
                 else {
