@@ -1,4 +1,4 @@
-2013/??/??  0.7
+2013/02/18  0.7
     - Added option -D to group leaf directories as single file entries
     - Big options and doc update/cleanup
     - Sync'd fts(3) code with current FreeBSD version (svn rev 245505)
