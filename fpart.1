@@ -60,7 +60,6 @@ The
 .Nm
 utility helps you sort file trees and pack them into bags
 (called "partitions").
-.Pp
 .Sh GENERAL OPTIONS
 .Bl -tag -width indent
 .It Fl h
@@ -78,7 +77,7 @@ files. This option cannot be used in conjunction
 with
 .Fl f ,
 .Fl s
-or 
+or
 .Fl L .
 .It Ic -f Ar files
 Create partitions containing at most
@@ -184,7 +183,7 @@ or
 options). This option can be useful for tools such as
 .Xr rsync 1
 to be able to recreate a full file tree when used with fpart (e.g. using
-rsync's --files-from option). See the 
+rsync's --files-from option). See the
 .Fl Z
 option to also pack un-readable directories.
 .It Fl Z
@@ -298,7 +297,10 @@ and sort them.
 .Xr du 1 ,
 .Xr grep 1
 .Sh AUTHOR, AVAILABILITY
-Fpart has been written by Ganaël LAPLANCHE and is available under the BSD
-license on \fIhttp://contribs.martymac.org\fR
+Fpart has been written by
+.An Gana\(:el LAPLANCHE
+and is available under the BSD
+license on
+.Lk http://contribs.martymac.org
 .Sh BUGS
 No bug known (yet).
