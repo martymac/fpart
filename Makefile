@@ -1,1 +1,1 @@
-Makefile.freebsd
+Makefile.bsd
