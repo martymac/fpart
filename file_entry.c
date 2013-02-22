@@ -666,6 +666,9 @@ add_directory:
                     /* check for name validity regarding include/exclude
                        options; directory is a leaf */
                     if(!valid_filename(p->fts_name, options, 1)) {
+                        if(options->verbose >= OPT_VERBOSE)
+                            fprintf(stderr, "Skipping directory: '%s'\n",
+                                p->fts_path);
                         goto reset_directory;
                     }
 
@@ -733,6 +736,9 @@ reset_directory:
 
                 /* check for name validity regarding exclude options */
                 if(!valid_filename(p->fts_name, options, 0)) {
+                    if(options->verbose >= OPT_VERBOSE)
+                        fprintf(stderr, "Skipping directory: '%s'\n",
+                            p->fts_path);
                     fts_set(ftsp, p, FTS_SKIP);
                     continue;
                 }
@@ -758,8 +764,11 @@ reset_directory:
                 curdir_empty = 0; /* mark current dir as non empty */
 
                 /* check for name validity regarding include/exclude options,*/
-                if(!valid_filename(p->fts_name, options, 1))
+                if(!valid_filename(p->fts_name, options, 1)) {
+                    if(options->verbose >= OPT_VERBOSE)
+                        fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
                     continue;
+                }
 
                 /* skip file entry when in leaf dirs mode (option -D) and no
                    directory has been found in current directory (i.e. we are
