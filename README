@@ -86,7 +86,7 @@ http://en.wikipedia.org/wiki/Bin_packing_problem
 I am sure you will also be interested in :
 https://github.com/jbd/packo
 
-which was developped by jbd as the original proof of concept.
+which was developped by Jean-Baptiste Denis as the original proof of concept.
 
 Author / Licence :
 ******************
@@ -94,7 +94,7 @@ Author / Licence :
 Fpart has been written by Ganaël LAPLANCHE <ganael.laplanche@martymac.org>
 and is available under the BSD license (see COPYING for details).
 
-Thanks to jbd for having given me the idea of this program !
+Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
 Contributions :
 ***************
