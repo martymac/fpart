@@ -25,7 +25,7 @@ Compatibility :
 Fpart has been successfully tested on :
 
 * FreeBSD (7x, 8x, 9x, amd64)
-* GNU/Linux (2.6.32, x86_64)
+* GNU/Linux (x86_64, arm)
 * Solaris 10 (i386)
 * Solaris 9 (Sparc)
 * NetBSD (amd64, alpha)
