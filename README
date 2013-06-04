@@ -63,7 +63,7 @@ Examples - migrating data :
 
 The following example will show you how to use fpart, GNU Parallel and Rsync to
 split up a directory and immediately schedule data synchronization of smaller
-lists of files, while FS crawling continues. We will be synchronizing data from
+lists of files, while FS crawling goes on. We will be synchronizing data from
 /data/src to /data/dest.
 
 First, go to the source directory (as rsync's --files-from option takes a file
@@ -71,37 +71,47 @@ list relative to its source directory) :
 
 $ cd /data/src
 
-Then, run fpart from here, and use the -L (live) and -W (post-part hook)
-options :
+Then, run fpart from here :
 
-$ fpart -f 10000 -o /tmp/part.out -x .snapshot -x .zfs -Z -L -W \
+$ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -Z -o /tmp/part.out -W \
   'SHELL=/bin/sh HOME=/home/martymac
     /usr/local/bin/sem -j 3
       "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
         /data/src/ /data/dest/"' .
 
-This command will generate partitions containing at most 10000 files and, for
-each one, run the following post-part hook :
+This command will start fpart in live mode (option -L), making it generate
+partitions during FS crawling. Fpart will produce partitions containing at most
+10000 files each (option -f), will skip files and folders named '.snapshot' or
+'.zfs' (option -x) and will list empty and non-accessible directories (option
+-Z; that option is necessary when working with rsync to make sure the whole file
+tree will be re-created within the destination directory). Last but not least,
+each partition will be written to /tmp/part.out.<n> (option -o; <n> is the
+partition index and will be automatically added by fpart) and used within the
+post-part hook (option -W), run immediately by fpart once the partition is
+complete :
 
 SHELL=/bin/sh HOME=/home/martymac /usr/local/bin/sem -j 3
     "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
 
-which is itself a nested command.  This hook will run GNU Parallel's sem
-scheduler (any other scheduler will do) to run at most 3 rsync in parallel.
+This hook is itself a nested command.  It will run GNU Parallel's sem scheduler
+(any other scheduler will do) to run at most 3 rsync in parallel.
 
 The scheduler will finally trigger the following command :
 
 /usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
 
-where ${FPART_PARTFILENAME} will be part of rsync's environment when it runs
-(it is set by fpart). It will contain the file name of the partition that has
-just been generated (other useful variables are available, see fpart(1)).
+where ${FPART_PARTFILENAME} is not expanded yet and will be part of rsync's
+environment when it runs (it is set by fpart). It will contain the file name of
+the partition that has just been generated (other useful variables are
+available, see fpart(1)).
 
-In this simple example, file crawling and data transfer are run from the 
-same - local - machine, but you can use it as the basis of a much sophisticated 
+That's all, folks ! Pretty simple, isn't it ?
+
+In this basic example, file crawling and data transfer are run from the same
+-local- machine, but you can use it as the basis of a much sophisticated 
 solution : at work, by using a cluster of machines connected to our filers
 through NFS and running Open Grid Scheduler, we successully migrated over
-400 TB of data. Simple and efficient, isn't it ?
+400 TB of data.
 
 Installing :
 ************
