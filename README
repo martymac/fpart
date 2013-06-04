@@ -32,8 +32,8 @@ Fpart has been successfully tested on :
 
 and will probably work on other operating systems too.
 
-Examples :
-**********
+Examples - common usage :
+*************************
 
 The following will produce 3 partitions, with (approximatively) the same size
 and number of files. This can be used (for example) to launch several rsync
@@ -57,6 +57,51 @@ not examine the filesystem but instead re-use arbitrary values printed by du(1)
 and sort them :
 
 $ du * | fpart -n 2 -a
+
+Examples - migrating data :
+***************************
+
+The following example will show you how to use fpart, GNU Parallel and Rsync to
+split up a directory and immediately schedule data synchronization of smaller
+lists of files, while FS crawling continues. We will be synchronizing data from
+/data/src to /data/dest.
+
+First, go to the source directory (as rsync's --files-from option takes a file
+list relative to its source directory) :
+
+$ cd /data/src
+
+Then, run fpart from here, and use the -L (live) and -W (post-part hook)
+options :
+
+$ fpart -f 10000 -o /tmp/part.out -x .snapshot -x .zfs -Z -L -W \
+  'SHELL=/bin/sh HOME=/home/martymac
+    /usr/local/bin/sem -j 3
+      "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
+        /data/src/ /data/dest/"' .
+
+This command will generate partitions containing at most 10000 files and, for
+each one, run the following post-part hook :
+
+SHELL=/bin/sh HOME=/home/martymac /usr/local/bin/sem -j 3
+    "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
+
+which is itself a nested command.  This hook will run GNU Parallel's sem
+scheduler (any other scheduler will do) to run at most 3 rsync in parallel.
+
+The scheduler will finally trigger the following command :
+
+/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
+
+where ${FPART_PARTFILENAME} will be part of rsync's environment when it runs
+(it is set by fpart). It will contain the file name of the partition that has
+just been generated (other useful variables are available, see fpart(1)).
+
+In this simple example, file crawling and data transfer are run from the 
+same - local - machine, but you can use it as the basis of a much sophisticated 
+solution : at work, by using a cluster of machines connected to our filers
+through NFS and running Open Grid Scheduler, we successully migrated over
+400 TB of data. Simple and efficient, isn't it ?
 
 Installing :
 ************
@@ -99,7 +144,7 @@ Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 Contributions :
 ***************
 
-FTS code comes from FreeBSD sources (8.2-RELEASE) :
+FTS code comes from FreeBSD :
     lib/libc/gen/fts.c -> fts.c
     include/fts.h -> fts.h
-It is available under the BSD license.
+and is available under the BSD license.
