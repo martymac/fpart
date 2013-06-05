@@ -269,11 +269,8 @@ is done *before* rounding.
 Here are some examples:
 .Bl -tag -width indent
 .It Li "fpart -n 3 -o var-parts /var"
-Produce 3 partitions, with (hopefully) the same size and number of files. This
-can be used (for example) to launch several
-.Xr rsync 1
-commands in parallel. 3 files: var-parts.0, var-parts.1 and var-parts.2 are
-generated as output.
+Produce 3 partitions, with (hopefully) the same size and number of files.
+Three files: var-parts.0, var-parts.1 and var-parts.2 are generated as output.
 .It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
 Produce partitions of 4.4 GB, containing music files from /path/to/music as well
 as MP3 files from current directory; with such a partition size, each partition

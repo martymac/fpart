@@ -36,10 +36,16 @@ Examples - common usage :
 *************************
 
 The following will produce 3 partitions, with (approximatively) the same size
-and number of files. This can be used (for example) to launch several rsync
-commands in parallel. 3 files, "var-parts.[0-2]", are generated as output :
+and number of files. Three files : "var-parts.[0-2]", are generated as output :
 
 $ fpart -n 3 -o var-parts /var
+
+$ ls var-parts*
+var-parts.0 var-parts.1 var-parts.2
+
+$ head -n 2 var-parts.0
+/var/some/file1
+/var/some/file2
 
 The following will produce partitions of 4.3 GB, containing music files ready
 to be burnt to a DVD (for example). Files "music-parts.[0-n]", are generated
