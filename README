@@ -30,7 +30,10 @@ Fpart has been successfully tested on :
 * Solaris 9 (Sparc)
 * NetBSD (amd64, alpha)
 
-and will probably work on other operating systems too.
+and will probably work on other operating systems too (*).
+
+(*) fpart built as a static binary within a Debian (armel) chroot will give you
+a powerful tool for backing-up your Android (arm) phone; see Makefile.armel ;-)
 
 Examples - common usage :
 *************************
@@ -151,6 +154,14 @@ In this example, file crawling and data transfer are run from the same -local-
 machine, but you can use it as the basis of a much sophisticated solution : at
 work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
+
+Limitations :
+*************
+
+Fpart will *NOT* modify data, it will *NOT* split your files !
+
+As a consequence, if you have a directory containing several small files and a huge one, it will
+be unable to produce partitions with the same size. Fpart does magic, but not that much ;-)
 
 Installing :
 ************
