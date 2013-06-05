@@ -58,13 +58,50 @@ and sort them :
 
 $ du * | fpart -n 2 -a
 
+Examples - live mode :
+**********************
+
+By default, fpart will wait for FS crawling to terminate before generating and
+displaying partitions. If you use the live mode (option -L), fpart will display
+each partition as soon as it is complete. You can combine this option with
+hooks; they will be triggered just before (pre-part hook, option -w) or after
+(post-part hook, option -W) partitions' completion.
+
+Hooks provide several environment variables (see fpart(1)); they are a
+convenient way of getting information about fpart's and partition's current
+states. For example, ${FPART_PARTFILENAME} will contain the name of the output
+file of the partition that has just been generated; using that variable within a
+post-part hook permits starting manipulating the files just after partition
+generation.
+
+See the following example :
+
+$ mkdir foo && touch foo/{bar,baz}
+$ fpart -L -f 1 -o /tmp/part.out -W \
+    'echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}' foo/
+== /tmp/part.out.0 ==
+foo/bar
+== /tmp/part.out.1 ==
+foo/baz
+2 file(s) found.
+
+This example crawls foo/ in live mode (option -L). For each file (option -f,
+1 file per partition), it generates a partition into /tmp/part.out.<n>
+(option -o; <n> is the partition index and will be automatically added by fpart)
+and executes the following post-part hook (option -W) :
+
+echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
+
+This hook will display the name of current partition's output file name as well
+as display its contents.
+
 Examples - migrating data :
 ***************************
 
-The following example will show you how to use fpart, GNU Parallel and Rsync to
-split up a directory and immediately schedule data synchronization of smaller
-lists of files, while FS crawling goes on. We will be synchronizing data from
-/data/src to /data/dest.
+Here is a more complex example that will show you how to use fpart, GNU Parallel
+and Rsync to split up a directory and immediately schedule data synchronization
+of smaller lists of files, while FS crawling goes on. We will be synchronizing
+data from /data/src to /data/dest.
 
 First, go to the source directory (as rsync's --files-from option takes a file
 list relative to its source directory) :
@@ -85,33 +122,29 @@ partitions during FS crawling. Fpart will produce partitions containing at most
 '.zfs' (option -x) and will list empty and non-accessible directories (option
 -Z; that option is necessary when working with rsync to make sure the whole file
 tree will be re-created within the destination directory). Last but not least,
-each partition will be written to /tmp/part.out.<n> (option -o; <n> is the
-partition index and will be automatically added by fpart) and used within the
-post-part hook (option -W), run immediately by fpart once the partition is
+each partition will be written to /tmp/part.out.<n> (option -o) and used within
+the post-part hook (option -W), run immediately by fpart once the partition is
 complete :
 
 SHELL=/bin/sh HOME=/home/martymac /usr/local/bin/sem -j 3
     "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
 
-This hook is itself a nested command.  It will run GNU Parallel's sem scheduler
+This hook is itself a nested command. It will run GNU Parallel's sem scheduler
 (any other scheduler will do) to run at most 3 rsync in parallel.
 
 The scheduler will finally trigger the following command :
 
 /usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
 
-where ${FPART_PARTFILENAME} is not expanded yet and will be part of rsync's
-environment when it runs (it is set by fpart). It will contain the file name of
-the partition that has just been generated (other useful variables are
-available, see fpart(1)).
+where ${FPART_PARTFILENAME} will be part of rsync's environment when it runs
+and contain the file name of the partition that has just been generated.
 
 That's all, folks ! Pretty simple, isn't it ?
 
-In this basic example, file crawling and data transfer are run from the same
--local- machine, but you can use it as the basis of a much sophisticated 
-solution : at work, by using a cluster of machines connected to our filers
-through NFS and running Open Grid Scheduler, we successully migrated over
-400 TB of data.
+In this example, file crawling and data transfer are run from the same -local-
+machine, but you can use it as the basis of a much sophisticated solution : at
+work, by using a cluster of machines connected to our filers through NFS and
+running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
 Installing :
 ************
