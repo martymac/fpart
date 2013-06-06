@@ -59,7 +59,7 @@ $ fpart -s 4617089843 -o music-parts /path/to/my/music
 The following will produce partitions containing 10000 files each by examining
 /usr first and then /home and display only partition 0 on stdout :
 
-$ find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'
+$ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
 
 The following will produce two partitions by re-using du(1) output. Fpart will
 not examine the filesystem but instead re-use arbitrary values printed by du(1)

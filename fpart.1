@@ -276,7 +276,7 @@ Produce partitions of 4.4 GB, containing music files from /path/to/music as well
 as MP3 files from current directory; with such a partition size, each partition
 content will be ready to be burnt to a DVD. Files
 music-parts.0 to music-parts.n, are generated as output.
-.It Li "find /usr ! -type d | ./fpart -f 10000 -i - /home | grep '^0:'"
+.It Li "find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'"
 Produce partitions containing 10000 files each by examining /usr first and then
 /home and display only partition 0 on stdout.
 .It Li "du * | fpart -n 2 -a"
@@ -288,7 +288,6 @@ system but instead use arbitrary values printed by
 and sort them.
 .El
 .Sh SEE ALSO
-.Xr packo 1 ,
 .Xr rsync 1 ,
 .Xr find 1 ,
 .Xr du 1 ,
