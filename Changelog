@@ -1,3 +1,6 @@
+20??/??/??  0.8
+    - Keep environ(7) when forking hooks
+    - Add sections about live mode and data migration in README
 2013/02/18  0.7
     - Added option -D to group leaf directories as single file entries
     - Big options and doc update/cleanup
