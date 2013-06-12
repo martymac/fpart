@@ -67,5 +67,7 @@ int str_match(const char * const * const array, const unsigned int num,
     const char * const str, const unsigned char ignore_case);
 int valid_filename(char *filename, struct program_options *options,
     unsigned char is_leaf);
+char ** clone_env();
+int push_env(char *str, char ***env);
 
 #endif /* _UTILS_H */

@@ -42,7 +42,7 @@
 /* errno */
 #include <errno.h>
 
-/* malloc(3), setenv(3) */
+/* malloc(3) */
 #include <stdlib.h>
 
 /* fts(3) */
@@ -129,7 +129,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     int retval = 0;
 
-    /* our env variables */
+    /* env variables' names */
     char *env_fpart_hooktype_name = "FPART_HOOKTYPE";
     char *env_fpart_partfilename_name = "FPART_PARTFILENAME";
     char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
@@ -137,8 +137,24 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
     char *env_fpart_pid_name = "FPART_PID";
 
-    /* our temporary value string */
-    char *env_value = NULL;
+    /* env variables' values */
+    char *env_fpart_hooktype_string = NULL;
+    char *env_fpart_partfilename_string = NULL;
+    char *env_fpart_partnumber_string = NULL;
+    char *env_fpart_partsize_string = NULL;
+    char *env_fpart_partnumfiles_string = NULL;
+    char *env_fpart_pid_string = NULL;
+
+    /* XXX As setenv(3)/unsetenv(3) are not available on all platforms, and there does not
+    seem to be a standard way of unsetting variables through putenv(3), clone current
+    environment (to avoid working on environ(7)) and add fpart variables. This is a convenient
+    way of starting from a clean environment and add only needed FPART_* variables for each hook
+    (putenv(3) would leave variables from a hook to another, even if next hooks do not need
+    them) */
+    char **envp = clone_env();
+    if(envp == NULL)
+        return (1);
+
     size_t malloc_size = 1; /* empty string */
 
     /* determine the kind of hook we are in */
@@ -152,7 +168,19 @@ fpart_hook(const char *cmd, const struct program_options *options,
                 *live_partition_index, cmd);
 
         /* FPART_HOOKTYPE (pre-part) */
-        setenv(env_fpart_hooktype_name, "pre-part", 1);
+        malloc_size = strlen(env_fpart_hooktype_name) + 1 +
+            strlen("pre-part") + 1;
+        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            retval = 1;
+            goto cleanup;
+        }
+        snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
+            env_fpart_hooktype_name, "pre-part");
+        if(push_env(env_fpart_hooktype_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
     else if(cmd == options->post_part_hook) {
         assert(live_partition_index != NULL);
@@ -164,67 +192,104 @@ fpart_hook(const char *cmd, const struct program_options *options,
                 *live_partition_index, cmd);
 
         /* FPART_HOOKTYPE (post-part) */
-        setenv(env_fpart_hooktype_name, "post-part", 1);
+        malloc_size = strlen(env_fpart_hooktype_name) + 1 +
+            strlen("post-part") + 1;
+        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            retval = 1;
+            goto cleanup;
+        }
+        snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
+            env_fpart_hooktype_name, "post-part");
+        if(push_env(env_fpart_hooktype_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
 
     /* FPART_PARTFILENAME */
-    if(live_filename != NULL)
-        setenv(env_fpart_partfilename_name, live_filename, 1);
-    else
-        unsetenv(env_fpart_partfilename_name);
+    if(live_filename != NULL) {
+        malloc_size = strlen(env_fpart_partfilename_name) + 1 +
+            strlen(live_filename) + 1;
+        if((env_fpart_partfilename_string = malloc(malloc_size)) == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            retval = 1;
+            goto cleanup;
+        }
+        snprintf(env_fpart_partfilename_string, malloc_size, "%s=%s",
+            env_fpart_partfilename_name, live_filename);
+        if(push_env(env_fpart_partfilename_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
+    }
 
     /* FPART_PARTNUMBER */
     if(live_partition_index != NULL) {
-        malloc_size = get_num_digits(*live_partition_index) + 1;
-        if((env_value = malloc(malloc_size)) == NULL) {
+        malloc_size = strlen(env_fpart_partnumber_name) + 1 +
+            get_num_digits(*live_partition_index) + 1;
+        if((env_fpart_partnumber_string = malloc(malloc_size)) == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            return (1);
+            retval = 1;
+            goto cleanup;
         }
-        snprintf(env_value, malloc_size, "%d", *live_partition_index);
-        setenv(env_fpart_partnumber_name, env_value, 1);
-        free(env_value);
+        snprintf(env_fpart_partnumber_string, malloc_size, "%s=%d",
+            env_fpart_partnumber_name, *live_partition_index);
+        if(push_env(env_fpart_partnumber_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
-    else
-        unsetenv(env_fpart_partnumber_name);
 
     /* FPART_PARTSIZE */
     if(live_partition_size != NULL) {
-        malloc_size = get_num_digits(*live_partition_size) + 1;
-        if((env_value = malloc(malloc_size)) == NULL) {
+        malloc_size = strlen(env_fpart_partsize_name) + 1 +
+            get_num_digits(*live_partition_size) + 1;
+        if((env_fpart_partsize_string = malloc(malloc_size)) == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            return (1);
+            retval = 1;
+            goto cleanup;
         }
-        snprintf(env_value, malloc_size, "%lld", *live_partition_size);
-        setenv(env_fpart_partsize_name, env_value, 1);
-        free(env_value);
+        snprintf(env_fpart_partsize_string, malloc_size, "%s=%lld",
+            env_fpart_partsize_name, *live_partition_size);
+        if(push_env(env_fpart_partsize_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
-    else
-        unsetenv(env_fpart_partsize_name);
 
     /* FPART_PARTNUMFILES */
     if(live_num_files != NULL) {
-        malloc_size = get_num_digits(*live_num_files) + 1;
-        if((env_value = malloc(malloc_size)) == NULL) {
+        malloc_size = strlen(env_fpart_partnumfiles_name) + 1 +
+            get_num_digits(*live_num_files) + 1;
+        if((env_fpart_partnumfiles_string = malloc(malloc_size)) == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            return (1);
+            retval = 1;
+            goto cleanup;
         }
-        snprintf(env_value, malloc_size, "%llu", *live_num_files);
-        setenv(env_fpart_partnumfiles_name, env_value, 1);
-        free(env_value);
+        snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%llu",
+            env_fpart_partnumfiles_name, *live_num_files);
+        if(push_env(env_fpart_partnumfiles_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
-    else
-        unsetenv(env_fpart_partnumfiles_name);
 
     /* FPART_PID */
     pid_t fpart_pid = getpid();
-    malloc_size = get_num_digits(fpart_pid) + 1;
-    if((env_value = malloc(malloc_size)) == NULL) {
+    malloc_size = strlen(env_fpart_pid_name) + 1 +
+        get_num_digits(fpart_pid) + 1;
+    if((env_fpart_pid_string = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-        return (1);
+        retval = 1;
+        goto cleanup;
     }
-    snprintf(env_value, malloc_size, "%d", (int)fpart_pid);
-    setenv(env_fpart_pid_name, env_value, 1);
-    free(env_value);
+    snprintf(env_fpart_pid_string, malloc_size, "%s=%d",
+        env_fpart_pid_name, (int)fpart_pid);
+    if(push_env(env_fpart_pid_string, &envp) != 0) {
+        retval = 1;
+        goto cleanup;
+    }
 
     /* fork child process */
     int child_status = 0;
@@ -241,7 +306,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
                     strerror(errno));
                 exit (1);
             }
-            execl(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL);
+            execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
             /* if reached, error */
             exit (1);
         }
@@ -291,6 +356,21 @@ fpart_hook(const char *cmd, const struct program_options *options,
             break;
     }
 
+cleanup:
+    if(envp != NULL)
+        free(envp);
+    if(env_fpart_hooktype_string != NULL)
+        free(env_fpart_hooktype_string);
+    if(env_fpart_partfilename_string != NULL)
+        free(env_fpart_partfilename_string);
+    if(env_fpart_partnumber_string != NULL)
+        free(env_fpart_partnumber_string);
+    if(env_fpart_partsize_string != NULL)
+        free(env_fpart_partsize_string);
+    if(env_fpart_partnumfiles_string != NULL)
+        free(env_fpart_partnumfiles_string);
+    if(env_fpart_pid_string != NULL)
+        free(env_fpart_pid_string);
     return (retval);
 }
 

@@ -324,3 +324,71 @@ valid_filename(char *filename, struct program_options *options,
 
     return (valid);
 }
+
+/* Create a copy of environ(7) and return its address
+   - return a pointer to the copy or NULL if error
+   - returned environ must be freed later */
+char **
+clone_env()
+{
+    int env_size = 0;
+    char **new_env = NULL;
+
+    /* import original environ */
+    extern char **environ;
+
+    /* compute environ size */
+    while(environ[env_size]) env_size++;
+
+    size_t malloc_size = sizeof(char *) * (env_size + 1);
+    if((new_env = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    }
+    else {
+        /* copy each pointer, beginning from the ending NULL value */
+        while(env_size >= 0) {
+            new_env[env_size] = environ[env_size];
+            env_size--;
+        }
+    }
+    return (new_env);
+}
+
+/* Push a str pointer to a cloned environ(7)
+   - return enlarged environ through env
+   - returned environ must be freed later
+   - return 0 (success) or 1 (failure) */
+int
+push_env(char *str, char ***env)
+{
+    assert(str != NULL);
+    assert(env != NULL);
+    assert(*env != NULL);
+
+    int env_size = 0;
+    char **new_env = NULL;
+
+    /* compute environ size */
+    while((*env)[env_size]) env_size++;
+
+    size_t malloc_size = sizeof(char *) * (env_size + 1 + 1);
+    if((new_env = malloc(malloc_size)) == NULL) {
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        return (1);
+    }
+
+    /* copy each pointer, beginning from the ending NULL value */
+    new_env[env_size + 1] = NULL;
+    new_env[env_size] = str;
+    env_size--;
+    while(env_size >= 0) {
+        new_env[env_size] = (*env)[env_size];
+        env_size--;
+    }
+
+    /* free previous environment and update env */
+    free(*env);
+    *env = new_env;
+
+    return (0);
+}
