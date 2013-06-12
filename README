@@ -120,10 +120,9 @@ $ cd /data/src
 Then, run fpart from here :
 
 $ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -Z -o /tmp/part.out -W \
-  'SHELL=/bin/sh HOME=/home/martymac
-    /usr/local/bin/sem -j 3
-      "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
-        /data/src/ /data/dest/"' .
+  '/usr/local/bin/sem -j 3
+    "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
+      /data/src/ /data/dest/"' .
 
 This command will start fpart in live mode (option -L), making it generate
 partitions during FS crawling. Fpart will produce partitions containing at most
@@ -135,7 +134,7 @@ each partition will be written to /tmp/part.out.<n> (option -o) and used within
 the post-part hook (option -W), run immediately by fpart once the partition is
 complete :
 
-SHELL=/bin/sh HOME=/home/martymac /usr/local/bin/sem -j 3
+/usr/local/bin/sem -j 3
     "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
 
 This hook is itself a nested command. It will run GNU Parallel's sem scheduler
