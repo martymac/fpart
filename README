@@ -165,15 +165,13 @@ be unable to produce partitions with the same size. Fpart does magic, but not th
 Installing :
 ************
 
-To install fpart, get the 'Makefile' symlink point to the right Makefile,
-e.g. :
+To install fpart, follow those instructions :
 
-# rm Makefile
-# ln -s Makefile.linux Makefile
+$ ./configure
+$ make
 
-then, type in :
+Then, as root :
 
-# make
 # make install
 
 See also :

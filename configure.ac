@@ -4,7 +4,8 @@ AC_CONFIG_SRCDIR([src/fpart.h])
 AM_INIT_AUTOMAKE(foreign -Wall -Werror)
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC([cc gcc])
+AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
 
@@ -27,16 +28,23 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([bzero fchdir getcwd memmove memset strchr strerror strrchr strtol])
 
-# OS-specific options
-dflt_embfts=false
+# Large file support
+AC_SYS_LARGEFILE
+
+# OS detection
 AC_CANONICAL_HOST
 case "${host_os}" in
-  solaris*) host_os_solaris=true ; dflt_embfts=true ;;
+  solaris2.9) host_os_solaris=true ; host_os_solaris9=true ;;
+  solaris2.10) host_os_solaris=true ;;
   linux*) host_os_linux=true ;;
 esac
 
-# Large file support
-AC_SYS_LARGEFILE
+# Default value for embedded fts support
+dflt_embfts=false
+if test x$host_os_solaris = xtrue
+then
+  dflt_embfts=true
+fi
 
 # Debug option
 AC_ARG_ENABLE([debug],
@@ -56,7 +64,7 @@ AC_ARG_ENABLE([embfts],
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-embfts]) ;;
 esac],[embfts=${dflt_embfts}])
 
-# Enable static build
+# Static build option
 AC_ARG_ENABLE([static],
 [  --enable-static         build static binary],
 [case "${enableval}" in
@@ -69,12 +77,9 @@ esac],[static=false])
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 AM_CONDITIONAL([EMBEDDED_FTS], [test x$embfts = xtrue])
 AM_CONDITIONAL([SOLARIS], [test x$host_os_solaris = xtrue])
+AM_CONDITIONAL([SOLARIS9], [test x$host_os_solaris9 = xtrue])
 AM_CONDITIONAL([LINUX], [test x$host_os_linux = xtrue])
 AM_CONDITIONAL([STATIC], [test x$static = xtrue])
 
-# host_os=solaris2.9
-# host_os=solaris2.10
-
-AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
