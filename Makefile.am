@@ -2,3 +2,4 @@
 EXTRA_DIST = src/types.h Changelog
 
 SUBDIRS = src
+SUBDIRS += man
