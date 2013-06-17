@@ -1,7 +1,6 @@
 TODO (ideas) :
 **************
 
-- Use autotools or a similar tool
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
