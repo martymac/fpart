@@ -33,7 +33,7 @@ Fpart has been successfully tested on :
 and will probably work on other operating systems too (*).
 
 (*) fpart built as a static binary within a Debian (armel) chroot will give you
-a powerful tool for backing-up your Android (arm) phone; see Makefile.armel ;-)
+a powerful tool for backing-up your Android (arm) phone ;-)
 
 Examples - common usage :
 *************************
@@ -159,18 +159,25 @@ Limitations :
 
 Fpart will *NOT* modify data, it will *NOT* split your files !
 
-As a consequence, if you have a directory containing several small files and a huge one, it will
-be unable to produce partitions with the same size. Fpart does magic, but not that much ;-)
+As a consequence, if you have a directory containing several small files and a
+huge one, it will be unable to produce partitions with the same size. Fpart does
+magic, but not that much ;-)
 
 Installing :
 ************
 
-To install fpart, follow those instructions :
+First, if there is no 'configure' script in the main directory, run :
+
+$ autoreconf -i
+
+(autoreconf comes from the GNU autotools), then run :
 
 $ ./configure
 $ make
 
-Then, as root :
+to configure and build fpart.
+
+Finally, install fpart (as root) :
 
 # make install
 
