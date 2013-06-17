@@ -1,5 +1,5 @@
 # Add Changelog to distribution package
-EXTRA_DIST = src/types.h Changelog
+EXTRA_DIST = Changelog
 
 SUBDIRS = src
 SUBDIRS += man
