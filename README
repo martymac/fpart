@@ -166,7 +166,12 @@ magic, but not that much ;-)
 Installing :
 ************
 
-First, if there is no 'configure' script in the main directory, run :
+For FreeBSD users, fpart is already available in ports, see sysutils/fpart. You
+can install fpart from there or from sources if you really need the latest
+revision.
+
+Installing from sources is simple. First, if there is no 'configure' script in
+the main directory, run :
 
 $ autoreconf -i
 
