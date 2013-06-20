@@ -41,7 +41,13 @@ esac
 
 # Default value for embedded fts support
 dflt_embfts=false
+# Enabled on Solaris...
 if test x$host_os_solaris = xtrue
+then
+  dflt_embfts=true
+fi
+# ...as well as on Linux armel
+if test x$host_os_linux = xtrue -a x$host_cpu = xarmv7l
 then
   dflt_embfts=true
 fi
