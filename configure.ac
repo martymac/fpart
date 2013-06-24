@@ -9,10 +9,8 @@ AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
 
-# Checks for libraries.
-AC_CHECK_LIB(m, log10, [MATHLIB=-lm],
-    [AC_MSG_ERROR(cannot find -lm library)])
-AC_SUBST(MATHLIB)
+# Checks for log10() in -lm
+AC_CHECK_LIB(m, log10)
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h paths.h stdlib.h string.h strings.h sys/mount.h sys/param.h sys/statfs.h sys/statvfs.h sys/vfs.h unistd.h])
@@ -34,8 +32,7 @@ AC_SYS_LARGEFILE
 # OS detection
 AC_CANONICAL_HOST
 case "${host_os}" in
-  solaris2.9) host_os_solaris=true ; host_os_solaris9=true ;;
-  solaris2.10) host_os_solaris=true ;;
+  solaris*) host_os_solaris=true ;;
   linux*) host_os_linux=true ;;
 esac
 
@@ -83,9 +80,9 @@ esac],[static=false])
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 AM_CONDITIONAL([EMBEDDED_FTS], [test x$embfts = xtrue])
 AM_CONDITIONAL([SOLARIS], [test x$host_os_solaris = xtrue])
-AM_CONDITIONAL([SOLARIS9], [test x$host_os_solaris9 = xtrue])
 AM_CONDITIONAL([LINUX], [test x$host_os_linux = xtrue])
 AM_CONDITIONAL([STATIC], [test x$static = xtrue])
 
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 AC_OUTPUT
