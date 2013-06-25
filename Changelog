@@ -1,4 +1,4 @@
-20??/??/??  0.8
+2013/06/25  0.8
     - Keep environ(7) when forking hooks
     - Add sections about live mode and data migration in README
 	- Use autotools and get rid of manual Makefiles
