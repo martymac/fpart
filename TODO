@@ -1,9 +1,15 @@
 TODO (ideas) :
 **************
 
+Fpart:
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...)
 - Make the program multithreaded for FS analysis
 - Display/accept size in a human-friendly format
+
+Autotools:
+- Use config.h (for program version, data types, header inclusion,
+  build options info [...])
+- Add -Wall to CFLAGS when possible (gcc, clang)
