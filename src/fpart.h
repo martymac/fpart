@@ -31,7 +31,7 @@
 #include "options.h"
 #include "file_entry.h"
 
-#define FPART_VERSION "0.8"
+#define FPART_VERSION "0.9"
 
 /* maximum input line length, including '\n' and '\0' */
 #define MAX_LINE_LENGTH 2048
