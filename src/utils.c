@@ -329,7 +329,7 @@ valid_filename(char *filename, struct program_options *options,
    - return a pointer to the copy or NULL if error
    - returned environ must be freed later */
 char **
-clone_env()
+clone_env(void)
 {
     int env_size = 0;
     char **new_env = NULL;
