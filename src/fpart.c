@@ -262,12 +262,10 @@ int main(int argc, char** argv)
                 usage();
                 uninit_options(&options);
                 return (0);
-                break;
             case 'V':
                 version();
                 uninit_options(&options);
                 return (0);
-                break;
             case 'n':
             {
                 char *endptr = NULL;
