@@ -331,7 +331,7 @@ valid_filename(char *filename, struct program_options *options,
 char **
 clone_env(void)
 {
-    int env_size = 0;
+    unsigned int env_size = 0;
     char **new_env = NULL;
 
     /* import original environ */
@@ -339,15 +339,17 @@ clone_env(void)
 
     /* compute environ size */
     while(environ[env_size]) env_size++;
+    /* ending NULL */
+    env_size++;
 
-    size_t malloc_size = sizeof(char *) * (env_size + 1);
+    size_t malloc_size = sizeof(char *) * env_size;
     if((new_env = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
     }
     else {
         /* copy each pointer, beginning from the ending NULL value */
-        while(env_size >= 0) {
-            new_env[env_size] = environ[env_size];
+        while(env_size > 0) {
+            new_env[env_size - 1] = environ[env_size - 1];
             env_size--;
         }
     }
@@ -365,24 +367,28 @@ push_env(char *str, char ***env)
     assert(env != NULL);
     assert(*env != NULL);
 
-    int env_size = 0;
+    unsigned int env_size = 0;
     char **new_env = NULL;
 
     /* compute environ size */
     while((*env)[env_size]) env_size++;
+    /* add our pointer */
+    env_size++;
+    /* add ending NULL */
+    env_size++;
 
-    size_t malloc_size = sizeof(char *) * (env_size + 1 + 1);
+    size_t malloc_size = sizeof(char *) * env_size;
     if((new_env = malloc(malloc_size)) == NULL) {
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
         return (1);
     }
 
     /* copy each pointer, beginning from the ending NULL value */
-    new_env[env_size + 1] = NULL;
-    new_env[env_size] = str;
-    env_size--;
-    while(env_size >= 0) {
-        new_env[env_size] = (*env)[env_size];
+    new_env[env_size - 1] = NULL;
+    new_env[env_size - 2] = str;
+    env_size -= 2;
+    while(env_size > 0) {
+        new_env[env_size - 1] = (*env)[env_size - 1];
         env_size--;
     }
 
