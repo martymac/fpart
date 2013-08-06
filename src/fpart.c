@@ -57,7 +57,7 @@
 #include <assert.h>
 
 /* Print version */
-void
+static void
 version(void)
 {
     fprintf(stderr, "fpart v" FPART_VERSION "\n"
@@ -77,7 +77,7 @@ version(void)
 }
 
 /* Print usage */
-void
+static void
 usage(void)
 {
     fprintf(stderr, "Usage: fpart [OPTIONS] -n num | -f files | -s size "
