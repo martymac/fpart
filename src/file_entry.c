@@ -310,7 +310,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
             /* if reached, error */
             exit (1);
         }
-            break;
         default:            /* parent */
         {
             /* child-killer signal handler */
@@ -596,9 +595,6 @@ fts_dirsfirst(const FTSENT * const *a, const FTSENT * const *b)
             return (1);
         else
             return (0);
-
-    /* NOTREACHED */
-    return (0);
 }
 
 /* Initialize a double-linked list of file_entries from a path
