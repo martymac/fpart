@@ -78,9 +78,7 @@
 unsigned int
 get_num_digits(double i)
 {
-    if(i < 0)
-        return (0);
-    else if(i == 0)
+    if((int)i == 0)
         return (1);
 
     double logvalue = log10(i);
