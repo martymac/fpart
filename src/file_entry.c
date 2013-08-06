@@ -450,7 +450,7 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
     else {
         /* print to fd */
         size_t to_write = strlen(path);
-        if((write(live_status.fd, path, to_write) != to_write) ||
+        if((write(live_status.fd, path, to_write) != (ssize_t)to_write) ||
             (write(live_status.fd, "\n", 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
             /* do not close(livefd) and free(live_status.filename) here because
@@ -961,7 +961,7 @@ print_file_entries(struct file_entry *head, char *out_template,
             if((head->partition_index >= (current_chunk * PRINT_FE_CHUNKS)) &&
                (head->partition_index < ((current_chunk + 1) * PRINT_FE_CHUNKS))) {
                 size_t to_write = strlen(head->path);
-                if((write(fd[head->partition_index % PRINT_FE_CHUNKS], head->path, to_write) != to_write) ||
+                if((write(fd[head->partition_index % PRINT_FE_CHUNKS], head->path, to_write) != (ssize_t)to_write) ||
                     (write(fd[head->partition_index % PRINT_FE_CHUNKS], "\n", 1) != 1)) {
                     fprintf(stderr, "%s\n", strerror(errno));
                     /* close all open descriptors */
