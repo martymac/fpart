@@ -231,7 +231,7 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
     return (0);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     fnum_t totalfiles = 0;
 
@@ -639,7 +639,7 @@ int main(int argc, char** argv)
 *******************/
 
     /* now, work on each path provided as arguments */
-    unsigned int i;
+    int i;
     for(i = 0 ; i < argc ; i++) {
         if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
             uninit_file_entries(head, &options);
