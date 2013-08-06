@@ -32,7 +32,7 @@
 #include "file_entry.h"
 #include "dispatch.h"
 
-/* NULL */
+/* NULL, exit(3) */
 #include <stdlib.h>
 
 /* fprintf(3), fopen(3), fclose(3), fgets(3), foef(3) */
@@ -261,11 +261,11 @@ int main(int argc, char **argv)
             case 'h':
                 usage();
                 uninit_options(&options);
-                return (0);
+                exit(EXIT_SUCCESS);
             case 'V':
                 version();
                 uninit_options(&options);
-                return (0);
+                exit(EXIT_SUCCESS);
             case 'n':
             {
                 char *endptr = NULL;
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
                     (num_parts <= 0)) {
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.num_parts = (pnum_t)num_parts;
                 break;
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
                     (max_entries <= 0)) {
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.max_entries = (fnum_t)max_entries;
                 break;
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
                 if((endptr == optarg) || (*endptr != '\0') || (max_size <= 0)) {
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.max_size = (fsize_t)max_size;
                 break;
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "%s(): cannot determine absolute path for "
                         "file '%s'\n", __func__, optarg);
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             }
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
                         fprintf(stderr, "%s(): cannot determine absolute path "
                             "for file '%s'\n", __func__, optarg);
                         uninit_options(&options);
-                        return (1);
+                        exit(EXIT_FAILURE);
                     }
                 }
                 break;
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
                 /* push string */
                 if(str_push(dst_list, dst_num, optarg) != 0) {
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             }
@@ -411,7 +411,7 @@ int main(int argc, char **argv)
                 if((endptr == optarg) || (*endptr != '\0') || (dir_depth < 0)) {
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.dir_depth = (int)dir_depth;
                 break;
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
                 if(options.pre_part_hook == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 snprintf(options.pre_part_hook, malloc_size, "%s", optarg);
                 break;
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
                 if(options.post_part_hook == NULL) {
                     fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 snprintf(options.post_part_hook, malloc_size, "%s", optarg);
                 break;
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
                         "Option -p requires a value greater than 0.\n");
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.preload_size = (fsize_t)preload_size;
                 break;
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
                         "Option -q requires a value greater than 0.\n");
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.overload_size = (fsize_t)overload_size;
                 break;
@@ -502,7 +502,7 @@ int main(int argc, char **argv)
                         "Option -r requires a value greater than 1.\n");
                     usage();
                     uninit_options(&options);
-                    return (1);
+                    exit(EXIT_FAILURE);
                 }
                 options.round_size = (fsize_t)round_size;
                 break;
@@ -519,7 +519,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Please specify either -n, -f or -s.\n");
         usage();
         uninit_options(&options);
-        return (1);
+        exit(EXIT_FAILURE);
     }
 
     if((options.num_parts != DFLT_OPT_NUM_PARTS) &&
@@ -530,7 +530,7 @@ int main(int argc, char **argv)
             "Option -n is incompatible with options -f, -s and -L.\n");
         usage();
         uninit_options(&options);
-        return (1);
+        exit(EXIT_FAILURE);
     }
 
     if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
@@ -549,7 +549,7 @@ int main(int argc, char **argv)
             "Option -a is incompatible with crawling-related options.\n");
         usage();
         uninit_options(&options);
-        return (1);
+        exit(EXIT_FAILURE);
         }
     }
 
@@ -560,7 +560,7 @@ int main(int argc, char **argv)
             "Hooks can only be used with option -L.\n");
         usage();
         uninit_options(&options);
-        return (1);
+        exit(EXIT_FAILURE);
     }
 
     if((options.in_filename == NULL) && (argc <= 0)) {
@@ -571,7 +571,7 @@ int main(int argc, char **argv)
         if(options.in_filename == NULL) {
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
         snprintf(options.in_filename, malloc_size, "%s", opt_input);
     }
@@ -601,7 +601,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "%s: %s\n", options.in_filename,
                     strerror(errno));
                 uninit_options(&options);
-                return (1);
+                exit(EXIT_FAILURE);
             }
         }
 
@@ -617,7 +617,7 @@ int main(int argc, char **argv)
             if(handle_argument(line, &totalfiles, &head, &options) != 0) {
                 uninit_file_entries(head, &options);
                 uninit_options(&options);
-                return (1);
+                exit(EXIT_FAILURE);
             }
 
             /* cleanup */
@@ -644,7 +644,7 @@ int main(int argc, char **argv)
         if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -661,7 +661,7 @@ int main(int argc, char **argv)
         /* display status */
         fprintf(stderr, "%lld file(s) found.\n", totalfiles);
         uninit_options(&options);
-        return (0);
+        exit(EXIT_SUCCESS);
     }
 
     /* display status */
@@ -690,7 +690,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
 
         /* initialize array */
@@ -709,7 +709,7 @@ int main(int argc, char **argv)
             free(file_entry_p);
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
         /* come back to the first element */
         rewind_list(part_head);
@@ -723,7 +723,7 @@ int main(int argc, char **argv)
             free(file_entry_p);
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
     
         /* re-dispatch empty files */
@@ -735,7 +735,7 @@ int main(int argc, char **argv)
             free(file_entry_p);
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
 
         /* cleanup */
@@ -757,7 +757,7 @@ int main(int argc, char **argv)
             uninit_partitions(part_head);
             uninit_file_entries(head, &options);
             uninit_options(&options);
-            return (1);
+            exit(EXIT_FAILURE);
         }
         /* come back to the first element
            (we may have exited with part_head set to partition 1, 
@@ -785,5 +785,5 @@ int main(int argc, char **argv)
     uninit_partitions(part_head);
     uninit_file_entries(head, &options);
     uninit_options(&options);
-    return (0);
+    exit(EXIT_SUCCESS);
 }

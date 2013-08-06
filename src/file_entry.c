@@ -42,7 +42,7 @@
 /* errno */
 #include <errno.h>
 
-/* malloc(3) */
+/* malloc(3), exit(3) */
 #include <stdlib.h>
 
 /* fts(3) */
@@ -115,7 +115,7 @@ kill_child(int sig)
         killpg(live_status.child_pid, sig ? sig : SIGTERM);
         waitpid(live_status.child_pid, NULL, 0);
     }
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 /* Executes 'cmd' and waits for it to terminate
@@ -306,11 +306,11 @@ fpart_hook(const char *cmd, const struct program_options *options,
             if(setpgid(live_status.child_pid, 0) != 0) {
                 fprintf(stderr, "%s(): setpgid(): %s\n", __func__,
                     strerror(errno));
-                exit (1);
+                exit(EXIT_FAILURE);
             }
             execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
             /* if reached, error */
-            exit (1);
+            exit(EXIT_FAILURE);
         }
         default:            /* parent */
         {
