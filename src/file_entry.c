@@ -76,6 +76,8 @@
 /* signal(3) */
 #include <signal.h>
 
+static void kill_child(int)  __attribute__((__noreturn__));
+
 /****************************
  Live-mode related functions 
  ****************************/
@@ -102,7 +104,7 @@ static struct {
 };
 
 /* Signal handler, kills child and exit() */
-void
+static void
 kill_child(int sig)
 {
 #if defined(DEBUG)
