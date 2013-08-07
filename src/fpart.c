@@ -156,7 +156,7 @@ usage(void)
    - returns != 0 if a critical error occurred
    - returns with head set to the last element added
    - updates totalfiles with the number of elements added */
-int
+static int
 handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
     struct program_options *options)
 {
@@ -231,6 +231,328 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
     return (0);
 }
 
+/* Handle options parsing
+   - initializes options structure using argc and argv (through pointers)
+   - returns a value defined by the mask below */
+static int
+handle_options(struct program_options *options, int *argcp, char ***argvp)
+{
+    /* Return code mask */
+#define FPART_OPTS_OK       0 /* OK */
+#define FPART_OPTS_NOK      1 /* Error */
+#define FPART_OPTS_EXIT     2 /* exit(3) required */
+#define FPART_OPTS_USAGE    4 /* usage() call required */
+#define FPART_OPTS_VERSION  8 /* version() call required */
+
+    assert(options != NULL);
+    assert(argcp != NULL);
+    assert(*argcp > 0);
+    assert(argvp != NULL);
+    assert(*argvp != NULL);
+
+    /* Options handling */
+    extern char *optarg;
+    extern int optind;
+    int ch;
+    while((ch = getopt(*argcp, *argvp,
+#if defined(_HAS_FNM_CASEFOLD)
+        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DLw:W:p:q:r:"
+#else
+        "?hVn:f:s:i:ao:evlby:x:zZd:DLw:W:p:q:r:"
+#endif
+        )) != -1) {
+        switch(ch) {
+            case '?':
+            case 'h':
+                return (FPART_OPTS_USAGE | FPART_OPTS_OK | FPART_OPTS_EXIT);
+            case 'V':
+                return (FPART_OPTS_VERSION | FPART_OPTS_OK | FPART_OPTS_EXIT);
+            case 'n':
+            {
+                char *endptr = NULL;
+                long num_parts = strtol(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') || (num_parts <= 0))
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                options->num_parts = (pnum_t)num_parts;
+                break;
+            }
+            case 'f':
+            {
+                char *endptr = NULL;
+                long long max_entries = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (max_entries <= 0))
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                options->max_entries = (fnum_t)max_entries;
+                break;
+            }
+            case 's':
+            {
+                char *endptr = NULL;
+                long long max_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') || (max_size <= 0))
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                options->max_size = (fsize_t)max_size;
+                break;
+            }
+            case 'i':
+            {
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* replace previous filename if '-i' specified multiple times */
+                if(options->in_filename != NULL)
+                    free(options->in_filename);
+                options->in_filename = abs_path(optarg);
+                if(options->in_filename == NULL) {
+                    fprintf(stderr, "%s(): cannot determine absolute path for "
+                        "file '%s'\n", __func__, optarg);
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                break;
+            }
+            case 'a':
+                options->arbitrary_values = OPT_ARBITRARYVALUES;
+                break;
+            case 'o':
+            {
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* replace previous filename if '-o' specified multiple times */
+                if(options->out_filename != NULL)
+                    free(options->out_filename);
+                /* '-' goes to stdout */
+                if((optarg[0] == '-') && (optarg[1] == '\0')) {
+                    options->out_filename = NULL;
+                } else {
+                    options->out_filename = abs_path(optarg);
+                    if(options->out_filename == NULL) {
+                        fprintf(stderr, "%s(): cannot determine absolute path "
+                            "for file '%s'\n", __func__, optarg);
+                        return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                    }
+                }
+                break;
+            }
+            case 'e':
+                options->add_slash = OPT_ADDSLASH;
+                break;
+            case 'v':
+                options->verbose++;
+                break;
+            case 'l':
+                options->follow_symbolic_links = OPT_FOLLOWSYMLINKS;
+                break;
+            case 'b':
+                options->cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
+                break;
+            case 'y':
+            case 'Y':   /* needs _HAS_FNM_CASEFOLD */
+            case 'x':
+            case 'X':   /* needs _HAS_FNM_CASEFOLD */
+            {
+                char ***dst_list = NULL;
+                unsigned int *dst_num = NULL;
+                switch(ch) {
+                    case 'y':
+                        dst_list = &(options->include_files);
+                        dst_num = &(options->ninclude_files);
+                    break;
+                    case 'Y':
+                        dst_list = &(options->include_files_ci);
+                        dst_num = &(options->ninclude_files_ci);
+                    break;
+                    case 'x':
+                        dst_list = &(options->exclude_files);
+                        dst_num = &(options->nexclude_files);
+                    break;
+                    case 'X':
+                        dst_list = &(options->exclude_files_ci);
+                        dst_num = &(options->nexclude_files_ci);
+                    break;
+                }
+                /* check for empty argument */
+                if(strlen(optarg) == 0)
+                    break;
+                /* push string */
+                if(str_push(dst_list, dst_num, optarg) != 0)
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                break;
+            }
+            case 'z':
+                options->empty_dirs = OPT_EMPTYDIRS;
+                break;
+            case 'Z':
+                options->dnr_empty = OPT_DNREMPTY;
+                options->empty_dirs = OPT_EMPTYDIRS;
+                break;
+            case 'd':
+            {
+                char *endptr = NULL;
+                long dir_depth = strtol(optarg, &endptr, 10);
+                /* refuse values < 0 (-1 being used to disable this option) */
+                if((endptr == optarg) || (*endptr != '\0') || (dir_depth < 0))
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                options->dir_depth = (int)dir_depth;
+                break;
+            }
+            case 'D':
+                options->leaf_dirs = OPT_LEAFDIRS;
+                options->empty_dirs = OPT_EMPTYDIRS;
+                break;
+            case 'L':
+                options->live_mode = OPT_LIVEMODE;
+                break;
+            case 'w':
+            {
+                /* check for empty argument */
+                size_t malloc_size = strlen(optarg) + 1;
+                if(malloc_size <= 1)
+                    break;
+                /* replace previous hook if '-w' specified multiple times */
+                if(options->pre_part_hook != NULL)
+                    free(options->pre_part_hook);
+                options->pre_part_hook = malloc(malloc_size);
+                if(options->pre_part_hook == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                snprintf(options->pre_part_hook, malloc_size, "%s", optarg);
+                break;
+            }
+            case 'W':
+            {
+                /* check for empty argument */
+                size_t malloc_size = strlen(optarg) + 1;
+                if(malloc_size <= 1)
+                    break;
+                /* replace previous hook if '-W' specified multiple times */
+                if(options->post_part_hook != NULL)
+                    free(options->post_part_hook);
+                options->post_part_hook = malloc(malloc_size);
+                if(options->post_part_hook == NULL) {
+                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                snprintf(options->post_part_hook, malloc_size, "%s", optarg);
+                break;
+            }
+            case 'p':
+            {
+                char *endptr = NULL;
+                long long preload_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (preload_size <= 0)) {
+                    fprintf(stderr,
+                        "Option -p requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                options->preload_size = (fsize_t)preload_size;
+                break;
+            }
+            case 'q':
+            {
+                char *endptr = NULL;
+                long long overload_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 0 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (overload_size <= 0)) {
+                    fprintf(stderr,
+                        "Option -q requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                options->overload_size = (fsize_t)overload_size;
+                break;
+            }
+            case 'r':
+            {
+                char *endptr = NULL;
+                long long round_size = strtoll(optarg, &endptr, 10);
+                /* refuse values <= 1 and partially-converted arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (round_size <= 1)) {
+                    fprintf(stderr,
+                        "Option -r requires a value greater than 1.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                options->round_size = (fsize_t)round_size;
+                break;
+            }
+        }
+    }
+    *argcp -= optind;
+    *argvp += optind;
+
+    /* check for options consistency */
+    if((options->num_parts == DFLT_OPT_NUM_PARTS) &&
+        (options->max_entries == DFLT_OPT_MAX_ENTRIES) &&
+        (options->max_size == DFLT_OPT_MAX_SIZE)) {
+        fprintf(stderr, "Please specify either -n, -f or -s.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    if((options->num_parts != DFLT_OPT_NUM_PARTS) &&
+        ((options->max_entries != DFLT_OPT_MAX_ENTRIES) ||
+                    (options->max_size != DFLT_OPT_MAX_SIZE) ||
+                    (options->live_mode != DFLT_OPT_LIVEMODE))) {
+        fprintf(stderr,
+            "Option -n is incompatible with options -f, -s and -L.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    if(options->arbitrary_values == OPT_ARBITRARYVALUES) {
+        if((options->add_slash != DFLT_OPT_ADDSLASH) ||
+            (options->follow_symbolic_links != DFLT_OPT_FOLLOWSYMLINKS) ||
+            (options->cross_fs_boundaries != DFLT_OPT_CROSSFSBOUNDARIES) ||
+            (options->include_files != NULL) ||
+            (options->include_files_ci != NULL) ||
+            (options->exclude_files != NULL) ||
+            (options->exclude_files_ci != NULL) ||
+            (options->empty_dirs != DFLT_OPT_EMPTYDIRS) ||
+            (options->dnr_empty != DFLT_OPT_DNREMPTY) ||
+            (options->dir_depth != DFLT_OPT_DIR_DEPTH) ||
+            (options->leaf_dirs != DFLT_OPT_LEAFDIRS)) {
+            fprintf(stderr,
+                "Option -a is incompatible with crawling-related options.\n");
+            return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+        }
+    }
+
+    if((options->live_mode == OPT_NOLIVEMODE) &&
+        ((options->pre_part_hook != NULL) ||
+        (options->post_part_hook != NULL))) {
+        fprintf(stderr,
+            "Hooks can only be used with option -L.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    if((options->in_filename == NULL) && (*argcp <= 0)) {
+        /* no file specified, force stdin */
+        char *opt_input = "-";
+        size_t malloc_size = strlen(opt_input) + 1;
+        options->in_filename = malloc(malloc_size);
+        if(options->in_filename == NULL) {
+            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+        }
+        snprintf(options->in_filename, malloc_size, "%s", opt_input);
+    }
+
+    return (FPART_OPTS_OK);
+}
+
 int main(int argc, char **argv)
 {
     fnum_t totalfiles = 0;
@@ -245,335 +567,17 @@ int main(int argc, char **argv)
     /* Set default options */
     init_options(&options);
 
-    /* Options handling */
-    extern char *optarg;
-    extern int optind;
-    int ch;
-    while((ch = getopt(argc, argv,
-#if defined(_HAS_FNM_CASEFOLD)
-        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DLw:W:p:q:r:"
-#else
-        "?hVn:f:s:i:ao:evlby:x:zZd:DLw:W:p:q:r:"
-#endif
-        )) != -1) {
-        switch(ch) {
-            case '?':
-            case 'h':
-                usage();
-                uninit_options(&options);
-                exit(EXIT_SUCCESS);
-            case 'V':
-                version();
-                uninit_options(&options);
-                exit(EXIT_SUCCESS);
-            case 'n':
-            {
-                char *endptr = NULL;
-                long num_parts = strtol(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') ||
-                    (num_parts <= 0)) {
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.num_parts = (pnum_t)num_parts;
-                break;
-            }
-            case 'f':
-            {
-                char *endptr = NULL;
-                long long max_entries = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') ||
-                    (max_entries <= 0)) {
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.max_entries = (fnum_t)max_entries;
-                break;
-            }
-            case 's':
-            {
-                char *endptr = NULL;
-                long long max_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') || (max_size <= 0)) {
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.max_size = (fsize_t)max_size;
-                break;
-            }
-            case 'i':
-            {
-                /* check for empty argument */
-                if(strlen(optarg) == 0)
-                    break;
-                /* replace previous filename if '-i' specified multiple times */
-                if(options.in_filename != NULL)
-                    free(options.in_filename);
-                options.in_filename = abs_path(optarg);
-                if(options.in_filename == NULL) {
-                    fprintf(stderr, "%s(): cannot determine absolute path for "
-                        "file '%s'\n", __func__, optarg);
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            }
-            case 'a':
-                options.arbitrary_values = OPT_ARBITRARYVALUES;
-                break;
-            case 'o':
-            {
-                /* check for empty argument */
-                if(strlen(optarg) == 0)
-                    break;
-                /* replace previous filename if '-o' specified multiple times */
-                if(options.out_filename != NULL)
-                    free(options.out_filename);
-                /* '-' goes to stdout */
-                if((optarg[0] == '-') && (optarg[1] == '\0')) {
-                    options.out_filename = NULL;
-                } else {
-                    options.out_filename = abs_path(optarg);
-                    if(options.out_filename == NULL) {
-                        fprintf(stderr, "%s(): cannot determine absolute path "
-                            "for file '%s'\n", __func__, optarg);
-                        uninit_options(&options);
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                break;
-            }
-            case 'e':
-                options.add_slash = OPT_ADDSLASH;
-                break;
-            case 'v':
-                options.verbose++;
-                break;
-            case 'l':
-                options.follow_symbolic_links = OPT_FOLLOWSYMLINKS;
-                break;
-            case 'b':
-                options.cross_fs_boundaries = OPT_NOCROSSFSBOUNDARIES;
-                break;
-            case 'y':
-            case 'Y':   /* needs _HAS_FNM_CASEFOLD */
-            case 'x':
-            case 'X':   /* needs _HAS_FNM_CASEFOLD */
-            {
-                char ***dst_list = NULL;
-                unsigned int *dst_num = NULL;
-                switch(ch) {
-                    case 'y':
-                        dst_list = &options.include_files;
-                        dst_num = &options.ninclude_files;
-                    break;
-                    case 'Y':
-                        dst_list = &options.include_files_ci;
-                        dst_num = &options.ninclude_files_ci;
-                    break;
-                    case 'x':
-                        dst_list = &options.exclude_files;
-                        dst_num = &options.nexclude_files;
-                    break;
-                    case 'X':
-                        dst_list = &options.exclude_files_ci;
-                        dst_num = &options.nexclude_files_ci;
-                    break;
-                }
-                /* check for empty argument */
-                if(strlen(optarg) == 0)
-                    break;
-                /* push string */
-                if(str_push(dst_list, dst_num, optarg) != 0) {
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            }
-            case 'z':
-                options.empty_dirs = OPT_EMPTYDIRS;
-                break;
-            case 'Z':
-                options.dnr_empty = OPT_DNREMPTY;
-                options.empty_dirs = OPT_EMPTYDIRS;
-                break;
-            case 'd':
-            {
-                char *endptr = NULL;
-                long dir_depth = strtol(optarg, &endptr, 10);
-                /* refuse values < 0 (-1 being used to disable this option) */
-                if((endptr == optarg) || (*endptr != '\0') || (dir_depth < 0)) {
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.dir_depth = (int)dir_depth;
-                break;
-            }
-            case 'D':
-                options.leaf_dirs = OPT_LEAFDIRS;
-                options.empty_dirs = OPT_EMPTYDIRS;
-                break;
-            case 'L':
-                options.live_mode = OPT_LIVEMODE;
-                break;
-            case 'w':
-            {
-                /* check for empty argument */
-                size_t malloc_size = strlen(optarg) + 1;
-                if(malloc_size <= 1)
-                    break;
-                /* replace previous hook if '-w' specified multiple times */
-                if(options.pre_part_hook != NULL)
-                    free(options.pre_part_hook);
-                options.pre_part_hook = malloc(malloc_size);
-                if(options.pre_part_hook == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                snprintf(options.pre_part_hook, malloc_size, "%s", optarg);
-                break;
-            }
-            case 'W':
-            {
-                /* check for empty argument */
-                size_t malloc_size = strlen(optarg) + 1;
-                if(malloc_size <= 1)
-                    break;
-                /* replace previous hook if '-W' specified multiple times */
-                if(options.post_part_hook != NULL)
-                    free(options.post_part_hook);
-                options.post_part_hook = malloc(malloc_size);
-                if(options.post_part_hook == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                snprintf(options.post_part_hook, malloc_size, "%s", optarg);
-                break;
-            }
-            case 'p':
-            {
-                char *endptr = NULL;
-                long long preload_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') ||
-                    (preload_size <= 0)) {
-                    fprintf(stderr,
-                        "Option -p requires a value greater than 0.\n");
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.preload_size = (fsize_t)preload_size;
-                break;
-            }
-            case 'q':
-            {
-                char *endptr = NULL;
-                long long overload_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') ||
-                    (overload_size <= 0)) {
-                    fprintf(stderr,
-                        "Option -q requires a value greater than 0.\n");
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.overload_size = (fsize_t)overload_size;
-                break;
-            }
-            case 'r':
-            {
-                char *endptr = NULL;
-                long long round_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 1 and partially converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') ||
-                    (round_size <= 1)) {
-                    fprintf(stderr,
-                        "Option -r requires a value greater than 1.\n");
-                    usage();
-                    uninit_options(&options);
-                    exit(EXIT_FAILURE);
-                }
-                options.round_size = (fsize_t)round_size;
-                break;
-            }
-        }
-    }
-    argc -= optind;
-    argv += optind;
+    /* Parse and initialize options */
+    int options_init_res = handle_options(&options, &argc, &argv);
 
-    /* check for options consistency */
-    if((options.num_parts == DFLT_OPT_NUM_PARTS) &&
-        (options.max_entries == DFLT_OPT_MAX_ENTRIES) &&
-        (options.max_size == DFLT_OPT_MAX_SIZE)) {
-        fprintf(stderr, "Please specify either -n, -f or -s.\n");
+    if(options_init_res & FPART_OPTS_USAGE)
         usage();
+    if(options_init_res & FPART_OPTS_VERSION)
+        version();
+    if(options_init_res & FPART_OPTS_EXIT) {
         uninit_options(&options);
-        exit(EXIT_FAILURE);
-    }
-
-    if((options.num_parts != DFLT_OPT_NUM_PARTS) &&
-        ((options.max_entries != DFLT_OPT_MAX_ENTRIES) ||
-                    (options.max_size != DFLT_OPT_MAX_SIZE) ||
-                    (options.live_mode != DFLT_OPT_LIVEMODE))) {
-        fprintf(stderr,
-            "Option -n is incompatible with options -f, -s and -L.\n");
-        usage();
-        uninit_options(&options);
-        exit(EXIT_FAILURE);
-    }
-
-    if(options.arbitrary_values == OPT_ARBITRARYVALUES) {
-        if((options.add_slash != DFLT_OPT_ADDSLASH) ||
-            (options.follow_symbolic_links != DFLT_OPT_FOLLOWSYMLINKS) ||
-            (options.cross_fs_boundaries != DFLT_OPT_CROSSFSBOUNDARIES) ||
-            (options.include_files != NULL) ||
-            (options.include_files_ci != NULL) ||
-            (options.exclude_files != NULL) ||
-            (options.exclude_files_ci != NULL) ||
-            (options.empty_dirs != DFLT_OPT_EMPTYDIRS) ||
-            (options.dnr_empty != DFLT_OPT_DNREMPTY) ||
-            (options.dir_depth != DFLT_OPT_DIR_DEPTH) ||
-            (options.leaf_dirs != DFLT_OPT_LEAFDIRS)) {
-        fprintf(stderr,
-            "Option -a is incompatible with crawling-related options.\n");
-        usage();
-        uninit_options(&options);
-        exit(EXIT_FAILURE);
-        }
-    }
-
-    if((options.live_mode == OPT_NOLIVEMODE) &&
-        ((options.pre_part_hook != NULL) ||
-        (options.post_part_hook != NULL))) {
-        fprintf(stderr,
-            "Hooks can only be used with option -L.\n");
-        usage();
-        uninit_options(&options);
-        exit(EXIT_FAILURE);
-    }
-
-    if((options.in_filename == NULL) && (argc <= 0)) {
-        /* no file specified, force stdin */
-        char *opt_input = "-";
-        size_t malloc_size = strlen(opt_input) + 1;
-        options.in_filename = malloc(malloc_size);
-        if(options.in_filename == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-            uninit_options(&options);
-            exit(EXIT_FAILURE);
-        }
-        snprintf(options.in_filename, malloc_size, "%s", opt_input);
+        exit(options_init_res & FPART_OPTS_NOK ?
+            EXIT_FAILURE : EXIT_SUCCESS);
     }
 
 /**************
