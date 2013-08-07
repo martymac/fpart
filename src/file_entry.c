@@ -76,7 +76,9 @@
 /* signal(3) */
 #include <signal.h>
 
+#if defined(__GNUC__)
 static void kill_child(int)  __attribute__((__noreturn__));
+#endif
 
 /****************************
  Live-mode related functions 
