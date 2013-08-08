@@ -57,6 +57,20 @@
 
 #define min(x, y) (((x) <= (y)) ? (x) : (y))
 
+#define if_not_malloc(ptr, size, err_action)                            \
+    ptr = malloc(size);                                                 \
+    if (ptr == NULL) {                                                  \
+        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);    \
+        err_action                                                      \
+    }
+
+#define if_not_realloc(ptr, size, err_action)                           \
+    ptr = realloc(ptr, size);                                           \
+    if (ptr == NULL) {                                                  \
+        fprintf(stderr, "%s(): cannot reallocate memory\n", __func__);  \
+        err_action                                                      \
+    }
+
 unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);

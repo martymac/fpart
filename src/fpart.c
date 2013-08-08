@@ -169,11 +169,9 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
     /* handle arbitrary values */
         fsize_t input_size = 0;
         char *input_path = NULL;
-        input_path  = malloc(strlen(argument) + 1);
-        if(input_path == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(input_path, strlen(argument) + 1,
             return (1);
-        }
+        )
 
         if(sscanf(argument, "%lld %[^\n]", &input_size, input_path) == 2) {
             if(handle_file_entry(head, input_path, input_size, options) == 0)
@@ -195,11 +193,9 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         char *input_path = NULL;
         size_t input_path_len = strlen(argument);
         size_t malloc_size = input_path_len + 1;
-        input_path  = malloc(malloc_size);
-        if(input_path == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(input_path, malloc_size,
             return (1);
-        }
+        )
         snprintf(input_path, malloc_size, "%s", argument);
     
         /* remove multiple ending slashes */
@@ -420,11 +416,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 /* replace previous hook if '-w' specified multiple times */
                 if(options->pre_part_hook != NULL)
                     free(options->pre_part_hook);
-                options->pre_part_hook = malloc(malloc_size);
-                if(options->pre_part_hook == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                if_not_malloc(options->pre_part_hook, malloc_size,
                     return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
-                }
+                )
                 snprintf(options->pre_part_hook, malloc_size, "%s", optarg);
                 break;
             }
@@ -437,11 +431,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 /* replace previous hook if '-W' specified multiple times */
                 if(options->post_part_hook != NULL)
                     free(options->post_part_hook);
-                options->post_part_hook = malloc(malloc_size);
-                if(options->post_part_hook == NULL) {
-                    fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+                if_not_malloc(options->post_part_hook, malloc_size,
                     return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
-                }
+                )
                 snprintf(options->post_part_hook, malloc_size, "%s", optarg);
                 break;
             }
@@ -542,11 +534,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         /* no file specified, force stdin */
         char *opt_input = "-";
         size_t malloc_size = strlen(opt_input) + 1;
-        options->in_filename = malloc(malloc_size);
-        if(options->in_filename == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(options->in_filename, malloc_size,
             return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
-        }
+        )
         snprintf(options->in_filename, malloc_size, "%s", opt_input);
     }
 
@@ -687,15 +677,11 @@ int main(int argc, char **argv)
         /* create a fixed-size array of pointers to sort */
         struct file_entry **file_entry_p = NULL;
 
-        file_entry_p =
-            malloc(sizeof(struct file_entry *) * totalfiles);
-
-        if(file_entry_p == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(file_entry_p, sizeof(struct file_entry *) * totalfiles,
             uninit_file_entries(head, &options);
             uninit_options(&options);
             exit(EXIT_FAILURE);
-        }
+        )
 
         /* initialize array */
         init_file_entry_p(file_entry_p, totalfiles, head);

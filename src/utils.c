@@ -170,19 +170,21 @@ abs_path(const char *path)
     if((path[0] != '/') &&
         ((path[0] != '-') || (path[1] != '\0'))) {
         /* relative path given */
-        cwd = malloc(MAXPATHLEN);
-        if(cwd == NULL) 
+        if_not_malloc(cwd, MAXPATHLEN,
             return (NULL);
+        )
         if(getcwd(cwd, MAXPATHLEN) == NULL) {
             free(cwd);
             return (NULL);
         }
         malloc_size += strlen(cwd) + 1; /* cwd + '/' */
-    }   
+    }
     malloc_size += strlen(path) + 1; /* path + '\0' */
 
-    abs = malloc(malloc_size);
-    if(abs != NULL) {
+    if_not_malloc(abs, malloc_size,
+        /* just print error message (within macro code) */
+    )
+    else {
         if(cwd != NULL)
             snprintf(abs, malloc_size, "%s/%s", cwd, path);
         else
@@ -210,19 +212,16 @@ str_push(char ***array, unsigned int *num, const char * const str)
     /* allocate new string */
     char *tmp_str = NULL;
     size_t malloc_size = strlen(str) + 1;
-    if((tmp_str = malloc(malloc_size)) == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_malloc(tmp_str, malloc_size,
         return (1);
-    }
+    )
     snprintf(tmp_str, malloc_size, "%s", str);
 
     /* add new char *pointer to array */
-    *array = realloc(*array, sizeof(char *) * ((*num) + 1));
-    if(*array == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_realloc(*array, sizeof(char *) * ((*num) + 1),
         free(tmp_str);
         return (1);
-    }
+    )
     (*array)[*num] = tmp_str;
     *num += 1;
 
@@ -341,9 +340,9 @@ clone_env(void)
     env_size++;
 
     size_t malloc_size = sizeof(char *) * env_size;
-    if((new_env = malloc(malloc_size)) == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
-    }
+    if_not_malloc(new_env, malloc_size,
+        /* just print error message (within macro code) */
+    )
     else {
         /* copy each pointer, beginning from the ending NULL value */
         while(env_size > 0) {
@@ -376,10 +375,9 @@ push_env(char *str, char ***env)
     env_size++;
 
     size_t malloc_size = sizeof(char *) * env_size;
-    if((new_env = malloc(malloc_size)) == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_malloc(new_env, malloc_size,
         return (1);
-    }
+    )
 
     /* copy each pointer, beginning from the ending NULL value */
     new_env[env_size - 1] = NULL;

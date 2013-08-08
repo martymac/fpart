@@ -61,10 +61,9 @@ add_partitions(struct partition **head, pnum_t num_parts,
     while(i < num_parts) {
         /* backup current structure pointer and initialize a new structure */
         previous = *current;
-        if((*current = malloc(sizeof(struct partition))) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(*current, sizeof(struct partition),
             return (1);
-        }
+        )
 
         /* set head on first pass */
         if(*head == NULL)

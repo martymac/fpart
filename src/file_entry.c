@@ -174,11 +174,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
         /* FPART_HOOKTYPE (pre-part) */
         malloc_size = strlen(env_fpart_hooktype_name) + 1 +
             strlen("pre-part") + 1;
-        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_hooktype_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
             env_fpart_hooktype_name, "pre-part");
         if(push_env(env_fpart_hooktype_string, &envp) != 0) {
@@ -198,11 +197,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
         /* FPART_HOOKTYPE (post-part) */
         malloc_size = strlen(env_fpart_hooktype_name) + 1 +
             strlen("post-part") + 1;
-        if((env_fpart_hooktype_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_hooktype_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
             env_fpart_hooktype_name, "post-part");
         if(push_env(env_fpart_hooktype_string, &envp) != 0) {
@@ -215,11 +213,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_filename != NULL) {
         malloc_size = strlen(env_fpart_partfilename_name) + 1 +
             strlen(live_filename) + 1;
-        if((env_fpart_partfilename_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_partfilename_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_partfilename_string, malloc_size, "%s=%s",
             env_fpart_partfilename_name, live_filename);
         if(push_env(env_fpart_partfilename_string, &envp) != 0) {
@@ -232,11 +229,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_partition_index != NULL) {
         malloc_size = strlen(env_fpart_partnumber_name) + 1 +
             get_num_digits(*live_partition_index) + 1;
-        if((env_fpart_partnumber_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_partnumber_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_partnumber_string, malloc_size, "%s=%d",
             env_fpart_partnumber_name, *live_partition_index);
         if(push_env(env_fpart_partnumber_string, &envp) != 0) {
@@ -249,11 +245,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_partition_size != NULL) {
         malloc_size = strlen(env_fpart_partsize_name) + 1 +
             get_num_digits(*live_partition_size) + 1;
-        if((env_fpart_partsize_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_partsize_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_partsize_string, malloc_size, "%s=%lld",
             env_fpart_partsize_name, *live_partition_size);
         if(push_env(env_fpart_partsize_string, &envp) != 0) {
@@ -266,11 +261,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
     if(live_num_files != NULL) {
         malloc_size = strlen(env_fpart_partnumfiles_name) + 1 +
             get_num_digits(*live_num_files) + 1;
-        if((env_fpart_partnumfiles_string = malloc(malloc_size)) == NULL) {
-            fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+        if_not_malloc(env_fpart_partnumfiles_string, malloc_size,
             retval = 1;
             goto cleanup;
-        }
+        )
         snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%llu",
             env_fpart_partnumfiles_name, *live_num_files);
         if(push_env(env_fpart_partnumfiles_string, &envp) != 0) {
@@ -283,11 +277,10 @@ fpart_hook(const char *cmd, const struct program_options *options,
     pid_t fpart_pid = getpid();
     malloc_size = strlen(env_fpart_pid_name) + 1 +
         get_num_digits(fpart_pid) + 1;
-    if((env_fpart_pid_string = malloc(malloc_size)) == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_malloc(env_fpart_pid_string, malloc_size,
         retval = 1;
         goto cleanup;
-    }
+    )
     snprintf(env_fpart_pid_string, malloc_size, "%s=%d",
         env_fpart_pid_name, (int)fpart_pid);
     if(push_env(env_fpart_pid_string, &envp) != 0) {
@@ -410,10 +403,9 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
             /* compute live_status.filename "out_template.i\0" */
             size_t malloc_size = strlen(out_template) + 1 +
                 get_num_digits(live_status.partition_index) + 1;
-            if((live_status.filename = malloc(malloc_size)) == NULL) {
-                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            if_not_malloc(live_status.filename, malloc_size,
                 return (1);
-            }
+            )
             snprintf(live_status.filename, malloc_size, "%s.%d", out_template,
                 live_status.partition_index);
         }
@@ -528,11 +520,9 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
 
-    *current = malloc(sizeof(struct file_entry));
-    if(*current == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_malloc(*current, sizeof(struct file_entry),
         return (1);
-    }
+    )
 
     /* set head on first call */
     if(*head == NULL)
@@ -541,13 +531,11 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     /* set current file data */
     size_t malloc_size = strlen(path) + 1;
 
-    (*current)->path = malloc(malloc_size);
-    if((*current)->path == NULL) {
-        fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+    if_not_malloc((*current)->path, malloc_size,
         free(*current);
         *current = previous;
         return (1);
-    }
+    )
     snprintf((*current)->path, malloc_size, "%s", path);
     (*current)->size = size + options->overload_size;
     (*current)->size = round_num((*current)->size, options->round_size);
@@ -704,12 +692,10 @@ add_directory:
                     /* count ending '/' and '\0', even if an ending '/' is not
                        added */
                     size_t malloc_size = p->fts_pathlen + 1 + 1;
-                    if((curdir_entry_path = malloc(malloc_size)) == NULL) {
-                        fprintf(stderr, "%s(): cannot allocate memory\n",
-                            __func__);
+                    if_not_malloc(curdir_entry_path, malloc_size,
                         fts_close(ftsp);
                         return (1);
-                    }
+                    )
 
                     /* add slash if requested and necessary */
                     if((options->add_slash == OPT_ADDSLASH) &&
@@ -931,17 +917,15 @@ print_file_entries(struct file_entry *head, char *out_template,
               (((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) < num_parts)) {
             /* compute out_filename  "out_template.i\0" */
             char *out_filename = NULL;
-            size_t malloc_size = strlen(out_template) + 1 +
-                get_num_digits
+            size_t malloc_size = strlen(out_template) + 1 + get_num_digits
                 ((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) + 1;
-            if((out_filename = malloc(malloc_size)) == NULL) {
-                fprintf(stderr, "%s(): cannot allocate memory\n", __func__);
+            if_not_malloc(out_filename, malloc_size,
                 /* close all open descriptors and return */
                 pnum_t i;
                 for(i = 0; i < current_file_entry; i++)
                      close(fd[i]);
                 return (1);
-            }
+            )
             snprintf(out_filename, malloc_size, "%s.%d", out_template,
                 (current_chunk * PRINT_FE_CHUNKS) + current_file_entry);
 
