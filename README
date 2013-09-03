@@ -153,6 +153,20 @@ machine, but you can use it as the basis of a much sophisticated solution : at
 work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
+Note : several fpart runs can be launched using the above example ; you will
+perform incremental synchronisations. That is, deleted files from the source
+directory will not be removed from destination unless rsync's --delete option is
+used. Unfortunately, this option cannot be used with a list of files (files that
+do not appear in the list are just ignored). To use the --delete option in
+conjunction with fpart, you *have* to provide rsync's --files-from option a list
+of directories (only). Fpart's -d option can do the trick but it will probaby
+not generate partitions having the same size (if you choose to use that method
+anyway, do not forget to use rsync's -r option too). Another - simpler - method
+if you plan to perform several synchronisations is to use a single, last rsync
+to delete extra files from destination using the --delete option. This simple
+rsync pass will not transfer data but only delete files from destination
+directory.
+
 Limitations :
 *************
 
