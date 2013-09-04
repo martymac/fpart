@@ -148,7 +148,7 @@ and contain the file name of the partition that has just been generated.
 
 That's all, folks ! Pretty simple, isn't it ?
 
-In this example, file crawling and data transfer are run from the same -local-
+In this example, FS crawling and data transfer are run from the same -local-
 machine, but you can use it as the basis of a much sophisticated solution : at
 work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
@@ -175,6 +175,11 @@ Fpart will *NOT* modify data, it will *NOT* split your files !
 As a consequence, if you have a directory containing several small files and a
 huge one, it will be unable to produce partitions with the same size. Fpart does
 magic, but not that much ;-)
+
+If you provide several paths to fpart, it will examine all of them. If those
+paths overlap or if the same path is specified more than once, same files will
+appear more than once within generated partitions. This is not a bug, fpart does
+not deduplicate FS crawling results.
 
 Installing :
 ************
