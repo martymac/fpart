@@ -26,9 +26,6 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([bzero fchdir getcwd memmove memset strchr strerror strrchr strtol])
 
-# Large file support
-AC_SYS_LARGEFILE
-
 # OS detection
 AC_CANONICAL_HOST
 case "${host_os}" in
@@ -38,25 +35,11 @@ esac
 
 # Default value for embedded fts support
 dflt_embfts=false
-# Enabled on Solaris...
+# Enabled on Solaris
 if test x$host_os_solaris = xtrue
 then
   dflt_embfts=true
 fi
-# ...as well as on Linux armel
-if test x$host_os_linux = xtrue -a x$host_cpu = xarmv7l
-then
-  dflt_embfts=true
-fi
-
-# Debug option
-AC_ARG_ENABLE([debug],
-[  --enable-debug          turn on debugging],
-[case "${enableval}" in
-  yes) debug=true ;;
-  no)  debug=false ;;
-  *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
-esac],[debug=false])
 
 # Embedded fts option
 AC_ARG_ENABLE([embfts],
@@ -75,6 +58,28 @@ AC_ARG_ENABLE([static],
   no)  static=false ;;
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-static]) ;;
 esac],[static=false])
+
+# Debug option
+AC_ARG_ENABLE([debug],
+[  --enable-debug          turn on debugging],
+[case "${enableval}" in
+  yes) debug=true ;;
+  no)  debug=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+esac],[debug=false])
+
+# Disable large file support on Linux when not using embedded fts
+# as Linux' fts.h cannot be used with _FILE_OFFSET_BITS==64
+if test x$embfts = xfalse
+then
+  if test x$host_os_linux = xtrue
+  then
+    enable_largefile=no
+  fi
+fi
+
+# Large file support
+AC_SYS_LARGEFILE
 
 # Automake output
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
