@@ -5,13 +5,15 @@ Fpart:
 - Factorize code (err(3), ...)
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
+- Test on Mac OS X (anyone ?)
+- Add constraints, e.g. : force hardlinks to belong to the same partition
+- Make the program multithreaded for FS analysis
+- Display/accept size in a human-friendly format
 - Add timestamps before/after hooks
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...)
-- Make the program multithreaded for FS analysis
-- Display/accept size in a human-friendly format
 
 Autotools:
 - Use config.h (for program version, data types, header inclusion,
