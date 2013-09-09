@@ -1,27 +1,27 @@
-20??/??/??  0.9
+2013/09/10, 0.9 ('I bite!'):
     - Code cleanup
-
-2013/06/25  0.8
+    - Fix Debian bug #719338 (fix build on 32bit architectures)
+2013/06/25, 0.8 ('Moving around'):
     - Keep environ(7) when forking hooks
     - Add sections about live mode and data migration in README
     - Use autotools and get rid of manual Makefiles
-2013/02/18  0.7
+2013/02/18, 0.7 ('Can I take it ?'):
     - Added option -D to group leaf directories as single file entries
     - Big options and doc update/cleanup
     - Sync'd fts(3) code with current FreeBSD version (svn rev 245505)
     - Embedded fts(3) can now be used on GNU/Linux
     - Renamed option '-x' to '-b'
     - Added options '-y', '-Y', '-x' and '-X' to include or exclude files
-2013/01/21  0.6
+2013/01/21, 0.6 ('Very funny'):
     - Options handling cleanup and various bugfixes
     - Added FPART_PID and FPART_HOOKTYPE hook variables
     - Added -z and -Z options to display empty directories
-2013/01/09  0.5
+2013/01/09, 0.5 ('Cassounette'):
     - Added option '-L' (live mode)
     - Added options '-w' and '-W' (hooks to be used with live mode)
     - Fixed build on Solaris 9
     - Removed option '-m' and associated code
-2012/06/12  0.4
+2012/06/12, 0.4:
     - Now builds on Solaris (using FreeBSD's fts(3))
     - Fix stack overflow when allocating file entry pointers' array
     - Added preloading/rounding options -p, -q and -r. See fpart(1)
@@ -32,13 +32,13 @@
     - Added option '-m' (disabled by default), that tries to lower physical
       memory usage (at least during FS crawling) by using temporary file(s)
       and mmap(2) facility
-2011/12/06  0.3
+2011/12/06, 0.3:
     - Switch to fts(3)
     - Replaced getline(3) calls with fgets(3) for compatibility
     - New "handle arbitrary values" (-a) option
     - Strings handling cleanup (stop using FILENAME_MAX)
     - Various smaller changes
-2011/11/24  0.2
+2011/11/24, 0.2:
     - New "follow symbolic links" (-l) option
     - Ending slash (if present in input path) is now left to allow following an
       initial symbolic link (without using option -l)
@@ -46,5 +46,5 @@
     - Fpart now reads on stdin by default if no path is given
     - File size are now written to stdout when displaying partition contents
     - Various smaller changes
-2011/11/18  0.1
+2011/11/18, 0.1:
     - Initial version
