@@ -28,6 +28,7 @@ Fpart has been successfully tested on :
 * GNU/Linux (x86_64, arm)
 * Solaris 9, 10 (Sparc, i386)
 * NetBSD (amd64, alpha)
+* Mac OS X (10.6, 10.8)
 
 and will probably work on other operating systems too (*).
 
