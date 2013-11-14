@@ -1,3 +1,9 @@
+2013/11/13, 0.9-1:
+    (this minor change only impacts tarball users, fpart code itself has not changed)
+	- Backport the following patch to config.guess:
+	  http://git.savannah.gnu.org/gitweb/?p=config.git;a=commitdiff;h=29900d3bff1ce445087ece5cb2cac425df1c2f74
+	  it adds support for ppcle and ppc64le architectures.
+	Submitted by: Madhu Pavan <kmp@linux.vnet.ibm.com>
 2013/09/10, 0.9 ('I bite!'):
     - Code cleanup
     - Fix Debian bug #719338 (fix build on 32bit architectures)
