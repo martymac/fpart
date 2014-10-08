@@ -71,8 +71,8 @@ done
 ########## Config ##########
 
 # Queue manager configuration
-#JOBS_MAX=4
-JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1))                  # How many jobs to run
+JOBS_MAX=4                                              # How many jobs to run
+#JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1))
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
@@ -80,14 +80,14 @@ JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 FPART_BIN="/usr/local/bin/fpart"
 RSYNC_BIN="/usr/local/bin/rsync"
 
-# Fpart paths and templates
+# Fpart paths
 FPART_LOGDIR="/mnt/nfsshared/fpart/log/${FPART_JOBNAME}"
 FPART_OUTPARTDIR="/mnt/nfsshared/fpart/partitions/${FPART_JOBNAME}"
 
 # Fpart options
 FPART_MAXPARTFILES="20000"
 FPART_MAXPARTSIZE="$((10 * 1024 * 1024 * 1024))" # 10 GB
-FPART_OPTIONS="-v -x '.zfs' -x '.snapshot*'"
+FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
 
 # Fpart hooks
 FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
@@ -96,7 +96,8 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
 		\\\"${DST_PATH}/\\\"' \
 		1>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stdout\" \
 		2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
-FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
+FPART_POSTHOOK="echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\" ; \
+        echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\""
 
 # Mail
@@ -166,6 +167,7 @@ jobs_loop () {
             _NEXT="$(dequeue_job)"
             if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ]
             then
+                echo "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
                 sh "${JOBS_WORKDIR}/${_NEXT}" &
                 push_pid_queue $!
             fi
@@ -202,6 +204,12 @@ jobs_loop&
 echo "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}" | \
 	tee -a ${FPART_LOGDIR}/fpart.log
 echo "===> Start time : $(date)" | \
+	tee -a ${FPART_LOGDIR}/fpart.log
+echo "===> Starting fpart..." | \
+	tee -a ${FPART_LOGDIR}/fpart.log
+echo "===> (parts dir : ${FPART_OUTPARTDIR})" | \
+	tee -a ${FPART_LOGDIR}/fpart.log
+echo "===> (log dir : ${FPART_LOGDIR})" | \
 	tee -a ${FPART_LOGDIR}/fpart.log
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
