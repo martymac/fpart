@@ -45,6 +45,13 @@ is_null () {
     echo "$1" | grep -qE "^[[:space:]]*$"
 }
 
+# Handle ^C : stop queue processing by setting the "stop" flag
+trap_queue () {
+    job_queue_stop
+    end_die "\nKilled."
+}
+trap 'trap_queue' 2
+
 ########## Simple sanity checks
 
 if is_null "$1" || is_null "$2"
@@ -121,21 +128,31 @@ init_job_queue () {
 
 # Set the "done" flag within job queue
 job_queue_done () {
-    sleep 1
+    sleep 1 # Ensure the file gets created within the next second of last file's birth date's one
     touch "${JOBS_QUEUEDIR}/done"
+}
+
+# Set the "stop" flag within job queue
+job_queue_stop () {
+    touch "${JOBS_QUEUEDIR}/stop"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
 # Returns empty string if no job is available
 dequeue_job () {
     local _NEXT=""
-    _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 | head -n 1)
-    if [ -n "${_NEXT}" ]
+    if [ -f "${JOBS_QUEUEDIR}/stop" ]
     then
-        mv "${JOBS_QUEUEDIR}/${_NEXT}" "${JOBS_WORKDIR}" || \
-            end_die "Cannot dequeue next job"
+        echo "stop"
+    else
+        _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 | head -n 1)
+        if [ -n "${_NEXT}" ]
+        then
+            mv "${JOBS_QUEUEDIR}/${_NEXT}" "${JOBS_WORKDIR}" || \
+                end_die "Cannot dequeue next job"
+            echo "${_NEXT}"
+        fi
     fi
-    echo "${_NEXT}"
 }
 
 push_pid_queue () {
@@ -177,13 +194,13 @@ next_ssh_host () {
 
 jobs_loop () {
     local _NEXT=""
-    while [ "${_NEXT}" != "done" ]
+    while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
     do
         local _PID=""
         if [ ${JOBS_NUM} -lt ${JOBS_MAX} ]
         then
             _NEXT="$(dequeue_job)"
-            if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ]
+            if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
             then
                 echo "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
                 if [ -z "${SSH_HOSTS}" ]
@@ -198,9 +215,17 @@ jobs_loop () {
             fi
         fi
         refresh_pid_queue
-        sleep 0.3
+        sleep 0.2
     done
+
+    if [ "${_NEXT}" == "done" ]
+    then
+        echo "=> [QMGR] Done submitting jobs. Waiting for them to finish."
+    else
+        echo "=> [QMGR] Stopped. Waiting for jobs to finish."
+    fi
     wait
+    echo "=> [QMGR] No more job running."
 }
 
 ########## Program start
