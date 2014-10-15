@@ -33,7 +33,7 @@
 ########## Helper functions
 
 usage () {
-	echo "$0 <src_dir> <dst_dir>"
+    echo "$0 <src_dir> <dst_dir>"
 }
 
 end_die () {
@@ -42,35 +42,35 @@ end_die () {
 }
 
 is_null () {
-  echo "$1" | grep -qE "^[[:space:]]*$"
+    echo "$1" | grep -qE "^[[:space:]]*$"
 }
 
 ########## Simple sanity checks
 
 if is_null "$1" || is_null "$2"
 then
-	usage
-	end_die
+    usage
+    end_die
 fi
 SRC_PATH="$1"
 DST_PATH="$2"
 
 [ ! -d "${SRC_PATH}" ] && \
-	end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
+    end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
 
 [ ! -d "${DST_PATH}" ] && \
-	end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
+    end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
 
 # Read the job name
 while read -p "Enter a job name: " FPART_JOBNAME && \
     echo "${FPART_JOBNAME}" | grep -vqE '^[a-zA-Z0-9]+$'
 do
-	:
+    :
 done
 
 ########## Config ##########
 
-# Queue manager configuration
+# Queue manager configuration. This queue remains local, even when using ssh.
 JOBS_MAX=4                                              # How many jobs to run
 #JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1))
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
@@ -79,8 +79,9 @@ JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 # Paths for executables
 FPART_BIN="/usr/local/bin/fpart"
 RSYNC_BIN="/usr/local/bin/rsync"
+SSH_BIN="/usr/bin/ssh"
 
-# Fpart paths
+# Fpart paths. Those ones must be shared amongst all nodes when using ssh.
 FPART_LOGDIR="/mnt/nfsshared/fpart/log/${FPART_JOBNAME}"
 FPART_OUTPARTDIR="/mnt/nfsshared/fpart/partitions/${FPART_JOBNAME}"
 
@@ -91,17 +92,20 @@ FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
 
 # Fpart hooks
 FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
-		--files-from=\\\"\${FPART_PARTFILENAME}\\\" \
-		\\\"${SRC_PATH}/\\\" \
-		\\\"${DST_PATH}/\\\"' \
-		1>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stdout\" \
-		2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
+        --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
+        \\\"${SRC_PATH}/\\\" \
+        \\\"${DST_PATH}/\\\"' \
+        1>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stdout\" \
+        2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\" ; \
         echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\""
 
 # Mail
 MAIL_ADDR="storage@mydomain.mytld"
+
+# SSH hosts (comment out to execute jobs locally)
+#SSH_HOSTS="login@host1 login@host2 login@host3"
 
 ########## Jobs-related functions
 
@@ -157,6 +161,20 @@ refresh_pid_queue () {
     JOBS_NUM=${_JOBS_NUM}
 }
 
+rotate_ssh_hosts () {
+    if [ -n "${SSH_HOSTS}" ]
+    then
+        SSH_HOSTS="$(echo ${SSH_HOSTS} | cut -d ' ' -f 2-) $(echo ${SSH_HOSTS} | cut -d ' ' -f 1)"
+    fi
+}
+
+next_ssh_host () {
+    if [ -n "${SSH_HOSTS}" ]
+    then
+        echo "${SSH_HOSTS}" | cut -d ' ' -f 1
+    fi
+}
+
 jobs_loop () {
     local _NEXT=""
     while [ "${_NEXT}" != "done" ]
@@ -168,7 +186,14 @@ jobs_loop () {
             if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ]
             then
                 echo "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
-                sh "${JOBS_WORKDIR}/${_NEXT}" &
+                if [ -z "${SSH_HOSTS}" ]
+                then
+                    /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
+                else
+                    "${SSH_BIN}" "$(next_ssh_host)" 'sh -s' \
+                        < "${JOBS_WORKDIR}/${_NEXT}" &
+                    rotate_ssh_hosts
+                fi
                 push_pid_queue $!
             fi
         fi
@@ -185,16 +210,16 @@ FPART_OUTPARTTEMPL="${FPART_OUTPARTDIR}/part-$$"
 JOBS_NUM=0      # Current num of concurrent processes
 JOBS_QUEUE=""   # Jobs PID queue
 
-if [ ! -x "${FPART_BIN}" ] || [ ! -x "${RSYNC_BIN}" ]
+if [ ! -x "${FPART_BIN}" ] || [ ! -x "${RSYNC_BIN}" ] || [ ! -x "${SSH_BIN}" ]
 then
-	end_die "External tools are missing, check your configuration"
+    end_die "External tools are missing, check your configuration"
 fi
 
 # Create fpart directories
 mkdir -p "${FPART_OUTPARTDIR}" 2>/dev/null || \
-	end_die "Cannot create output directory: ${FPART_OUTPARTDIR}"
+    end_die "Cannot create output directory: ${FPART_OUTPARTDIR}"
 mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
-	end_die "Cannot create log directory: ${FPART_LOGDIR}"
+    end_die "Cannot create log directory: ${FPART_LOGDIR}"
 
 # Initialize jobs queue and start jobs_loop
 init_job_queue
@@ -202,21 +227,21 @@ jobs_loop&
 
 # Let's rock !
 echo "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}" | \
-	tee -a ${FPART_LOGDIR}/fpart.log
+    tee -a ${FPART_LOGDIR}/fpart.log
 echo "===> Start time : $(date)" | \
-	tee -a ${FPART_LOGDIR}/fpart.log
+    tee -a ${FPART_LOGDIR}/fpart.log
 echo "===> Starting fpart..." | \
-	tee -a ${FPART_LOGDIR}/fpart.log
+    tee -a ${FPART_LOGDIR}/fpart.log
 echo "===> (parts dir : ${FPART_OUTPARTDIR})" | \
-	tee -a ${FPART_LOGDIR}/fpart.log
+    tee -a ${FPART_LOGDIR}/fpart.log
 echo "===> (log dir : ${FPART_LOGDIR})" | \
-	tee -a ${FPART_LOGDIR}/fpart.log
+    tee -a ${FPART_LOGDIR}/fpart.log
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
-	time ${FPART_BIN} -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
-		-o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
-		-W "${FPART_POSTHOOK}" . 2>&1 | tee -a ${FPART_LOGDIR}/fpart.log
+    time ${FPART_BIN} -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
+        -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
+        -W "${FPART_POSTHOOK}" . 2>&1 | tee -a ${FPART_LOGDIR}/fpart.log
 
 # Tell jobs_loop that crawling has finished
 job_queue_done
@@ -229,14 +254,14 @@ wait
 RET=$(find ${FPART_LOGDIR}/ -name "$$-*.stderr" ! -size 0)
 if [ -n "${MAIL_ADDR}" ]
 then
-	(echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
-	[ -n "${RET}" ] && \
-		echo -e "Rsync errors detected, see logs:\n${RET}") | \
-	mail -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
+    (echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
+    [ -n "${RET}" ] && \
+        echo -e "Rsync errors detected, see logs:\n${RET}") | \
+    mail -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
 fi
 
 echo "<=== End time : $(date)" | \
-	tee -a "${FPART_LOGDIR}/fpart.log"
+    tee -a "${FPART_LOGDIR}/fpart.log"
 
 [ -n "${RET}" ] && exit 1
 exit 0
