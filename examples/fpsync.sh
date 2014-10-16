@@ -63,12 +63,6 @@ fi
 SRC_PATH="$1"
 DST_PATH="$2"
 
-[ ! -d "${SRC_PATH}" ] && \
-    end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
-
-[ ! -d "${DST_PATH}" ] && \
-    end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
-
 # Read the job name
 while read -p "Enter a job name: " FPART_JOBNAME && \
     echo "${FPART_JOBNAME}" | grep -vqE '^[a-zA-Z0-9]+$'
@@ -254,6 +248,28 @@ JOBS_QUEUE=""   # Jobs PID queue
 if [ ! -x "${FPART_BIN}" ] || [ ! -x "${RSYNC_BIN}" ] || [ ! -x "${SSH_BIN}" ]
 then
     end_die "External tools are missing, check your configuration"
+fi
+
+# Validate src and dst paths
+if [ -n "${SSH_HOSTS}" ]
+then
+    # When using SSH, src/ path must exist locally (to allow fpart crawling it)
+    # and src/ and dst/ paths must exist on each node.
+    [ ! -d "${SRC_PATH}" ] && \
+        end_die "Directory ${SRC_PATH} does not exist locally (or is not a directory)"
+    # This also allows checking the SSH connectivity to each declared host.
+    for _host in ${SSH_HOSTS}
+    do
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d "${SRC_PATH}" ]'" || \
+            end_die "Directory ${SRC_PATH} does not exist for target ${_host} (or is not a directory)"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d "${DST_PATH}" ]'" || \
+            end_die "Directory ${DST_PATH} does not exist for target ${_host} (or is not a directory)"
+    done
+else
+    [ ! -d "${SRC_PATH}" ] && \
+        end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
+    [ ! -d "${DST_PATH}" ] && \
+        end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
 fi
 
 # Create fpart directories
