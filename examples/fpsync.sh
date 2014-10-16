@@ -104,9 +104,15 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         \\\"${DST_PATH}/\\\"' \
         1>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stdout\" \
         2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
-FPART_POSTHOOK="echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\" ; \
-        echo \"${FPART_COMMAND}\" > \
-        \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\""
+FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
+        \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+        touch \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # XXX [1]
+
+# [1] Workaround for st_mtim.tv_nsec not being initialized at file creation
+# on FreeBSD/UFS2 which prevents queue from being processed in the right
+# order. This hack forces the update of st_mtim.tv_nsec by using touch just
+# after file creation.
 
 # Mail
 MAIL_ADDR="storage@mydomain.mytld"
@@ -128,7 +134,10 @@ init_job_queue () {
 
 # Set the "done" flag within job queue
 job_queue_done () {
-    sleep 1 # Ensure the file gets created within the next second of last file's birth date's one
+    sleep 1 # Ensure the file gets created within
+            # the next second of last file's mtime.
+            # Necessary for filesystems that don't
+            # get below the second for mtime precision (msdosfs).
     touch "${JOBS_QUEUEDIR}/done"
 }
 
@@ -207,7 +216,7 @@ jobs_loop () {
                 then
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
                 else
-                    "${SSH_BIN}" "$(next_ssh_host)" 'sh -s' \
+                    "${SSH_BIN}" "$(next_ssh_host)" '/bin/sh -s' \
                         < "${JOBS_WORKDIR}/${_NEXT}" &
                     rotate_ssh_hosts
                 fi
