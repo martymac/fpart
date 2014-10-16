@@ -107,13 +107,14 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        touch \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # XXX [1]
+        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
-# [1] Workaround for st_mtim.tv_nsec not being initialized at file creation
-# on FreeBSD/UFS2 which prevents queue from being processed in the right
-# order. This hack forces the update of st_mtim.tv_nsec by using touch just
-# after file creation.
+# [1] Be careful to host the job queue on a filesystem that can handle
+# fine-grained mtime timestamps (i.e. with a sub-second prescision) if you want
+# the queue to be processed in order when fpart generates several job files per
+# second.
+# On FreeBSD, the precision can be tuned using the vfs.timestamp_precision
+# sysctl. See vfs_timestamp(9).
 
 # Mail
 MAIL_ADDR="storage@mydomain.mytld"
@@ -135,10 +136,9 @@ init_job_queue () {
 
 # Set the "done" flag within job queue
 job_queue_done () {
-    sleep 1 # Ensure the file gets created within
-            # the next second of last file's mtime.
-            # Necessary for filesystems that don't
-            # get below the second for mtime precision (msdosfs).
+    sleep 1 # Ensure this very last file gets created within the next second of
+            # last job file's mtime. Necessary for filesystems that don't get
+            # below the second for mtime precision (msdosfs).
     touch "${JOBS_QUEUEDIR}/done"
 }
 
