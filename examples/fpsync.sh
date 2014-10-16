@@ -52,8 +52,9 @@ trap_queue () {
 }
 trap 'trap_queue' 2
 
-########## Simple sanity checks
+########## Needed for config set-up
 
+# Check for args presence
 if is_null "$1" || is_null "$2"
 then
     usage
@@ -75,7 +76,7 @@ do
     :
 done
 
-########## Config ##########
+########## Config
 
 # Queue manager configuration. This queue remains local, even when using ssh.
 JOBS_MAX=4                                              # How many jobs to run
@@ -164,6 +165,7 @@ dequeue_job () {
     fi
 }
 
+# Push a PID to the list of currently-running-PIDs
 push_pid_queue () {
     if [ -n "$1" ]
     then
@@ -172,6 +174,7 @@ push_pid_queue () {
     fi
 }
 
+# Rebuild the currently-running-PIDs' list by examining each process' state
 refresh_pid_queue () {
     local _JOBS_QUEUE=""
     local _JOBS_NUM=0
@@ -187,6 +190,7 @@ refresh_pid_queue () {
     JOBS_NUM=${_JOBS_NUM}
 }
 
+# Simple round-robin for SSH_HOSTS
 rotate_ssh_hosts () {
     if [ -n "${SSH_HOSTS}" ]
     then
@@ -194,6 +198,7 @@ rotate_ssh_hosts () {
     fi
 }
 
+# Pick-up next SSH host
 next_ssh_host () {
     if [ -n "${SSH_HOSTS}" ]
     then
@@ -201,6 +206,7 @@ next_ssh_host () {
     fi
 }
 
+# Main jobs loop : pick up jobs within the queue directory and start them
 jobs_loop () {
     local _NEXT=""
     while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
@@ -244,6 +250,7 @@ FPART_OUTPARTTEMPL="${FPART_OUTPARTDIR}/part-$$"
 JOBS_NUM=0      # Current num of concurrent processes
 JOBS_QUEUE=""   # Jobs PID queue
 
+# Checks for binaries
 if [ ! -x "${FPART_BIN}" ] || [ ! -x "${RSYNC_BIN}" ] || [ ! -x "${SSH_BIN}" ]
 then
     end_die "External tools are missing, check your configuration"
