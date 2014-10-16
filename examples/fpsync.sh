@@ -309,13 +309,16 @@ wait
 
 # Examine results and send e-mail if requested
 RET=$(find ${FPART_LOGDIR}/ -name "$$-*.stderr" ! -size 0)
+MSG=$(echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
+    [ -n "${RET}" ] && echo -e "Rsync errors detected, see logs:\n${RET}")
 if [ -n "${MAIL_ADDR}" ]
 then
-    (echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
-    [ -n "${RET}" ] && \
-        echo -e "Rsync errors detected, see logs:\n${RET}") | \
-    mail -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
+    echo "${MSG}" | mail -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
 fi
+echo "===> Jobs terminated." | \
+    tee -a "${FPART_LOGDIR}/fpart.log"
+echo "${MSG}" | \
+    tee -a "${FPART_LOGDIR}/fpart.log"
 
 echo "<=== End time : $(date)" | \
     tee -a "${FPART_LOGDIR}/fpart.log"
