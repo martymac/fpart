@@ -36,6 +36,11 @@ usage () {
     echo "$0 <src_dir> <dst_dir>"
 }
 
+echo_log () {
+    [ -n "$1" ] && echo "$1" | \
+        tee -a "${FPART_LOGFILE}"
+}
+
 end_die () {
     [ -n "$1" ] && echo -e "$1" 1>&2
     exit 1
@@ -85,6 +90,7 @@ SSH_BIN="/usr/bin/ssh"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using ssh.
 FPART_LOGDIR="/mnt/nfsshared/fpart/log/${FPART_JOBNAME}"
+FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_OUTPARTDIR="/mnt/nfsshared/fpart/partitions/${FPART_JOBNAME}"
 
 # Fpart options
@@ -211,7 +217,7 @@ jobs_loop () {
             _NEXT="$(dequeue_job)"
             if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
             then
-                echo "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
+                echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
                 if [ -z "${SSH_HOSTS}" ]
                 then
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
@@ -229,12 +235,12 @@ jobs_loop () {
 
     if [ "${_NEXT}" == "done" ]
     then
-        echo "=> [QMGR] Done submitting jobs. Waiting for them to finish."
+        echo_log "=> [QMGR] Done submitting jobs. Waiting for them to finish."
     else
-        echo "=> [QMGR] Stopped. Waiting for jobs to finish."
+        echo_log "=> [QMGR] Stopped. Waiting for jobs to finish."
     fi
     wait
-    echo "=> [QMGR] No more job running."
+    echo_log "=> [QMGR] No more job running."
 }
 
 ########## Program start
@@ -250,6 +256,14 @@ then
     end_die "External tools are missing, check your configuration"
 fi
 
+# Create fpart directories and log file
+mkdir -p "${FPART_OUTPARTDIR}" 2>/dev/null || \
+    end_die "Cannot create output directory: ${FPART_OUTPARTDIR}"
+mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
+    end_die "Cannot create log directory: ${FPART_LOGDIR}"
+touch "${FPART_LOGFILE}" 2>/dev/null || \
+    end_die "Cannot create log file: ${FPART_LOGFILE}"
+
 # Validate src and dst paths
 if [ -n "${SSH_HOSTS}" ]
 then
@@ -258,6 +272,7 @@ then
     [ ! -d "${SRC_PATH}" ] && \
         end_die "Directory ${SRC_PATH} does not exist locally (or is not a directory)"
     # This also allows checking the SSH connectivity to each declared host.
+    echo_log "======> Validating src/ and dst/ paths on SSH nodes..."
     for _host in ${SSH_HOSTS}
     do
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d "${SRC_PATH}" ]'" || \
@@ -272,39 +287,28 @@ else
         end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
 fi
 
-# Create fpart directories
-mkdir -p "${FPART_OUTPARTDIR}" 2>/dev/null || \
-    end_die "Cannot create output directory: ${FPART_OUTPARTDIR}"
-mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
-    end_die "Cannot create log directory: ${FPART_LOGDIR}"
-
 # Initialize jobs queue and start jobs_loop
 init_job_queue
 jobs_loop&
 
 # Let's rock !
-echo "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}" | \
-    tee -a ${FPART_LOGDIR}/fpart.log
-echo "===> Start time : $(date)" | \
-    tee -a ${FPART_LOGDIR}/fpart.log
-echo "===> Starting fpart..." | \
-    tee -a ${FPART_LOGDIR}/fpart.log
-echo "===> (parts dir : ${FPART_OUTPARTDIR})" | \
-    tee -a ${FPART_LOGDIR}/fpart.log
-echo "===> (log dir : ${FPART_LOGDIR})" | \
-    tee -a ${FPART_LOGDIR}/fpart.log
+echo_log "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}"
+echo_log "===> Start time : $(date)"
+echo_log "===> Starting fpart..."
+echo_log "===> (parts dir : ${FPART_OUTPARTDIR})"
+echo_log "===> (log dir : ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
     time ${FPART_BIN} -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
         -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
-        -W "${FPART_POSTHOOK}" . 2>&1 | tee -a ${FPART_LOGDIR}/fpart.log
+        -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
 # Tell jobs_loop that crawling has finished
 job_queue_done
 
 # Wait for jobs_loop to terminate
-echo "===> Jobs submitted, waiting..."
+echo_log "===> Jobs submitted, waiting..."
 wait
 
 # Examine results and send e-mail if requested
@@ -315,13 +319,9 @@ if [ -n "${MAIL_ADDR}" ]
 then
     echo "${MSG}" | mail -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
 fi
-echo "===> Jobs terminated." | \
-    tee -a "${FPART_LOGDIR}/fpart.log"
-echo "${MSG}" | \
-    tee -a "${FPART_LOGDIR}/fpart.log"
-
-echo "<=== End time : $(date)" | \
-    tee -a "${FPART_LOGDIR}/fpart.log"
+echo_log "===> Jobs terminated."
+echo_log "${MSG}"
+echo_log "<=== End time : $(date)"
 
 [ -n "${RET}" ] && exit 1
 exit 0
