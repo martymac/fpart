@@ -77,7 +77,7 @@ done
 
 ########## Config
 
-# Queue manager configuration. This queue remains local, even when using ssh.
+# Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_MAX=4                                              # How many jobs to run
 #JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1))
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
@@ -88,7 +88,7 @@ FPART_BIN="/usr/local/bin/fpart"
 RSYNC_BIN="/usr/local/bin/rsync"
 SSH_BIN="/usr/bin/ssh"
 
-# Fpart paths. Those ones must be shared amongst all nodes when using ssh.
+# Fpart paths. Those ones must be shared amongst all nodes when using SSH.
 FPART_LOGDIR="/mnt/nfsshared/fpart/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_OUTPARTDIR="/mnt/nfsshared/fpart/partitions/${FPART_JOBNAME}"
@@ -180,7 +180,7 @@ refresh_pid_queue () {
     local _JOBS_NUM=0
     for _PID in ${JOBS_QUEUE}
     do
-        if ps ${_PID} 1>/dev/null 2>&1
+        if ps "${_PID}" 1>/dev/null 2>&1
         then
             _JOBS_QUEUE="${_JOBS_QUEUE} ${_PID}"
             _JOBS_NUM="$((${_JOBS_NUM} + 1))"
@@ -300,7 +300,7 @@ echo_log "===> (log dir : ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
-    time ${FPART_BIN} -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
+    time "${FPART_BIN}" -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
         -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
@@ -312,7 +312,7 @@ echo_log "===> Jobs submitted, waiting..."
 wait
 
 # Examine results and send e-mail if requested
-RET=$(find ${FPART_LOGDIR}/ -name "$$-*.stderr" ! -size 0)
+RET=$(find "${FPART_LOGDIR}/" -name "$$-*.stderr" ! -size 0)
 MSG=$(echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
     [ -n "${RET}" ] && echo -e "Rsync errors detected, see logs:\n${RET}")
 if [ -n "${MAIL_ADDR}" ]
