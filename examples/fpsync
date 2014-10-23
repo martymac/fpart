@@ -52,7 +52,7 @@ is_null () {
     echo "$1" | grep -qE "^[[:space:]]*$"
 }
 
-# Handle ^C : stop queue processing by setting the "stop" flag
+# Handle ^C: stop queue processing by setting the "stop" flag
 trap_queue () {
     job_queue_stop
     end_die "\nKilled."
@@ -85,11 +85,14 @@ JOBS_MAX=4                                              # How many jobs to run
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
-# Paths for executables
+# Paths to executables that must exist locally
 FPART_BIN="/usr/local/bin/fpart"
-RSYNC_BIN="/usr/local/bin/rsync"
 SSH_BIN="/usr/bin/ssh"
 MAIL_BIN="/usr/bin/mail"
+
+# Paths to executables that must exist either locally or remotely (when using SSH)
+# When using SSH, those binaries must be present at those paths on every worker.
+RSYNC_BIN="/usr/local/bin/rsync"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on every node).
@@ -216,7 +219,7 @@ next_ssh_host () {
     fi
 }
 
-# Main jobs loop : pick up jobs within the queue directory and start them
+# Main jobs loop: pick up jobs within the queue directory and start them
 jobs_loop () {
     local _NEXT=""
     while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
@@ -261,8 +264,7 @@ JOBS_NUM=0      # Current number of running processes
 JOBS_QUEUE=""   # Jobs PID queue
 
 # Checks for essential binaries
-if [ ! -x "${FPART_BIN}" ] || [ ! -x "${RSYNC_BIN}" ] || \
-    [ ! -x "${SSH_BIN}" ] || [ ! -x "${MAIL_BIN}" ]
+if [ ! -x "${FPART_BIN}" ] || [ ! -x "${SSH_BIN}" ] || [ ! -x "${MAIL_BIN}" ]
 then
     end_die "External tools are missing, check your configuration"
 fi
@@ -275,27 +277,31 @@ mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
 touch "${FPART_LOGFILE}" 2>/dev/null || \
     end_die "Cannot create log file: ${FPART_LOGFILE}"
 
-# Validate src_dir/ and dst_dir/ directories
+# Validate src_dir/ locally (needed for fpart)
+[ ! -d "${SRC_PATH}" ] && \
+    end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
+
+# When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync presence
+# (this also allows checking SSH connectivity to each declared host)
 if [ -n "${SSH_HOSTS}" ]
 then
-    # When using SSH, src_dir/ must exist locally (to allow fpart crawling it)
-    # and src_dir/ and dst_dir/ must exist on each node.
-    [ ! -d "${SRC_PATH}" ] && \
-        end_die "Directory ${SRC_PATH} does not exist locally (or is not a directory)"
-    # This also allows checking the SSH connectivity to each declared host.
-    echo_log "======> Validating src_dir/ and dst_dir/ on SSH nodes..."
+    echo_log "======> Validating requirements on SSH nodes..."
     for _host in ${SSH_HOSTS}
     do
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d "${SRC_PATH}" ]'" || \
-            end_die "Directory ${SRC_PATH} does not exist for target ${_host} (or is not a directory)"
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d "${DST_PATH}" ]'" || \
-            end_die "Directory ${DST_PATH} does not exist for target ${_host} (or is not a directory)"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${SRC_PATH}\" ]'" || \
+            end_die "Directory ${SRC_PATH} does not exist on target ${_host} (or is not a directory)"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${DST_PATH}\" ]'" || \
+            end_die "Directory ${DST_PATH} does not exist on target ${_host} (or is not a directory)"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
+            end_die "Rsync is missing on target ${_host}, check your configuration"
+        echo_log "===> ${_host}: OK"
     done
 else
-    [ ! -d "${SRC_PATH}" ] && \
-        end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
+# Local usage - check for dst_dir/ and rsync presence
     [ ! -d "${DST_PATH}" ] && \
         end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
+    [ ! -x "${RSYNC_BIN}" ] && \
+        end_die "Rsync is missing locally, check your configuration"
 fi
 
 # Initialize jobs queue and start jobs_loop
@@ -304,10 +310,10 @@ jobs_loop&
 
 # Let's rock !
 echo_log "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}"
-echo_log "===> Start time : $(date)"
+echo_log "===> Start time: $(date)"
 echo_log "===> Starting fpart..."
-echo_log "===> (parts dir : ${FPART_OUTPARTDIR})"
-echo_log "===> (log dir : ${FPART_LOGDIR})"
+echo_log "===> (parts dir: ${FPART_OUTPARTDIR})"
+echo_log "===> (log dir: ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
@@ -332,7 +338,7 @@ then
 fi
 echo_log "===> Jobs terminated."
 echo_log "${MSG}"
-echo_log "<=== End time : $(date)"
+echo_log "<=== End time: $(date)"
 
 [ -n "${RET}" ] && exit 1
 exit 0
