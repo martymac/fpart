@@ -35,7 +35,11 @@
 
 usage () {
     echo "fpsync - Start multiple rsync in parallel"
-    echo "Usage: $0 /absolute/path/to/src_dir/ /absolute/path/to/dst_dir/"
+    echo "Usage: $0 [-n <x>] /src_dir/ /dst_dir/"
+    echo "  -n <x>:    start <x> concurrent rsync workers"
+    echo "  /src_dir/: source directory (absolute path)"
+    echo "  /dst_dir/: destination directory (absolute path)"
+    echo "Edit the script itself to fine-tune its configuration."
 }
 
 echo_log () {
@@ -52,6 +56,10 @@ is_abs_path() {
     echo "$1" | grep -qE "^/"
 }
 
+is_integer () {
+    echo "$1" | grep -qE '^[0-9]+$'
+}
+
 # Handle ^C: stop queue processing by setting the "stop" flag
 trap_queue () {
     job_queue_stop
@@ -59,9 +67,24 @@ trap_queue () {
 }
 trap 'trap_queue' 2
 
-########## Needed before configuration section
+########## Arguments handling
 
-# Check for args presence
+# Handle -n option, if any
+JOBS_MAX=4                              # How many jobs to run by default
+#JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1)) # The same, but autodetected (FreeBSD)
+if [ "x$1" = "x-n" ]
+then
+    shift
+    if is_integer "$1" && [ $1 -ge 1 ]
+    then
+        JOBS_MAX="$1"
+    else
+        end_die "Please supply a numeric value >= 1 for option -n"
+    fi
+    shift
+fi
+
+# Check for paths presence and validity
 if is_abs_path "$1" && is_abs_path "$2"
 then
     :
@@ -82,8 +105,6 @@ done
 ########## Configuration
 
 # Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_MAX=4                                              # How many jobs to run
-#JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1))
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
@@ -136,6 +157,24 @@ FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
 # Be sure to set-up passwordless access for those accounts so that rsync jobs
 # can execute seemlessly. See ssh(1) for more details.
 #SSH_HOSTS="login@host1 login@host2 login@host3"
+
+########## SSH-related functions
+
+# Simple round-robin for SSH_HOSTS
+rotate_ssh_hosts () {
+    if [ -n "${SSH_HOSTS}" ]
+    then
+        SSH_HOSTS="$(echo ${SSH_HOSTS} | cut -d ' ' -f 2-) $(echo ${SSH_HOSTS} | cut -d ' ' -f 1)"
+    fi
+}
+
+# Pick-up next SSH host
+next_ssh_host () {
+    if [ -n "${SSH_HOSTS}" ]
+    then
+        echo "${SSH_HOSTS}" | cut -d ' ' -f 1
+    fi
+}
 
 ########## Jobs-related functions
 
@@ -203,22 +242,6 @@ refresh_pid_queue () {
     done
     JOBS_QUEUE=${_JOBS_QUEUE}
     JOBS_NUM=${_JOBS_NUM}
-}
-
-# Simple round-robin for SSH_HOSTS
-rotate_ssh_hosts () {
-    if [ -n "${SSH_HOSTS}" ]
-    then
-        SSH_HOSTS="$(echo ${SSH_HOSTS} | cut -d ' ' -f 2-) $(echo ${SSH_HOSTS} | cut -d ' ' -f 1)"
-    fi
-}
-
-# Pick-up next SSH host
-next_ssh_host () {
-    if [ -n "${SSH_HOSTS}" ]
-    then
-        echo "${SSH_HOSTS}" | cut -d ' ' -f 1
-    fi
 }
 
 # Main jobs loop: pick up jobs within the queue directory and start them
