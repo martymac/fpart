@@ -35,7 +35,7 @@
 
 usage () {
     echo "fpsync - Start multiple rsync in parallel"
-    echo "Usage: $0 <src_dir> <dst_dir>"
+    echo "Usage: $0 /absolute/path/to/src_dir/ /absolute/path/to/dst_dir/"
 }
 
 echo_log () {
@@ -48,8 +48,8 @@ end_die () {
     exit 1
 }
 
-is_null () {
-    echo "$1" | grep -qE "^[[:space:]]*$"
+is_abs_path() {
+    echo "$1" | grep -qE "^/"
 }
 
 # Handle ^C: stop queue processing by setting the "stop" flag
@@ -62,8 +62,10 @@ trap 'trap_queue' 2
 ########## Needed before configuration section
 
 # Check for args presence
-if is_null "$1" || is_null "$2"
+if is_abs_path "$1" && is_abs_path "$2"
 then
+    :
+else
     usage
     end_die
 fi
