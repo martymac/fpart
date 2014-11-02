@@ -113,12 +113,13 @@ FPART_BIN="/usr/local/bin/fpart"
 SSH_BIN="/usr/bin/ssh"
 MAIL_BIN="/usr/bin/mail"
 
-# Paths to executables that must exist either locally or remotely (when using SSH)
-# When using SSH, those binaries must be present at those paths on every worker.
+# Paths to executables that must exist either locally or remotely. When using
+# SSH, those binaries must be present at those paths on every worker.
 RSYNC_BIN="/usr/local/bin/rsync"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
-# (e.g. through a NFS share mounted on every node).
+# (e.g. through a NFS share mounted on *every* single node, including the master
+# 'job submitter').
 FPART_LOGDIR="/mnt/nfs/fpart/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_OUTPARTDIR="/mnt/nfs/fpart/partitions/${FPART_JOBNAME}"
@@ -253,14 +254,18 @@ jobs_loop () {
         if [ ${JOBS_NUM} -lt ${JOBS_MAX} ]
         then
             _NEXT="$(dequeue_job)"
-            if [ -n "${_NEXT}" ] && [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
+            if [ -n "${_NEXT}" ] && \
+                [ "${_NEXT}" != "done" ] && \
+                [ "${_NEXT}" != "stop" ]
             then
-                echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
                 if [ -z "${SSH_HOSTS}" ]
                 then
+                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
                 else
-                    "${SSH_BIN}" "$(next_ssh_host)" '/bin/sh -s' \
+                    local _NEXT_HOST="$(next_ssh_host)"
+                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
+                    "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
                         < "${JOBS_WORKDIR}/${_NEXT}" &
                     rotate_ssh_hosts
                 fi
@@ -296,7 +301,7 @@ fi
 
 # Create fpart directories and log file
 mkdir -p "${FPART_OUTPARTDIR}" 2>/dev/null || \
-    end_die "Cannot create output directory: ${FPART_OUTPARTDIR}"
+    end_die "Cannot create partitions' output directory: ${FPART_OUTPARTDIR}"
 mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
     end_die "Cannot create log directory: ${FPART_LOGDIR}"
 touch "${FPART_LOGFILE}" 2>/dev/null || \
@@ -306,8 +311,8 @@ touch "${FPART_LOGFILE}" 2>/dev/null || \
 [ ! -d "${SRC_PATH}" ] && \
     end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
 
-# When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync presence
-# (this also allows checking SSH connectivity to each declared host)
+# When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync
+# presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${SSH_HOSTS}" ]
 then
     echo_log "======> Validating requirements on SSH nodes..."
