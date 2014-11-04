@@ -104,8 +104,8 @@ echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
 This hook will display the name of current partition's output file name as well
 as display its contents.
 
-Examples - migrating data :
-***************************
+Examples - migrating data (take 1) :
+************************************
 
 Here is a more complex example that will show you how to use fpart, GNU Parallel
 and Rsync to split up a directory and immediately schedule data synchronization
@@ -155,7 +155,7 @@ work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
 Note : several fpart runs can be launched using the above example ; you will
-perform incremental synchronisations. That is, deleted files from the source
+perform incremental synchronizations. That is, deleted files from the source
 directory will not be removed from destination unless rsync's --delete option is
 used. Unfortunately, this option cannot be used with a list of files (files that
 do not appear in the list are just ignored). To use the --delete option in
@@ -163,10 +163,28 @@ conjunction with fpart, you *have* to provide rsync's --files-from option a list
 of directories (only). Fpart's -d option can do the trick but it will probaby
 not generate partitions having the same size (if you choose to use that method
 anyway, do not forget to use rsync's -r option too). Another - simpler - method
-if you plan to perform several synchronisations is to use a single, last rsync
+if you plan to perform several synchronizations is to use a single, last rsync
 to delete extra files from destination using the --delete option. This simple
 rsync pass will not transfer data but only delete files from destination
 directory.
+
+Examples - migrating data (take 2) :
+************************************
+
+A tool called 'fpsync' is provided within the examples/ directory. This tool is
+a shell script that wraps fpart and rsync to launch several rsync in parallel as
+presented in the previous section ("take 1"), but while the previous example
+used GNU Parallel to schedule transfers, this wrapper provides its own
+-embedded- scheduler. It can execute several rsync instances locally or launch
+rsync transfers on several nodes (workers) through SSH.
+
+Edit the script itself to configure it, then start it this way :
+
+./fpsync [-n threads] src_dir/ dst_dir/
+
+If you plan to use several SSH workers, you will have to mount src_dir/,
+dst_dir/ and fpart log and partitions' directories on each of them (e.g. using
+NFS).
 
 Limitations :
 *************
