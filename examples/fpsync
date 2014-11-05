@@ -112,9 +112,11 @@ JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 FPART_BIN="/usr/local/bin/fpart"
 SSH_BIN="/usr/bin/ssh"
 MAIL_BIN="/usr/bin/mail"
+# This script also uses cut, sed and awk, which should come with your system
 
-# Paths to executables that must exist either locally or remotely. When using
-# SSH, those binaries must be present at those paths on every worker.
+# Paths to executables that must exist either locally or remotely (depending
+# on if you use SSH or not). When using SSH, those binaries must be present at
+# those paths on each worker.
 RSYNC_BIN="/usr/local/bin/rsync"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
@@ -153,34 +155,82 @@ FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
 #MAIL_ADDR="address@mydomain.tld"
 
 # List of SSH hosts (space-separated) to use as rsync workers (nodes).
-# If commented, jobs will execute locally, else, jobs will be sent through SSH
-# using a simple round-robin.
-# Be sure to set-up passwordless access for those accounts so that rsync jobs
-# can execute seemlessly. See ssh(1) for more details.
+# If unset, jobs will execute locally, else, jobs will be sent through SSH
+# and executed remotely. In that case, be sure to set up passwordless access for
+# those accounts so that rsync jobs can execute seemlessly.
+# See ssh(1) for more details.
 #SSH_HOSTS="login@host1 login@host2 login@host3"
 
-########## SSH-related functions
+########## Work-related functions (in-memory, running-jobs handling)
 
-# Simple round-robin for SSH_HOSTS
-rotate_ssh_hosts () {
-    if [ -n "${SSH_HOSTS}" ]
+# Initialize WORK_FREEWORKERS by expanding SSH_HOSTS up to JOBS_MAX elements,
+# assigning a fixed number of slots to each worker.
+# Sanitize SSH_HOSTS if necessary.
+work_list_free_workers_init () {
+    local _SSH_HOSTS_NUM=$(echo ${SSH_HOSTS} | awk '{print NF}')
+    if [ ${_SSH_HOSTS_NUM} -gt 0 ]
     then
-        SSH_HOSTS="$(echo ${SSH_HOSTS} | cut -d ' ' -f 2-) $(echo ${SSH_HOSTS} | cut -d ' ' -f 1)"
+        local _i=0
+        while [ ${_i} -lt ${JOBS_MAX} ]
+        do
+            local _SSH_HOSTS_IDX="$((${_i} % ${_SSH_HOSTS_NUM} + 1))"
+            WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${SSH_HOSTS} | awk '{print $'${_SSH_HOSTS_IDX}'}')"
+            _i=$((${_i} + 1))
+        done
+    else
+        echo_log "======> WARN: Invalid SSH_HOSTS specified, ignoring and working locally"
+        SSH_HOSTS=""
+        WORK_FREEWORKERS="local"
     fi
 }
 
-# Pick-up next SSH host
-next_ssh_host () {
-    if [ -n "${SSH_HOSTS}" ]
+# Pick-up next worker
+work_list_pick_next_free_worker () {
+    echo "${WORK_FREEWORKERS}" | awk '{print $1}'
+}
+
+# Remove next worker from list
+work_list_trunc_next_free_worker () {
+    WORK_FREEWORKERS="$( echo ${WORK_FREEWORKERS} | sed -E 's/^[[:space:]]*[^[:space:]]+[[:space:]]*//')"
+}
+
+# Push a work to the list of currently-running ones
+work_list_push () {
+    if [ -n "$1" ]
     then
-        echo "${SSH_HOSTS}" | cut -d ' ' -f 1
+        WORK_LIST="${WORK_LIST} $1"
+        WORK_NUM="$((${WORK_NUM} + 1))"
     fi
 }
 
-########## Jobs-related functions
+# Rebuild the currently-running jobs' list by examining each process' state
+work_list_refresh () {
+    local _WORK_LIST=""
+    local _WORK_NUM=0
+    for _JOB in ${WORK_LIST}
+    do
+        # If the process is still alive, keep it
+        if ps "$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+        then
+            _WORK_LIST="${_WORK_LIST} ${_JOB}"
+            _WORK_NUM="$((${_WORK_NUM} + 1))"
+        # If not, put its worker to the free list
+        else
+            #echo_log "<= [QMGR] Job ${_JOB} finished"
+            if [ -n "${SSH_HOSTS}" ]
+            then
+                WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 2)"
+            fi
+        fi
+    done
+    WORK_LIST=${_WORK_LIST}
+    WORK_NUM=${_WORK_NUM}
+}
+
+########## Jobs-related functions (on-disk, jobs' queue handling)
 
 # Initialize job queue and work directories
-init_job_queue () {
+job_queue_init () {
     mkdir -p "${JOBS_QUEUEDIR}" 2>/dev/null || \
         end_die "Cannot create job queue directory ${JOBS_QUEUEDIR}"
     rm -f "${JOBS_QUEUEDIR}"/*
@@ -204,7 +254,7 @@ job_queue_stop () {
 
 # Get next job name relative to ${JOBS_WORKDIR}/
 # Returns empty string if no job is available
-dequeue_job () {
+job_queue_next () {
     local _NEXT=""
     if [ -f "${JOBS_QUEUEDIR}/stop" ]
     then
@@ -220,59 +270,35 @@ dequeue_job () {
     fi
 }
 
-# Push a PID to the list of currently-running PIDs
-push_pid_queue () {
-    if [ -n "$1" ]
-    then
-        JOBS_QUEUE="${JOBS_QUEUE} $1"
-        JOBS_NUM="$((${JOBS_NUM} + 1))"
-    fi
-}
-
-# Rebuild the currently-running PIDs' list by examining each process' state
-refresh_pid_queue () {
-    local _JOBS_QUEUE=""
-    local _JOBS_NUM=0
-    for _PID in ${JOBS_QUEUE}
-    do
-        if ps "${_PID}" 1>/dev/null 2>&1
-        then
-            _JOBS_QUEUE="${_JOBS_QUEUE} ${_PID}"
-            _JOBS_NUM="$((${_JOBS_NUM} + 1))"
-        fi
-    done
-    JOBS_QUEUE=${_JOBS_QUEUE}
-    JOBS_NUM=${_JOBS_NUM}
-}
-
-# Main jobs loop: pick up jobs within the queue directory and start them
-jobs_loop () {
+# Main jobs' loop: pick up jobs within the queue directory and start them
+job_queue_loop () {
     local _NEXT=""
     while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
     do
         local _PID=""
-        if [ ${JOBS_NUM} -lt ${JOBS_MAX} ]
+        if [ ${WORK_NUM} -lt ${JOBS_MAX} ]
         then
-            _NEXT="$(dequeue_job)"
+            _NEXT="$(job_queue_next)"
             if [ -n "${_NEXT}" ] && \
                 [ "${_NEXT}" != "done" ] && \
                 [ "${_NEXT}" != "stop" ]
             then
                 if [ -z "${SSH_HOSTS}" ]
                 then
-                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT}"
+                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
+                    work_list_push "$!:local"
                 else
-                    local _NEXT_HOST="$(next_ssh_host)"
+                    local _NEXT_HOST="$(work_list_pick_next_free_worker)"
+                    work_list_trunc_next_free_worker
                     echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
                     "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
                         < "${JOBS_WORKDIR}/${_NEXT}" &
-                    rotate_ssh_hosts
+                    work_list_push "$!:${_NEXT_HOST}"
                 fi
-                push_pid_queue $!
             fi
         fi
-        refresh_pid_queue
+        work_list_refresh
         sleep 0.2
     done
 
@@ -290,10 +316,11 @@ jobs_loop () {
 
 FPART_OUTPARTTEMPL="${FPART_OUTPARTDIR}/part-$$"
 
-JOBS_NUM=0      # Current number of running processes
-JOBS_QUEUE=""   # Jobs PID queue
+WORK_NUM=0          # Current number of running processes
+WORK_LIST=""        # Work PID[:WORKER] list
+WORK_FREEWORKERS="" # Free workers' list
 
-# Checks for essential binaries
+# Check for essential binaries
 if [ ! -x "${FPART_BIN}" ] || [ ! -x "${SSH_BIN}" ] || [ ! -x "${MAIL_BIN}" ]
 then
     end_die "External tools are missing, check your configuration"
@@ -327,16 +354,19 @@ then
         echo_log "===> ${_host}: OK"
     done
 else
-# Local usage - check for dst_dir/ and rsync presence
+    # Local usage - check for dst_dir/ and rsync presence
     [ ! -d "${DST_PATH}" ] && \
         end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
     [ ! -x "${RSYNC_BIN}" ] && \
         end_die "Rsync is missing locally, check your configuration"
 fi
 
-# Initialize jobs queue and start jobs_loop
-init_job_queue
-jobs_loop&
+# Dispatch SSH_HOSTS into WORK_FREEWORKERS
+work_list_free_workers_init
+
+# Initialize jobs queue and start job_queue_loop
+job_queue_init
+job_queue_loop&
 
 # Let's rock !
 echo_log "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}"
@@ -351,10 +381,10 @@ cd "${SRC_PATH}" && \
         -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
-# Tell jobs_loop that crawling has finished
+# Tell job_queue_loop that crawling has finished
 job_queue_done
 
-# Wait for jobs_loop to terminate
+# Wait for job_queue_loop to terminate
 echo_log "===> Jobs submitted, waiting..."
 wait
 
