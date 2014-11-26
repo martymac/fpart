@@ -178,7 +178,6 @@ work_list_free_workers_init () {
             _i=$((${_i} + 1))
         done
     else
-        echo_log "======> WARN: Invalid SSH_HOSTS specified, ignoring and working locally"
         SSH_HOSTS=""
         WORK_FREEWORKERS="local"
     fi
