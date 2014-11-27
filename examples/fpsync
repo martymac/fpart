@@ -335,29 +335,50 @@ touch "${FPART_LOGFILE}" 2>/dev/null || \
 
 # Validate src_dir/ locally (needed for fpart)
 [ ! -d "${SRC_PATH}" ] && \
-    end_die "Directory ${SRC_PATH} does not exist (or is not a directory)"
+    end_die "Source directory does not exist (or is not a directory): ${SRC_PATH}"
 
 # When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync
 # presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${SSH_HOSTS}" ]
 then
     echo_log "======> Validating requirements on SSH nodes..."
+
+    # First, blindly try to create dst_dir/ as well as a witness file on the
+    # first node (only). Using a witness file will allow us to check for its
+    # presence/visibility from other nodes, avoiding "split-brain" situations
+    # where dst_dir/ exists but is not shared amongst all nodes (typically a
+    # local mount point where the shared storage area *should* be mounted but
+    # isn't, for any reason).
+    _first_host="$(echo ${SSH_HOSTS} | awk '{print $1}')"
+    "${SSH_BIN}" "${_first_host}" \
+        "/bin/sh -c 'mkdir -p \"${DST_PATH}\" && \
+        touch \"${DST_PATH}/${FPART_JOBNAME}\"' 2>/dev/null"
+
+    # Then, check for src_dir/, witness file and rsync presence on each node.
     for _host in ${SSH_HOSTS}
     do
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${SRC_PATH}\" ]'" || \
-            end_die "Directory ${SRC_PATH} does not exist on target ${_host} (or is not a directory)"
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${DST_PATH}\" ]'" || \
-            end_die "Directory ${DST_PATH} does not exist on target ${_host} (or is not a directory)"
+            end_die "Source directory does not exist on target ${_host} (or is not a directory): ${SRC_PATH}"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${DST_PATH}/${FPART_JOBNAME}\" ]'" || \
+            end_die "Destination directory (shared) is not available on target ${_host}: ${DST_PATH}"
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
-            end_die "Rsync is missing on target ${_host}, check your configuration"
+            end_die "Rsync executable not found on target ${_host}"
         echo_log "===> ${_host}: OK"
     done
+
+    # Remove witness file
+    "${SSH_BIN}" "${_first_host}" \
+        "/bin/sh -c 'rm -f \"${DST_PATH}/${FPART_JOBNAME}\"' 2>/dev/null"
+    unset _first_host
 else
-    # Local usage - check for dst_dir/ and rsync presence
-    [ ! -d "${DST_PATH}" ] && \
-        end_die "Directory ${DST_PATH} does not exist (or is not a directory)"
+    # Local usage - create dst_dir/ and check for rsync presence
+    if [ ! -d "${DST_PATH}" ]
+    then
+        mkdir -p "${DST_PATH}" 2>/dev/null || \
+            end_die "Cannot create destination directory: ${DST_PATH}"
+    fi
     [ ! -x "${RSYNC_BIN}" ] && \
-        end_die "Rsync is missing locally, check your configuration"
+        end_die "Rsync executable not found"
 fi
 
 # Dispatch SSH_HOSTS into WORK_FREEWORKERS
