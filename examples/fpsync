@@ -95,12 +95,8 @@ fi
 SRC_PATH="$1"
 DST_PATH="$2"
 
-# Read the job name
-while read -p "Enter a job name: " FPART_JOBNAME && \
-    echo "${FPART_JOBNAME}" | grep -vqE '^[a-zA-Z0-9]+$'
-do
-    :
-done
+# Generate a unique job name
+FPART_JOBNAME="$(echo ${DST_PATH} | sha1)-$(date '+%s')-$$"
 
 ########## Configuration
 
@@ -108,8 +104,8 @@ done
 VERBOSE="yes"
 
 # Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
-JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
+JOBS_QUEUEDIR="/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
+JOBS_WORKDIR="/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
 # Paths to executables that must exist locally
 FPART_BIN="$(which fpart)"
@@ -126,9 +122,10 @@ RSYNC_BIN="$(which rsync)"
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
-FPART_LOGDIR="/mnt/nfs/fpart/log/${FPART_JOBNAME}"
+FPART_SHDIR="/mnt/nfs/fpart"
+FPART_OUTPARTDIR="${FPART_SHDIR}/parts/${FPART_JOBNAME}"
+FPART_LOGDIR="${FPART_SHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
-FPART_OUTPARTDIR="/mnt/nfs/fpart/partitions/${FPART_JOBNAME}"
 
 # Fpart options / splitting thresholds
 FPART_MAXPARTFILES="2000"
@@ -140,8 +137,8 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
         \\\"${SRC_PATH}/\\\" \
         \\\"${DST_PATH}/\\\"' \
-        1>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stdout\" \
-        2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
+        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
         [ -n \"${VERBOSE}\" ] && \
@@ -237,10 +234,8 @@ work_list_refresh () {
 job_queue_init () {
     mkdir -p "${JOBS_QUEUEDIR}" 2>/dev/null || \
         end_die "Cannot create job queue directory ${JOBS_QUEUEDIR}"
-    rm -f "${JOBS_QUEUEDIR}"/*
     mkdir -p "${JOBS_WORKDIR}" 2>/dev/null || \
         end_die "Cannot create job work directory ${JOBS_WORKDIR}"
-    rm -f "${JOBS_WORKDIR}"/*
 }
 
 # Set the "done" flag within job queue
@@ -393,9 +388,9 @@ echo_log "===> Jobs submitted, waiting..."
 wait
 
 # Examine results and send an e-mail if requested
-RET=$(find "${FPART_LOGDIR}/" -name "$$-*.stderr" ! -size 0)
-MSG=$(echo -e "Return code: $( ([ -z "${RET}" ] && echo '0') || echo '1')" ; \
-    [ -n "${RET}" ] && echo -e "Rsync errors detected, see logs:\n${RET}")
+RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
+MSG=$( ([ -z "${RET}" ] && echo 'Rsync completed without error.') || \
+    echo -e "Rsync errors detected, see logs:\n${RET}")
 if [ -n "${MAIL_ADDR}" ]
 then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
