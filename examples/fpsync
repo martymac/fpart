@@ -123,7 +123,7 @@ RSYNC_BIN="$(which rsync)"
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
 FPART_SHDIR="/mnt/nfs/fpart"
-FPART_OUTPARTDIR="${FPART_SHDIR}/parts/${FPART_JOBNAME}"
+FPART_PARTSDIR="${FPART_SHDIR}/parts/${FPART_JOBNAME}"
 FPART_LOGDIR="${FPART_SHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
@@ -313,7 +313,7 @@ job_queue_loop () {
 
 ########## Program start
 
-FPART_OUTPARTTEMPL="${FPART_OUTPARTDIR}/part-$$"
+FPART_PARTSTMPL="${FPART_PARTSDIR}/part-$$"
 
 WORK_NUM=0          # Current number of running processes
 WORK_LIST=""        # Work PID[:WORKER] list
@@ -326,8 +326,8 @@ then
 fi
 
 # Create fpart directories and log file
-mkdir -p "${FPART_OUTPARTDIR}" 2>/dev/null || \
-    end_die "Cannot create partitions' output directory: ${FPART_OUTPARTDIR}"
+mkdir -p "${FPART_PARTSDIR}" 2>/dev/null || \
+    end_die "Cannot create partitions' output directory: ${FPART_PARTSDIR}"
 mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
     end_die "Cannot create log directory: ${FPART_LOGDIR}"
 touch "${FPART_LOGFILE}" 2>/dev/null || \
@@ -392,13 +392,13 @@ job_queue_loop&
 echo_log "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}"
 echo_log "===> Start time: $(date)"
 echo_log "===> Starting fpart..."
-echo_log "===> (parts dir: ${FPART_OUTPARTDIR})"
+echo_log "===> (parts dir: ${FPART_PARTSDIR})"
 echo_log "===> (log dir: ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
     "${FPART_BIN}" -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
-        -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
+        -o "${FPART_PARTSTMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
 # Tell job_queue_loop that crawling has finished
