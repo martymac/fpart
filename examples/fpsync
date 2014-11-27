@@ -43,8 +43,8 @@ usage () {
 }
 
 echo_log () {
-    [ -n "$1" ] && echo "$1" | \
-        tee -a "${FPART_LOGFILE}"
+    [ -n "$1" ] && [ -n "${VERBOSE}" ] && echo "$1"
+    echo "$1" >> "${FPART_LOGFILE}"
 }
 
 end_die () {
@@ -104,6 +104,9 @@ done
 
 ########## Configuration
 
+# Verbose mode - unset for quiet mode
+VERBOSE="yes"
+
 # Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
@@ -140,6 +143,7 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         2>\"${FPART_LOGDIR}/$$-\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+        [ -n \"${VERBOSE}\" ] && \
         echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
@@ -215,7 +219,7 @@ work_list_refresh () {
             _WORK_NUM="$((${_WORK_NUM} + 1))"
         # If not, put its worker to the free list
         else
-            #echo_log "<= [QMGR] Job ${_JOB} finished"
+            echo_log "<= [QMGR] Job ${_JOB} finished"
             if [ -n "${SSH_HOSTS}" ]
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 2)"
@@ -376,7 +380,7 @@ echo_log "===> (log dir: ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
 cd "${SRC_PATH}" && \
-    time "${FPART_BIN}" -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
+    "${FPART_BIN}" -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
         -o "${FPART_OUTPARTTEMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
@@ -396,7 +400,7 @@ then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
 fi
 echo_log "===> Jobs terminated."
-echo_log "${MSG}"
+echo "${MSG}" | tee -a "${FPART_LOGFILE}"
 echo_log "<=== End time: $(date)"
 
 [ -n "${RET}" ] && exit 1
