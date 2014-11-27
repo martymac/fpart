@@ -112,15 +112,16 @@ JOBS_QUEUEDIR="/var/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="/var/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
 # Paths to executables that must exist locally
-FPART_BIN="/usr/local/bin/fpart"
-SSH_BIN="/usr/bin/ssh"
-MAIL_BIN="/usr/bin/mail"
-# This script also uses cut, sed and awk, which should come with your system
+FPART_BIN="$(which fpart)"
+SSH_BIN="$(which ssh)"
+MAIL_BIN="$(which mail)"
+# This script also uses tee, cut, sed, awk, sha1, date which should come with
+# your favourite operating system
 
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, those binaries must be present at
 # those paths on each worker.
-RSYNC_BIN="/usr/local/bin/rsync"
+RSYNC_BIN="$(which rsync)"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
