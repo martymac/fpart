@@ -31,20 +31,44 @@
 # (rsync -av -delete src_dir/ dst_dir/) to remove extra files from dst_dir/.
 # See the Configuration section below to set-up the script.
 
+########## Default values for options
+
+# Number of rsync jobs to run in parallel ("workers")
+OPT_JOBS=2
+# Same, but autodetected (on FreeBSD)
+#OPT_JOBS=$(($(sysctl -n hw.ncpu) - 1))
+# Maximum files per worker
+OPT_FPMAXPARTFILES="2000"
+# Maximum bytes to transfer per worker
+OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
+# SSH workers (execute jobs locally if not defined)
+OPT_WRKRS=""
+# FPart Shared dir (must be shared amongst all workers)
+OPT_FPSHDIR="/mnt/nfs"
+# Verbose mode
+OPT_VERBOSE=""
+# Source directory
+OPT_SDIR=""
+# Destination directory
+OPT_DDIR=""
+
 ########## Helper functions
 
 usage () {
-    echo "fpsync - Start multiple rsync in parallel"
-    echo "Usage: $0 [-n <x>] /src_dir/ /dst_dir/"
+    echo "fpsync - Start multiple rsync in parallel using fpart"
+    echo "Copyright (c) 2014 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
+    echo "WWW: http://contribs.martymac.org"
+    echo "Usage: $0 [OPTIONS...] /src_dir/ /dst_dir/"
     echo "  -n <x>:    start <x> concurrent rsync workers"
+    echo "  -f <y>:    transfer at most <y> files per worker"
+    echo "  -s <z>:    transfer at most <z> bytes per worker"
+    echo "  -w wrks:   use SSH workers (default: use local jobs)"
+    echo "             e.g. 'login@host1 login@host2 login@host3'"
+    echo "  -d /dir/:  set shared dir to dir (absolute path)"
+    echo "  -v:        verbose mode"
+    echo "  -h:        this help"
     echo "  /src_dir/: source directory (absolute path)"
     echo "  /dst_dir/: destination directory (absolute path)"
-    echo "Edit the script itself to fine-tune its configuration."
-}
-
-echo_log () {
-    [ -n "$1" ] && [ -n "${VERBOSE}" ] && echo "$1"
-    echo "$1" >> "${FPART_LOGFILE}"
 }
 
 end_die () {
@@ -56,8 +80,90 @@ is_abs_path() {
     echo "$1" | grep -qE "^/"
 }
 
-is_integer () {
+is_num () {
     echo "$1" | grep -qE '^[0-9]+$'
+}
+
+parse_opts () {
+    local opt OPTARG OPTIND
+
+    while getopts "n:f:s:w:d:vh" opt
+    do
+        case "${opt}" in
+        "n")
+            if is_num "${OPTARG}" && [ ${OPTARG} -ge 1 ]
+            then
+                OPT_JOBS=${OPTARG}
+            else
+                end_die "Option -n expects a numeric value >= 1"
+            fi
+            ;;
+        "f")
+            if is_num "${OPTARG}" && [ ${OPTARG} -gt 0 ]
+            then
+                OPT_FPMAXPARTFILES=${OPTARG}
+            else
+                end_die "Option -f expects a numeric value > 0"
+            fi
+            ;;
+        "s")
+            if is_num "${OPTARG}" && [ ${OPTARG} -gt 0 ]
+            then
+                OPT_FPMAXPARTSIZE=${OPTARG}
+            else
+                end_die "Option -s expects a numeric value > 0"
+            fi
+            ;;
+        "w")
+            if [ -n "${OPTARG}" ]
+            then
+                OPT_WRKRS="${OPTARG}"
+            else
+                end_die "Invalid workers list supplied"
+            fi
+            ;;
+        "d")
+            if is_abs_path "${OPTARG}"
+            then
+                OPT_FPSHDIR="${OPTARG}"
+            else
+                end_die "Please supply an absolute path for shared dir"
+            fi
+            ;;
+        "v")
+            OPT_VERBOSE="yes"
+            ;;
+        "h")
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            end_die "Invalid option specified"
+            ;;
+        esac
+    done
+    shift $((${OPTIND} - 1))
+
+    # Check for options validity
+    [ -n "${OPT_WRKRS}" ] && [ -z "${OPT_FPSHDIR}" ] && \
+                end_die "Please supply a shared dir when specifying workers"
+
+    # Check for paths presence and validity
+    if is_abs_path "$1" && is_abs_path "$2"
+    then
+        :
+    else
+        usage
+        end_die "Please supply an absolute path for both src_dir/ and dst_dir/"
+    fi
+    OPT_SDIR="$1"
+    OPT_DDIR="$2"
+}
+
+echo_log () {
+    [ -n "$1" ] && [ -n "${OPT_VERBOSE}" ] && echo "$1"
+    echo "$1" >> "${FPART_LOGFILE}"
 }
 
 # Handle ^C: stop queue processing by setting the "stop" flag
@@ -65,43 +171,15 @@ trap_queue () {
     job_queue_stop
     end_die "\nKilled."
 }
-trap 'trap_queue' 2
 
-########## Arguments handling
+########## Options handling
+########## Do not modify unless you know exactly what you are doing !
 
-# Handle -n option, if any
-JOBS_MAX=4                              # How many jobs to run by default
-#JOBS_MAX=$(($(sysctl -n hw.ncpu) - 1)) # The same, but autodetected (FreeBSD)
-if [ "x$1" = "x-n" ]
-then
-    shift
-    if is_integer "$1" && [ $1 -ge 1 ]
-    then
-        JOBS_MAX="$1"
-    else
-        end_die "Please supply a numeric value >= 1 for option -n"
-    fi
-    shift
-fi
-
-# Check for paths presence and validity
-if is_abs_path "$1" && is_abs_path "$2"
-then
-    :
-else
-    usage
-    end_die
-fi
-SRC_PATH="$1"
-DST_PATH="$2"
+# Parse command-line options
+parse_opts "$@"
 
 # Generate a unique job name
-FPART_JOBNAME="$(echo ${DST_PATH} | sha1)-$(date '+%s')-$$"
-
-########## Configuration
-
-# Verbose mode - unset for quiet mode
-VERBOSE="yes"
+FPART_JOBNAME="$(echo ${OPT_DDIR} | sha1)-$(date '+%s')-$$"
 
 # Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_QUEUEDIR="/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
@@ -111,37 +189,34 @@ JOBS_WORKDIR="/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
 FPART_BIN="$(which fpart)"
 SSH_BIN="$(which ssh)"
 MAIL_BIN="$(which mail)"
-# This script also uses tee, cut, sed, awk, sha1, date which should come with
-# your favourite operating system
+# Note: This script also uses tee, cut, sed, awk, sha1, date which should come
+# with your favourite operating system
 
 # Paths to executables that must exist either locally or remotely (depending
-# on if you use SSH or not). When using SSH, those binaries must be present at
-# those paths on each worker.
+# on if you use SSH or not). When using SSH, the following binaries must be
+# present at those paths on each worker.
 RSYNC_BIN="$(which rsync)"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
-FPART_SHDIR="/mnt/nfs/fpart"
-FPART_PARTSDIR="${FPART_SHDIR}/parts/${FPART_JOBNAME}"
-FPART_LOGDIR="${FPART_SHDIR}/log/${FPART_JOBNAME}"
+FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_JOBNAME}"
+FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
-# Fpart options / splitting thresholds
-FPART_MAXPARTFILES="2000"
-FPART_MAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
+# Fpart's common options
 FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
 
 # Fpart hooks
 FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
-        \\\"${SRC_PATH}/\\\" \
-        \\\"${DST_PATH}/\\\"' \
+        \\\"${OPT_SDIR}/\\\" \
+        \\\"${OPT_DDIR}/\\\"' \
         1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
         2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        [ -n \"${VERBOSE}\" ] && \
+        [ -n \"${OPT_VERBOSE}\" ] && \
         echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
@@ -156,31 +231,24 @@ FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
 # using the 'mail' command.
 #MAIL_ADDR="address@mydomain.tld"
 
-# List of SSH hosts (space-separated) to use as rsync workers (nodes).
-# If unset, jobs will execute locally, else, jobs will be sent through SSH
-# and executed remotely. In that case, be sure to set up passwordless access for
-# those accounts so that rsync jobs can execute seemlessly.
-# See ssh(1) for more details.
-#SSH_HOSTS="login@host1 login@host2 login@host3"
-
 ########## Work-related functions (in-memory, running-jobs handling)
 
-# Initialize WORK_FREEWORKERS by expanding SSH_HOSTS up to JOBS_MAX elements,
+# Initialize WORK_FREEWORKERS by expanding OPT_WRKRS up to OPT_JOBS elements,
 # assigning a fixed number of slots to each worker.
-# Sanitize SSH_HOSTS if necessary.
+# Sanitize OPT_WRKRS if necessary.
 work_list_free_workers_init () {
-    local _SSH_HOSTS_NUM=$(echo ${SSH_HOSTS} | awk '{print NF}')
-    if [ ${_SSH_HOSTS_NUM} -gt 0 ]
+    local _OPT_WRKRS_NUM=$(echo ${OPT_WRKRS} | awk '{print NF}')
+    if [ ${_OPT_WRKRS_NUM} -gt 0 ]
     then
         local _i=0
-        while [ ${_i} -lt ${JOBS_MAX} ]
+        while [ ${_i} -lt ${OPT_JOBS} ]
         do
-            local _SSH_HOSTS_IDX="$((${_i} % ${_SSH_HOSTS_NUM} + 1))"
-            WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${SSH_HOSTS} | awk '{print $'${_SSH_HOSTS_IDX}'}')"
+            local _OPT_WRKRS_IDX="$((${_i} % ${_OPT_WRKRS_NUM} + 1))"
+            WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${OPT_WRKRS} | awk '{print $'${_OPT_WRKRS_IDX}'}')"
             _i=$((${_i} + 1))
         done
     else
-        SSH_HOSTS=""
+        OPT_WRKRS=""
         WORK_FREEWORKERS="local"
     fi
 }
@@ -218,7 +286,7 @@ work_list_refresh () {
         # If not, put its worker to the free list
         else
             echo_log "<= [QMGR] Job ${_JOB} finished"
-            if [ -n "${SSH_HOSTS}" ]
+            if [ -n "${OPT_WRKRS}" ]
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 2)"
             fi
@@ -275,14 +343,14 @@ job_queue_loop () {
     while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
     do
         local _PID=""
-        if [ ${WORK_NUM} -lt ${JOBS_MAX} ]
+        if [ ${WORK_NUM} -lt ${OPT_JOBS} ]
         then
             _NEXT="$(job_queue_next)"
             if [ -n "${_NEXT}" ] && \
                 [ "${_NEXT}" != "done" ] && \
                 [ "${_NEXT}" != "stop" ]
             then
-                if [ -z "${SSH_HOSTS}" ]
+                if [ -z "${OPT_WRKRS}" ]
                 then
                     echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
@@ -334,12 +402,12 @@ touch "${FPART_LOGFILE}" 2>/dev/null || \
     end_die "Cannot create log file: ${FPART_LOGFILE}"
 
 # Validate src_dir/ locally (needed for fpart)
-[ ! -d "${SRC_PATH}" ] && \
-    end_die "Source directory does not exist (or is not a directory): ${SRC_PATH}"
+[ ! -d "${OPT_SDIR}" ] && \
+    end_die "Source directory does not exist (or is not a directory): ${OPT_SDIR}"
 
 # When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync
 # presence (this also allows checking SSH connectivity to each declared host)
-if [ -n "${SSH_HOSTS}" ]
+if [ -n "${OPT_WRKRS}" ]
 then
     echo_log "======> Validating requirements on SSH nodes..."
 
@@ -349,18 +417,18 @@ then
     # where dst_dir/ exists but is not shared amongst all nodes (typically a
     # local mount point where the shared storage area *should* be mounted but
     # isn't, for any reason).
-    _first_host="$(echo ${SSH_HOSTS} | awk '{print $1}')"
+    _first_host="$(echo ${OPT_WRKRS} | awk '{print $1}')"
     "${SSH_BIN}" "${_first_host}" \
-        "/bin/sh -c 'mkdir -p \"${DST_PATH}\" && \
-        touch \"${DST_PATH}/${FPART_JOBNAME}\"' 2>/dev/null"
+        "/bin/sh -c 'mkdir -p \"${OPT_DDIR}\" && \
+        touch \"${OPT_DDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
 
     # Then, check for src_dir/, witness file and rsync presence on each node.
-    for _host in ${SSH_HOSTS}
+    for _host in ${OPT_WRKRS}
     do
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${SRC_PATH}\" ]'" || \
-            end_die "Source directory does not exist on target ${_host} (or is not a directory): ${SRC_PATH}"
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${DST_PATH}/${FPART_JOBNAME}\" ]'" || \
-            end_die "Destination directory (shared) is not available on target ${_host}: ${DST_PATH}"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${OPT_SDIR}\" ]'" || \
+            end_die "Source directory does not exist on target ${_host} (or is not a directory): ${OPT_SDIR}"
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DDIR}/${FPART_JOBNAME}\" ]'" || \
+            end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DDIR}"
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
             end_die "Rsync executable not found on target ${_host}"
         echo_log "===> ${_host}: OK"
@@ -368,36 +436,37 @@ then
 
     # Remove witness file
     "${SSH_BIN}" "${_first_host}" \
-        "/bin/sh -c 'rm -f \"${DST_PATH}/${FPART_JOBNAME}\"' 2>/dev/null"
+        "/bin/sh -c 'rm -f \"${OPT_DDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
     unset _first_host
 else
     # Local usage - create dst_dir/ and check for rsync presence
-    if [ ! -d "${DST_PATH}" ]
+    if [ ! -d "${OPT_DDIR}" ]
     then
-        mkdir -p "${DST_PATH}" 2>/dev/null || \
-            end_die "Cannot create destination directory: ${DST_PATH}"
+        mkdir -p "${OPT_DDIR}" 2>/dev/null || \
+            end_die "Cannot create destination directory: ${OPT_DDIR}"
     fi
     [ ! -x "${RSYNC_BIN}" ] && \
         end_die "Rsync executable not found"
 fi
 
-# Dispatch SSH_HOSTS into WORK_FREEWORKERS
+# Dispatch OPT_WRKRS into WORK_FREEWORKERS
 work_list_free_workers_init
 
-# Initialize jobs queue and start job_queue_loop
+# Initialize jobs queue, set trap and start job_queue_loop
 job_queue_init
+trap 'trap_queue' 2
 job_queue_loop&
 
 # Let's rock !
-echo_log "======> [$$] Syncing ${SRC_PATH} => ${DST_PATH}"
+echo_log "======> [$$] Syncing ${OPT_SDIR} => ${OPT_DDIR}"
 echo_log "===> Start time: $(date)"
 echo_log "===> Starting fpart..."
 echo_log "===> (parts dir: ${FPART_PARTSDIR})"
 echo_log "===> (log dir: ${FPART_LOGDIR})"
 
 # Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
-cd "${SRC_PATH}" && \
-    "${FPART_BIN}" -f "${FPART_MAXPARTFILES}" -s "${FPART_MAXPARTSIZE}" \
+cd "${OPT_SDIR}" && \
+    "${FPART_BIN}" -f "${OPT_FPMAXPARTFILES}" -s "${OPT_FPMAXPARTSIZE}" \
         -o "${FPART_PARTSTMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 
