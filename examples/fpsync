@@ -52,8 +52,18 @@ OPT_SDIR=""
 # Destination directory
 OPT_DDIR=""
 
-########## Helper functions
+# Mail - Uncomment to receive a mail when the whole rsync job has finished.
+# The master machine (the one running this script) must be able to send mail
+# using the 'mail' command. No CLI option is provided to change it.
+#OPT_MAIL="address@mydomain.tld"
 
+# Local fpart dir (for queue management).
+# No CLI option is provided to change it.
+OPT_FPDIR="/tmp/fpart"
+
+########## Various functions
+
+# Print help
 usage () {
     echo "fpsync - Start multiple rsync in parallel using fpart"
     echo "Copyright (c) 2014 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
@@ -71,19 +81,29 @@ usage () {
     echo "  /dst_dir/: destination directory (absolute path)"
 }
 
+# Print a message to stderr and exit with error code 1
 end_die () {
     [ -n "$1" ] && echo -e "$1" 1>&2
     exit 1
 }
 
+# Print (to stdout) and log a message
+echo_log () {
+    [ -n "$1" ] && [ -n "${OPT_VERBOSE}" ] && echo "$1"
+    echo "$1" >> "${FPART_LOGFILE}"
+}
+
+# Check if $1 is an absolute path
 is_abs_path() {
     echo "$1" | grep -qE "^/"
 }
 
+# Check if $1 is a number
 is_num () {
     echo "$1" | grep -qE '^[0-9]+$'
 }
 
+# Parse user options and initialize OPT_* global variables
 parse_opts () {
     local opt OPTARG OPTIND
 
@@ -160,76 +180,6 @@ parse_opts () {
     OPT_SDIR="$1"
     OPT_DDIR="$2"
 }
-
-echo_log () {
-    [ -n "$1" ] && [ -n "${OPT_VERBOSE}" ] && echo "$1"
-    echo "$1" >> "${FPART_LOGFILE}"
-}
-
-# Handle ^C: stop queue processing by setting the "stop" flag
-trap_queue () {
-    job_queue_stop
-    end_die "\nKilled."
-}
-
-########## Options handling
-########## Do not modify unless you know exactly what you are doing !
-
-# Parse command-line options
-parse_opts "$@"
-
-# Generate a unique job name
-FPART_JOBNAME="$(echo ${OPT_DDIR} | sha1)-$(date '+%s')-$$"
-
-# Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="/tmp/fpart/queue/${FPART_JOBNAME}"   # Queue dir.
-JOBS_WORKDIR="/tmp/fpart/work/${FPART_JOBNAME}"     # Current jobs' dir.
-
-# Paths to executables that must exist locally
-FPART_BIN="$(which fpart)"
-SSH_BIN="$(which ssh)"
-MAIL_BIN="$(which mail)"
-# Note: This script also uses tee, cut, sed, awk, sha1, date which should come
-# with your favourite operating system
-
-# Paths to executables that must exist either locally or remotely (depending
-# on if you use SSH or not). When using SSH, the following binaries must be
-# present at those paths on each worker.
-RSYNC_BIN="$(which rsync)"
-
-# Fpart paths. Those ones must be shared amongst all nodes when using SSH
-# (e.g. through a NFS share mounted on *every* single node, including the master
-# 'job submitter').
-FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_JOBNAME}"
-FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
-FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
-
-# Fpart's common options
-FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
-
-# Fpart hooks
-FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
-        --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
-        \\\"${OPT_SDIR}/\\\" \
-        \\\"${OPT_DDIR}/\\\"' \
-        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
-FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
-        \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        [ -n \"${OPT_VERBOSE}\" ] && \
-        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
-
-# [1] Be careful to host the job queue on a filesystem that can handle
-# fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
-# the queue to be processed in order when fpart generates several job files per
-# second.
-# On FreeBSD, vfs timestamps' precision can be tuned using the
-# vfs.timestamp_precision sysctl. See vfs_timestamp(9).
-
-# Mail - Uncomment to receive a mail when the whole rsync job has finished.
-# The master machine (the one running this script) must be able to send mail
-# using the 'mail' command.
-#MAIL_ADDR="address@mydomain.tld"
 
 ########## Work-related functions (in-memory, running-jobs handling)
 
@@ -319,6 +269,12 @@ job_queue_stop () {
     touch "${JOBS_QUEUEDIR}/stop"
 }
 
+# Handle ^C: stop queue processing by setting the "stop" flag
+trap_queue () {
+    job_queue_stop
+    end_die "\nKilled."
+}
+
 # Get next job name relative to ${JOBS_WORKDIR}/
 # Returns empty string if no job is available
 job_queue_next () {
@@ -379,9 +335,63 @@ job_queue_loop () {
     echo_log "=> [QMGR] No more job running."
 }
 
-########## Program start
+########## Program start (main() !)
 
+# Parse command-line options
+parse_opts "$@"
+
+## Options' post-processing section
+
+# Generate a unique job name
+FPART_JOBNAME="$(echo ${OPT_DDIR} | sha1)-$(date '+%s')-$$"
+
+# Queue manager configuration. This queue remains local, even when using SSH.
+JOBS_QUEUEDIR="${OPT_FPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
+JOBS_WORKDIR="${OPT_FPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
+
+# Paths to executables that must exist locally
+FPART_BIN="$(which fpart)"
+SSH_BIN="$(which ssh)"
+MAIL_BIN="$(which mail)"
+# Note: This script also uses tee, cut, sed, awk, sha1, date
+# which should come with your favourite operating system
+
+# Paths to executables that must exist either locally or remotely (depending
+# on if you use SSH or not). When using SSH, the following binaries must be
+# present at those paths on each worker.
+RSYNC_BIN="$(which rsync)"
+
+# Fpart paths. Those ones must be shared amongst all nodes when using SSH
+# (e.g. through a NFS share mounted on *every* single node, including the master
+# 'job submitter').
+FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_JOBNAME}"
 FPART_PARTSTMPL="${FPART_PARTSDIR}/part-$$"
+FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
+FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
+
+# Fpart's common options
+FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
+
+# Fpart hooks (black magic is here !)
+FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
+        --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
+        \\\"${OPT_SDIR}/\\\" \
+        \\\"${OPT_DDIR}/\\\"' \
+        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
+        \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+        [ -n \"${OPT_VERBOSE}\" ] && \
+        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
+
+# [1] Be careful to host the job queue on a filesystem that can handle
+# fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
+# the queue to be processed in order when fpart generates several job files per
+# second.
+# On FreeBSD, vfs timestamps' precision can be tuned using the
+# vfs.timestamp_precision sysctl. See vfs_timestamp(9).
+
+## End of options' post-processing section, let's start for real now !
 
 WORK_NUM=0          # Current number of running processes
 WORK_LIST=""        # Work PID[:WORKER] list
@@ -481,9 +491,9 @@ wait
 RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
 MSG=$( ([ -z "${RET}" ] && echo 'Rsync completed without error.') || \
     echo -e "Rsync errors detected, see logs:\n${RET}")
-if [ -n "${MAIL_ADDR}" ]
+if [ -n "${OPT_MAIL}" ]
 then
-    echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${MAIL_ADDR}"
+    echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${OPT_MAIL}"
 fi
 echo_log "===> Jobs terminated."
 echo "${MSG}" | tee -a "${FPART_LOGFILE}"
