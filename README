@@ -171,7 +171,7 @@ directory.
 Examples - migrating data (take 2) :
 ************************************
 
-A tool called 'fpsync' is provided within the examples/ directory. This tool is
+A program called 'fpsync' is provided within the tools/ directory. This tool is
 a shell script that wraps fpart and rsync to launch several rsync in parallel as
 presented in the previous section ("take 1"), but while the previous example
 used GNU Parallel to schedule transfers, this wrapper provides its own
