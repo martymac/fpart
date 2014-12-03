@@ -44,7 +44,7 @@ OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # SSH workers (execute jobs locally if not defined)
 OPT_WRKRS=""
 # FPart Shared dir (must be shared amongst all workers)
-OPT_FPSHDIR="/mnt/nfs"
+OPT_FPSHDIR="/mnt/nfs/fpart"
 # Verbose mode
 OPT_VERBOSE=""
 # Source directory
