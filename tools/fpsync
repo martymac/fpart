@@ -72,8 +72,10 @@ usage () {
     echo "  -n <x>:    start <x> concurrent rsync workers"
     echo "  -f <y>:    transfer at most <y> files per worker"
     echo "  -s <z>:    transfer at most <z> bytes per worker"
-    echo "  -w wrks:   use SSH workers (default: use local jobs)"
-    echo "             e.g. 'login@host1 login@host2 login@host3'"
+    echo "  -w wrks:   space-separated list of SSH workers"
+    echo "             e.g.: -w 'login@host1 login@host2 login@host3'"
+    echo "             or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
+    echo "             Jobs are executed locally if not specified (default)."
     echo "  -d /dir/:  set shared dir to dir (absolute path)"
     echo "  -v:        verbose mode"
     echo "  -h:        this help"
@@ -137,7 +139,7 @@ parse_opts () {
         "w")
             if [ -n "${OPTARG}" ]
             then
-                OPT_WRKRS="${OPTARG}"
+                OPT_WRKRS="${OPT_WRKRS} ${OPTARG}"
             else
                 end_die "Invalid workers list supplied"
             fi
