@@ -33,19 +33,21 @@
 
 ########## Default values for options
 
-# Number of rsync jobs to run in parallel ("workers")
+# Number of rsync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
 # Same, but autodetected (on FreeBSD)
 #OPT_JOBS=$(($(sysctl -n hw.ncpu) - 1))
-# Maximum files per worker
+# Maximum files per worker (-f)
 OPT_FPMAXPARTFILES="2000"
-# Maximum bytes to transfer per worker
+# Maximum bytes to transfer per worker (-s)
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
-# SSH workers (execute jobs locally if not defined)
+# SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
-# FPart Shared dir (must be shared amongst all workers)
+# FPart Shared dir (must be shared amongst all workers, -d)
 OPT_FPSHDIR="/mnt/nfs/fpart"
-# Verbose mode
+# Job name for resume mode (-r)
+OPT_JOBNAME=""
+# Verbose mode (-v)
 OPT_VERBOSE=""
 # Source directory
 OPT_SDIR=""
@@ -69,18 +71,19 @@ usage () {
     echo "Copyright (c) 2014 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [OPTIONS...] /src_dir/ /dst_dir/"
-    echo "  -n <x>:    start <x> concurrent rsync workers"
-    echo "  -f <y>:    transfer at most <y> files per worker"
-    echo "  -s <z>:    transfer at most <z> bytes per worker"
-    echo "  -w wrks:   space-separated list of SSH workers"
-    echo "             e.g.: -w 'login@host1 login@host2 login@host3'"
-    echo "             or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
-    echo "             Jobs are executed locally if not specified (default)."
-    echo "  -d /dir/:  set shared dir to dir (absolute path)"
-    echo "  -v:        verbose mode"
-    echo "  -h:        this help"
-    echo "  /src_dir/: source directory (absolute path)"
-    echo "  /dst_dir/: destination directory (absolute path)"
+    echo "  -n x:       start <x> concurrent rsync workers"
+    echo "  -f y:       transfer at most <y> files per worker"
+    echo "  -s z:       transfer at most <z> bytes per worker"
+    echo "  -w wrks:    space-separated list of SSH workers"
+    echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
+    echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
+    echo "              Jobs are executed locally if not specified (default)."
+    echo "  -d /dir/:   set fpsync shared dir to </dir/> (absolute path)"
+    echo "  -r jobname: resume job <jobname>"
+    echo "  -v:         verbose mode"
+    echo "  -h:         this help"
+    echo "  /src_dir/:  source directory (absolute path)"
+    echo "  /dst_dir/:  destination directory (absolute path)"
 }
 
 # Print a message to stderr and exit with error code 1
@@ -109,7 +112,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:vh" opt
+    while getopts "n:f:s:w:d:r:vh" opt
     do
         case "${opt}" in
         "n")
@@ -150,6 +153,14 @@ parse_opts () {
                 OPT_FPSHDIR="${OPTARG}"
             else
                 end_die "Please supply an absolute path for shared dir"
+            fi
+            ;;
+        "r")
+            if [ -n "${OPTARG}" ]
+            then
+                OPT_JOBNAME="${OPTARG}"
+            else
+                end_die "Invalid job name supplied"
             fi
             ;;
         "v")
@@ -258,6 +269,11 @@ job_queue_init () {
         end_die "Cannot create job work directory ${JOBS_WORKDIR}"
 }
 
+# Set job queue information to allow later resuming
+job_queue_info () {
+    echo "${OPT_JOBS}" > "${JOBS_QUEUEDIR}/info"
+}
+
 # Set the "done" flag within job queue
 job_queue_done () {
     sleep 1 # Ensure this very last file gets created within the next second of
@@ -285,7 +301,7 @@ job_queue_next () {
     then
         echo "stop"
     else
-        _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 | head -n 1)
+        _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 | grep -v "info" | head -n 1)
         if [ -n "${_NEXT}" ]
         then
             mv "${JOBS_QUEUEDIR}/${_NEXT}" "${JOBS_WORKDIR}" || \
@@ -344,8 +360,21 @@ parse_opts "$@"
 
 ## Options' post-processing section
 
-# Generate a unique job name
-FPART_JOBNAME="$(echo ${OPT_DDIR} | sha1)-$(date '+%s')-$$"
+# Job name initialization
+if [ -n "${OPT_JOBNAME}" ]
+then
+    # Resume mode, check if OPT_JOBNAME exists
+    if [ -d "${OPT_FPDIR}/queue/${OPT_JOBNAME}" ] && \
+        [ -d "${OPT_FPDIR}/work/${OPT_JOBNAME}" ]
+    then
+        FPART_JOBNAME="${OPT_JOBNAME}"
+    else
+        end_die "Could not find specified job's queue and work directories"
+    fi
+else
+    # Generate a unique job name
+    FPART_JOBNAME="$(echo ${OPT_DDIR} | sha1)-$(date '+%s')-$$"
+fi
 
 # Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_QUEUEDIR="${OPT_FPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
@@ -405,17 +434,32 @@ then
     end_die "External tools are missing, check your configuration"
 fi
 
-# Create fpart directories and log file
-mkdir -p "${FPART_PARTSDIR}" 2>/dev/null || \
-    end_die "Cannot create partitions' output directory: ${FPART_PARTSDIR}"
-mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
-    end_die "Cannot create log directory: ${FPART_LOGDIR}"
+# Create / check for fpart directories
+if [ -z "${OPT_JOBNAME}" ]
+then
+    # For a new job, create those directories
+    mkdir -p "${FPART_PARTSDIR}" 2>/dev/null || \
+        end_die "Cannot create partitions' output directory: ${FPART_PARTSDIR}"
+    mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
+        end_die "Cannot create log directory: ${FPART_LOGDIR}"
+else
+    # In resume mode, FPART_PARTSDIR and FPART_LOGDIR must already exist
+    if [ ! -d "${FPART_PARTSDIR}" ] || [ ! -d "${FPART_LOGDIR}" ]
+    then
+        end_die "Could not find specified job's parts and log directories"
+    fi
+fi
+
+# Create or update log file
 touch "${FPART_LOGFILE}" 2>/dev/null || \
     end_die "Cannot create log file: ${FPART_LOGFILE}"
 
-# Validate src_dir/ locally (needed for fpart)
-[ ! -d "${OPT_SDIR}" ] && \
-    end_die "Source directory does not exist (or is not a directory): ${OPT_SDIR}"
+# Validate src_dir/ locally (needed for fpart) for first runs or local ones
+if [ -z "${OPT_JOBNAME}" ] || [ -z "${OPT_WRKRS}" ]
+then
+    [ ! -d "${OPT_SDIR}" ] && \
+        end_die "Source directory does not exist (or is not a directory): ${OPT_SDIR}"
+fi
 
 # When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync
 # presence (this also allows checking SSH connectivity to each declared host)
@@ -464,23 +508,67 @@ fi
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
 work_list_free_workers_init
 
-# Initialize jobs queue, set trap and start job_queue_loop
-job_queue_init
-trap 'trap_queue' 2
-job_queue_loop&
+# Initialize jobs queue
+if [ -z "${OPT_JOBNAME}" ]
+then
+    # For a new job, create directories
+    job_queue_init
+else
+    # Check if our job is resumable. It is if :
+    # - the last fpart pass has completed (the 'done' flag is present)
+    # - a previous fpsync pass has *not* completed (the 'done' flag is still
+    #   present)
+    # - we can get the number of workers previously implied (the 'info' flag is
+    #   present)
+    if [ ! -f "${JOBS_QUEUEDIR}/done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ] 
+    then
+        end_die "Specified job is not resumable ('done' or 'info' flag missing)"
+    fi
+    # Remove the "stop" flag, if any
+    rm -f "${JOBS_QUEUEDIR}/stop" 2>/dev/null
+    # Move potentially-incomplete jobs to the jobs queue so that they can
+    # be executed again (this is the worst-case scenario as some of them may
+    # be partially finished)
+    _PREV_OPT_JOBS=$(cat "${JOBS_QUEUEDIR}/info" 2>/dev/null)
+    if [ -n "${_PREV_OPT_JOBS}" ] && is_num "${_PREV_OPT_JOBS}"
+    then
+        for _file in \
+            $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${_PREV_OPT_JOBS}")
+        do
+            mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null ||
+                end_die "Cannot resume specified job"
+        done
+    else
+        end_die "Not enough information to resume specified job"
+    fi
+    unset _PREV_OPT_JOBS
+fi
 
 # Let's rock !
 echo_log "======> [$$] Syncing ${OPT_SDIR} => ${OPT_DDIR}"
+echo_log "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
 echo_log "===> Start time: $(date)"
-echo_log "===> Starting fpart..."
-echo_log "===> (parts dir: ${FPART_PARTSDIR})"
-echo_log "===> (log dir: ${FPART_LOGDIR})"
+echo_log "===> Parts dir: ${FPART_PARTSDIR}"
+echo_log "===> Log dir: ${FPART_LOGDIR}"
 
-# Start fpart from src_dir/ directory and produce jobs within ${JOBS_QUEUEDIR}/
-cd "${OPT_SDIR}" && \
-    "${FPART_BIN}" -f "${OPT_FPMAXPARTFILES}" -s "${OPT_FPMAXPARTSIZE}" \
+# Record job information
+job_queue_info
+
+# Set trap and start job_queue_loop
+trap 'trap_queue' 2
+job_queue_loop&
+
+# When not resuming a previous job, start fpart
+if [ -z "${OPT_JOBNAME}" ]
+then
+    echo_log "===> Starting fpart..."
+    # Start fpart from src_dir/ directory and produce jobs within
+    # ${JOBS_QUEUEDIR}/
+    cd "${OPT_SDIR}" && \
+        "${FPART_BIN}" -f "${OPT_FPMAXPARTFILES}" -s "${OPT_FPMAXPARTSIZE}" \
         -o "${FPART_PARTSTMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
+fi
 
 # Tell job_queue_loop that crawling has finished
 job_queue_done
