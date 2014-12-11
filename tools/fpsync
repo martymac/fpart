@@ -35,8 +35,11 @@
 
 # Number of rsync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
-# Same, but autodetected (on FreeBSD)
-#OPT_JOBS=$(($(sysctl -n hw.ncpu) - 1))
+# Same, but autodetected
+#OPT_JOBS=$(sysctl -n hw.ncpu)  # On FreeBSD
+#OPT_JOBS=$(nproc)              # On Linux
+# Number of rsync jobs from resumed run, read from the 'info' file
+OPT_RJOBS=
 # Maximum files per worker (-f)
 OPT_FPMAXPARTFILES="2000"
 # Maximum bytes to transfer per worker (-s)
@@ -183,15 +186,18 @@ parse_opts () {
                 end_die "Please supply a shared dir when specifying workers"
 
     # Check for paths presence and validity
-    if is_abs_path "$1" && is_abs_path "$2"
+    if [ -z "${OPT_JOBNAME}" ]
     then
-        :
-    else
-        usage
-        end_die "Please supply an absolute path for both src_dir/ and dst_dir/"
+        if is_abs_path "$1" && is_abs_path "$2"
+        then
+            :
+        else
+            usage
+            end_die "Please supply an absolute path for both src_dir/ and dst_dir/"
+        fi
+        OPT_SDIR="$1"
+        OPT_DDIR="$2"
     fi
-    OPT_SDIR="$1"
-    OPT_DDIR="$2"
 }
 
 ########## Work-related functions (in-memory, running-jobs handling)
@@ -269,9 +275,34 @@ job_queue_init () {
         end_die "Cannot create job work directory ${JOBS_WORKDIR}"
 }
 
-# Set job queue information to allow later resuming
-job_queue_info () {
-    echo "${OPT_JOBS}" > "${JOBS_QUEUEDIR}/info"
+# Dump job queue information to allow later resuming
+job_queue_info_dump () {
+    # Create "info" file
+    local _TMPMASK="$(umask)"
+    umask "0077"
+    touch "${JOBS_QUEUEDIR}/info" 2>/dev/null
+    umask "${_TMPMASK}"
+
+    # Dump information necessary for job resuming
+    cat << EOF > "${JOBS_QUEUEDIR}/info" || \
+        end_die "Cannot record job information"
+# Job information used for resuming, do not edit !
+OPT_RJOBS="${OPT_JOBS}"
+OPT_SDIR="${OPT_SDIR}"
+OPT_DDIR="${OPT_DDIR}"
+EOF
+}
+
+job_queue_info_load () {
+    # Source info file and initialize a few variables
+    . "${JOBS_QUEUEDIR}/info" || \
+        end_die "Cannot read job information"
+
+    # Validate loaded options
+    { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
+        end_die "Invalid option value loaded from resumed job: OPT_RJOBS"
+    { is_abs_path "${OPT_SDIR}" && is_abs_path "${OPT_DDIR}" ;} || \
+        end_die "Invalid options value loaded from resumed job: OPT_SDIR/OPT_DDIR"
 }
 
 # Set the "done" flag within job queue
@@ -454,6 +485,42 @@ fi
 touch "${FPART_LOGFILE}" 2>/dev/null || \
     end_die "Cannot create log file: ${FPART_LOGFILE}"
 
+# Create / check for job and work queues
+if [ -z "${OPT_JOBNAME}" ]
+then
+    # For a new job, create those directories
+    job_queue_init
+else
+    # When resuming a job, check if :
+    # - the last fpart pass has completed
+    #   (the 'done' flag is present)
+    # - the last fpsync pass has *not* completed
+    #   (the 'done' flag is *still* present)
+    # - we can get the number of workers previously implied
+    #   (the 'info' flag is present)
+    # - the work queue exists
+    if [ ! -f "${JOBS_QUEUEDIR}/done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ]
+    then
+        end_die "Specified job is not resumable ('done' or 'info' flag missing)"
+    fi
+    [ ! -d "${JOBS_WORKDIR}" ] && \
+        end_die "Specified job is not resumable (work queue missing)"
+
+    # Job is resumable, try to reload job options and prepare queues
+    job_queue_info_load
+    # Remove the "stop" flag, if any
+    rm -f "${JOBS_QUEUEDIR}/stop" 2>/dev/null
+    # Move potentially-incomplete jobs to the jobs queue so that they can be
+    # executed again. We consider the worst-case scenario and resume OPT_RJOBS
+    # last jobs, some of them being partially finished.
+    for _file in \
+        $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${OPT_RJOBS}")
+    do
+        mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null ||
+            end_die "Cannot resume specified job"
+    done
+fi
+
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones
 if [ -z "${OPT_JOBNAME}" ] || [ -z "${OPT_WRKRS}" ]
 then
@@ -508,42 +575,6 @@ fi
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
 work_list_free_workers_init
 
-# Initialize jobs queue
-if [ -z "${OPT_JOBNAME}" ]
-then
-    # For a new job, create directories
-    job_queue_init
-else
-    # Check if our job is resumable. It is if :
-    # - the last fpart pass has completed (the 'done' flag is present)
-    # - a previous fpsync pass has *not* completed (the 'done' flag is still
-    #   present)
-    # - we can get the number of workers previously implied (the 'info' flag is
-    #   present)
-    if [ ! -f "${JOBS_QUEUEDIR}/done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ] 
-    then
-        end_die "Specified job is not resumable ('done' or 'info' flag missing)"
-    fi
-    # Remove the "stop" flag, if any
-    rm -f "${JOBS_QUEUEDIR}/stop" 2>/dev/null
-    # Move potentially-incomplete jobs to the jobs queue so that they can
-    # be executed again (this is the worst-case scenario as some of them may
-    # be partially finished)
-    _PREV_OPT_JOBS=$(cat "${JOBS_QUEUEDIR}/info" 2>/dev/null)
-    if [ -n "${_PREV_OPT_JOBS}" ] && is_num "${_PREV_OPT_JOBS}"
-    then
-        for _file in \
-            $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${_PREV_OPT_JOBS}")
-        do
-            mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null ||
-                end_die "Cannot resume specified job"
-        done
-    else
-        end_die "Not enough information to resume specified job"
-    fi
-    unset _PREV_OPT_JOBS
-fi
-
 # Let's rock !
 echo_log "======> [$$] Syncing ${OPT_SDIR} => ${OPT_DDIR}"
 echo_log "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
@@ -552,7 +583,7 @@ echo_log "===> Parts dir: ${FPART_PARTSDIR}"
 echo_log "===> Log dir: ${FPART_LOGDIR}"
 
 # Record job information
-job_queue_info
+job_queue_info_dump
 
 # Set trap and start job_queue_loop
 trap 'trap_queue' 2
