@@ -49,7 +49,7 @@ OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
 # FPart Shared dir (must be shared amongst all workers, -d)
-OPT_FPSHDIR="/mnt/nfs/fpart"
+OPT_FPSHDIR=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
 # Verbose mode (-v)
@@ -65,7 +65,7 @@ OPT_DSTDIR=""
 #OPT_MAIL="address@mydomain.tld"
 
 # Local fpart dir (for queue management).
-# No CLI option is provided to change it.
+# No option is provided to change it.
 OPT_FPDIR="/tmp/fpart"
 
 ########## Various functions
@@ -85,6 +85,7 @@ usage () {
     echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
     echo "              Jobs are executed locally if not specified (default)."
     echo "  -d /dir/:   set fpsync shared dir to </dir/> (absolute path)"
+    echo "              This option is mandatory when using SSH workers."
     echo "  -r jobname: resume job <jobname>"
     echo "              (options -f, -s, /src_dir/ and /dst_dir/ ignored)"
     echo "  -v:         verbose mode"
@@ -185,11 +186,19 @@ parse_opts () {
     done
     shift $((${OPTIND} - 1))
 
-    # Check for options validity
-    [ -n "${OPT_WRKRS}" ] && [ -z "${OPT_FPSHDIR}" ] && \
+    # Validate OPT_FPSHDIR (shared directory)
+    if [ -z "${OPT_WRKRS}" ]
+    then
+        # For local jobs, set shared dirertory to fpart directory
+        [ -z "${OPT_FPSHDIR}" ] && \
+            OPT_FPSHDIR="${OPT_FPDIR}"
+    else
+        # For remote ones, specifying a shared directory is mandatory
+        [ -z "${OPT_FPSHDIR}" ] && \
                 end_die "Please supply a shared dir when specifying workers"
+    fi
 
-    # Check for paths presence and validity
+    # Check for src and dst dirs presence and validity
     if [ -z "${OPT_JOBNAME}" ]
     then
         if is_abs_path "$1" && is_abs_path "$2"
