@@ -95,7 +95,7 @@ usage () {
 
 # Print a message to stderr and exit with error code 1
 end_die () {
-    [ -n "$1" ] && echo -e "$1" 1>&2
+    [ -n "$1" ] && echo "$1" 1>&2
     exit 1
 }
 
@@ -325,7 +325,7 @@ job_queue_stop () {
 # Handle ^C: stop queue processing by setting the "stop" flag
 trap_queue () {
     job_queue_stop
-    end_die "\nKilled."
+    end_die "Killed."
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -481,7 +481,7 @@ else
     # In resume mode, FPART_PARTSDIR and FPART_LOGDIR must already exist
     if [ ! -d "${FPART_PARTSDIR}" ] || [ ! -d "${FPART_LOGDIR}" ]
     then
-        end_die "Could not find specified job's parts and log directories"
+        end_die "Could not find specified job's 'parts' and 'log' directories"
     fi
 fi
 
@@ -614,8 +614,8 @@ wait
 
 # Examine results and send an e-mail if requested
 RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
-MSG=$( ([ -z "${RET}" ] && echo 'Rsync completed without error.') || \
-    echo -e "Rsync errors detected, see logs:\n${RET}")
+MSG=$( { [ -z "${RET}" ] && echo 'Rsync completed without error.' ;} || \
+    { echo "Rsync errors detected, see logs:" && echo "${RET}" ;} )
 if [ -n "${OPT_MAIL}" ]
 then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${OPT_MAIL}"
