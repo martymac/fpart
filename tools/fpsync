@@ -48,10 +48,12 @@ OPT_FPMAXPARTFILES="2000"
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
-# FPart Shared dir (must be shared amongst all workers, -d)
+# FPart shared dir (must be shared amongst all workers, -d)
 OPT_FPSHDIR=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
+# FPart temporary dir (local, used for queue management, -t)
+OPT_FPDIR="/tmp/fpart"
 # Verbose mode (-v)
 OPT_VERBOSE=""
 # Source directory
@@ -64,10 +66,6 @@ OPT_DSTDIR=""
 # using the 'mail' command. No CLI option is provided to change it.
 #OPT_MAIL="address@mydomain.tld"
 
-# Local fpart dir (for queue management).
-# No option is provided to change it.
-OPT_FPDIR="/tmp/fpart"
-
 ########## Various functions
 
 # Print help
@@ -77,21 +75,22 @@ usage () {
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [OPTIONS...] /src_dir/ /dst_dir/"
     echo "Usage: $0 [-r jobname] [OPTIONS...]"
-    echo "  -n x:       start <x> concurrent Rsync workers"
-    echo "  -f y:       transfer at most <y> files per worker"
-    echo "  -s z:       transfer at most <z> bytes per worker"
-    echo "  -w wrks:    space-separated list of SSH workers"
+    echo "  -n x        start <x> concurrent Rsync workers"
+    echo "  -f y        transfer at most <y> files per worker"
+    echo "  -s z        transfer at most <z> bytes per worker"
+    echo "  -w wrks     space-separated list of SSH workers"
     echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
     echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
     echo "              Jobs are executed locally if not specified (default)."
-    echo "  -d /dir/:   set fpsync shared dir to </dir/> (absolute path)"
+    echo "  -d /dir/    set fpsync shared dir to </dir/> (absolute path)"
     echo "              This option is mandatory when using SSH workers."
-    echo "  -r jobname: resume job <jobname>"
+    echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, /src_dir/ and /dst_dir/ ignored)"
-    echo "  -v:         verbose mode"
-    echo "  -h:         this help"
-    echo "  /src_dir/:  source directory (absolute path)"
-    echo "  /dst_dir/:  destination directory (absolute path)"
+    echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
+    echo "  -v          verbose mode"
+    echo "  -h          this help"
+    echo "  /src_dir/   source directory (absolute path)"
+    echo "  /dst_dir/   destination directory (absolute path)"
 }
 
 # Print a message to stderr and exit with error code 1
@@ -120,7 +119,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:r:vh" opt
+    while getopts "n:f:s:w:d:r:t:vh" opt
     do
         case "${opt}" in
         "n")
@@ -169,6 +168,14 @@ parse_opts () {
                 OPT_JOBNAME="${OPTARG}"
             else
                 end_die "Invalid job name supplied"
+            fi
+            ;;
+        "t")
+            if is_abs_path "${OPTARG}"
+            then
+                OPT_FPDIR="${OPTARG}"
+            else
+                end_die "Please supply an absolute path for temp dir"
             fi
             ;;
         "v")
