@@ -394,7 +394,7 @@ job_queue_loop () {
         sleep 0.2
     done
 
-    if [ "${_NEXT}" == "done" ]
+    if [ "${_NEXT}" = "done" ]
     then
         echo_log "=> [QMGR] Done submitting jobs. Waiting for them to finish."
     else
