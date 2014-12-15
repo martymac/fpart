@@ -416,8 +416,9 @@ then
         end_die "Could not find specified job's queue and work directories"
     fi
 else
-    # Generate a unique job name
-    FPART_JOBNAME="$(echo ${OPT_DSTDIR} | sha1)-$(date '+%s')-$$"
+    # Generate a unique job name. This job name *must* remain
+    # unique from one job to another.
+    FPART_JOBNAME="$(echo ${OPT_DSTDIR} | LC_ALL=C tr -dc '/a-zA-Z0-9' | sed -E -e 's|/*$||' -e 's|^.*/([^/]+)$|\1|' | head -c 16)-$(date '+%s')-$$"
 fi
 
 # Queue manager configuration. This queue remains local, even when using SSH.
