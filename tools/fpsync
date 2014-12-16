@@ -50,10 +50,12 @@ OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 OPT_WRKRS=""
 # Fpart shared dir (must be shared amongst all workers, -d)
 OPT_FPSHDIR=""
-# Job name for resume mode (-r)
-OPT_JOBNAME=""
 # Temporary dir (local, used for queue management, -t)
 OPT_TMPDIR="/tmp/fpart"
+# Job name for resume mode (-r)
+OPT_JOBNAME=""
+# Rsync options (-o)
+OPT_RSYNC="-av --numeric-ids"
 # Verbose mode (-v)
 OPT_VERBOSE="0"
 # Source directory
@@ -84,9 +86,12 @@ usage () {
     echo "              Jobs are executed locally if not specified (default)."
     echo "  -d /dir/    set fpsync shared dir to </dir/> (absolute path)"
     echo "              This option is mandatory when using SSH workers."
+    echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, /src_dir/ and /dst_dir/ ignored)"
-    echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
+    echo "  -o options  override default rsync options with <options>"
+    echo "              Use this option with care as certain options are"
+    echo "              incompatible with parallel usage (e.g. --delete)"
     echo "  -v          verbose mode (default: quiet)"
     echo "              This option can be be specified several times to"
     echo "              increase verbosity level."
@@ -125,7 +130,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:r:t:vh" opt
+    while getopts "n:f:s:w:d:t:r:o:vh" opt
     do
         case "${opt}" in
         "n")
@@ -168,6 +173,14 @@ parse_opts () {
                 end_die "Please supply an absolute path for shared dir"
             fi
             ;;
+        "t")
+            if is_abs_path "${OPTARG}"
+            then
+                OPT_TMPDIR="${OPTARG}"
+            else
+                end_die "Please supply an absolute path for temp dir"
+            fi
+            ;;
         "r")
             if [ -n "${OPTARG}" ]
             then
@@ -176,12 +189,12 @@ parse_opts () {
                 end_die "Invalid job name supplied"
             fi
             ;;
-        "t")
-            if is_abs_path "${OPTARG}"
+        "o")
+            if [ -n "${OPTARG}" ]
             then
-                OPT_TMPDIR="${OPTARG}"
+                OPT_RSYNC="${OPTARG}"
             else
-                end_die "Please supply an absolute path for temp dir"
+                end_die "Invalid rsync options supplied"
             fi
             ;;
         "v")
@@ -462,7 +475,7 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
 
 # Fpart hooks (black magic is here !)
-FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
+FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} ${OPT_RSYNC} \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
         \\\"${OPT_SRCDIR}/\\\" \
         \\\"${OPT_DSTDIR}/\\\"' \
