@@ -55,7 +55,7 @@ OPT_JOBNAME=""
 # FPart temporary dir (local, used for queue management, -t)
 OPT_FPDIR="/tmp/fpart"
 # Verbose mode (-v)
-OPT_VERBOSE=""
+OPT_VERBOSE="0"
 # Source directory
 OPT_SRCDIR=""
 # Destination directory
@@ -87,7 +87,9 @@ usage () {
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, /src_dir/ and /dst_dir/ ignored)"
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
-    echo "  -v          verbose mode"
+    echo "  -v          verbose mode (default: quiet)"
+    echo "              This option can be be specified several times to"
+    echo "              increase verbosity level."
     echo "  -h          this help"
     echo "  /src_dir/   source directory (absolute path)"
     echo "  /dst_dir/   destination directory (absolute path)"
@@ -100,9 +102,13 @@ end_die () {
 }
 
 # Print (to stdout) and log a message
+# $1 = level (0 = quiet, 1 = verbose, >=2 more verbose)
+# $2 = message to log
 echo_log () {
-    [ -n "$1" ] && [ -n "${OPT_VERBOSE}" ] && echo "$1"
-    echo "$1" >> "${FPART_LOGFILE}"
+    is_num "$1" && [ "${OPT_VERBOSE}" -ge "$1" ] && [ -n "$2" ] && \
+        echo "$2"
+    [ -n "$2" ] && \
+        echo "$2" >> "${FPART_LOGFILE}"
 }
 
 # Check if $1 is an absolute path
@@ -179,7 +185,7 @@ parse_opts () {
             fi
             ;;
         "v")
-            OPT_VERBOSE="yes"
+            OPT_VERBOSE="$((${OPT_VERBOSE} + 1))"
             ;;
         "h")
             usage
@@ -249,7 +255,7 @@ work_list_pick_next_free_worker () {
 
 # Remove next worker from list
 work_list_trunc_next_free_worker () {
-    WORK_FREEWORKERS="$( echo ${WORK_FREEWORKERS} | sed -E 's/^[[:space:]]*[^[:space:]]+[[:space:]]*//')"
+    WORK_FREEWORKERS="$(echo ${WORK_FREEWORKERS} | sed -E 's/^[[:space:]]*[^[:space:]]+[[:space:]]*//')"
 }
 
 # Push a work to the list of currently-running ones
@@ -274,7 +280,7 @@ work_list_refresh () {
             _WORK_NUM="$((${_WORK_NUM} + 1))"
         # If not, put its worker to the free list
         else
-            echo_log "<= [QMGR] Job ${_JOB} finished"
+            echo_log "2" "<= [QMGR] Job ${_JOB} finished"
             if [ -n "${OPT_WRKRS}" ]
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 2)"
@@ -377,13 +383,13 @@ job_queue_loop () {
             then
                 if [ -z "${OPT_WRKRS}" ]
                 then
-                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
                     work_list_push "$!:local"
                 else
                     local _NEXT_HOST="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
-                    echo_log "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
                     "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
                         < "${JOBS_WORKDIR}/${_NEXT}" &
                     work_list_push "$!:${_NEXT_HOST}"
@@ -396,12 +402,12 @@ job_queue_loop () {
 
     if [ "${_NEXT}" = "done" ]
     then
-        echo_log "=> [QMGR] Done submitting jobs. Waiting for them to finish."
+        echo_log "2" "=> [QMGR] Done submitting jobs. Waiting for them to finish."
     else
-        echo_log "=> [QMGR] Stopped. Waiting for jobs to finish."
+        echo_log "2" "=> [QMGR] Stopped. Waiting for jobs to finish."
     fi
     wait
-    echo_log "=> [QMGR] No more job running."
+    echo_log "2" "=> [QMGR] No more job running."
 }
 
 ########## Program start (main() !)
@@ -464,7 +470,7 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} -av --numeric-ids \
         2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        [ -n \"${OPT_VERBOSE}\" ] && \
+        [ \"${OPT_VERBOSE}\" -ge \"2\" ] && \
         echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
@@ -553,7 +559,7 @@ fi
 # presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${OPT_WRKRS}" ]
 then
-    echo_log "======> Validating requirements on SSH nodes..."
+    echo_log "2" "======> Validating requirements on SSH nodes..."
 
     # First, blindly try to create dst_dir/ as well as a witness file on the
     # first node (only). Using a witness file will allow us to check for its
@@ -575,7 +581,7 @@ then
             end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTDIR}"
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
             end_die "Rsync executable not found on target ${_host}"
-        echo_log "===> ${_host}: OK"
+        echo_log "2" "===> ${_host}: OK"
     done
 
     # Remove witness file
@@ -597,11 +603,11 @@ fi
 work_list_free_workers_init
 
 # Let's rock !
-echo_log "======> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
-echo_log "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
-echo_log "===> Start time: $(date)"
-echo_log "===> Parts dir: ${FPART_PARTSDIR}"
-echo_log "===> Log dir: ${FPART_LOGDIR}"
+echo_log "2" "======> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
+echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
+echo_log "2" "===> Start time: $(date)"
+echo_log "2" "===> Temp dir: ${OPT_FPDIR}"
+echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 
 # Record job information
 job_queue_info_dump
@@ -613,7 +619,7 @@ job_queue_loop&
 # When not resuming a previous job, start fpart
 if [ -z "${OPT_JOBNAME}" ]
 then
-    echo_log "===> Starting fpart..."
+    echo_log "1" "===> Analyzing filesystem..."
     # Start fpart from src_dir/ directory and produce jobs within
     # ${JOBS_QUEUEDIR}/
     cd "${OPT_SRCDIR}" && \
@@ -626,7 +632,7 @@ fi
 job_queue_done
 
 # Wait for job_queue_loop to terminate
-echo_log "===> Filesystem analyzed, waiting for Rsync jobs to complete..."
+echo_log "1" "===> Waiting for Rsync jobs to complete..."
 wait
 
 # Examine results and send an e-mail if requested
@@ -637,9 +643,9 @@ if [ -n "${OPT_MAIL}" ]
 then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${OPT_MAIL}"
 fi
-echo_log "===> Jobs terminated."
-echo "${MSG}" | tee -a "${FPART_LOGFILE}"
-echo_log "<=== End time: $(date)"
+echo_log "2" "===> Jobs terminated."
+echo_log "1" "===> ${MSG}"
+echo_log "2" "<=== End time: $(date)"
 
 [ -n "${RET}" ] && exit 1
 exit 0
