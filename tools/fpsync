@@ -48,12 +48,12 @@ OPT_FPMAXPARTFILES="2000"
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
-# FPart shared dir (must be shared amongst all workers, -d)
+# Fpart shared dir (must be shared amongst all workers, -d)
 OPT_FPSHDIR=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
-# FPart temporary dir (local, used for queue management, -t)
-OPT_FPDIR="/tmp/fpart"
+# Temporary dir (local, used for queue management, -t)
+OPT_TMPDIR="/tmp/fpart"
 # Verbose mode (-v)
 OPT_VERBOSE="0"
 # Source directory
@@ -179,7 +179,7 @@ parse_opts () {
         "t")
             if is_abs_path "${OPTARG}"
             then
-                OPT_FPDIR="${OPTARG}"
+                OPT_TMPDIR="${OPTARG}"
             else
                 end_die "Please supply an absolute path for temp dir"
             fi
@@ -202,9 +202,9 @@ parse_opts () {
     # Validate OPT_FPSHDIR (shared directory)
     if [ -z "${OPT_WRKRS}" ]
     then
-        # For local jobs, set shared dirertory to fpart directory
+        # For local jobs, set shared directory to temporary directory
         [ -z "${OPT_FPSHDIR}" ] && \
-            OPT_FPSHDIR="${OPT_FPDIR}"
+            OPT_FPSHDIR="${OPT_TMPDIR}"
     else
         # For remote ones, specifying a shared directory is mandatory
         [ -z "${OPT_FPSHDIR}" ] && \
@@ -421,8 +421,8 @@ parse_opts "$@"
 if [ -n "${OPT_JOBNAME}" ]
 then
     # Resume mode, check if OPT_JOBNAME exists
-    if [ -d "${OPT_FPDIR}/queue/${OPT_JOBNAME}" ] && \
-        [ -d "${OPT_FPDIR}/work/${OPT_JOBNAME}" ]
+    if [ -d "${OPT_TMPDIR}/queue/${OPT_JOBNAME}" ] && \
+        [ -d "${OPT_TMPDIR}/work/${OPT_JOBNAME}" ]
     then
         FPART_JOBNAME="${OPT_JOBNAME}"
     else
@@ -435,8 +435,8 @@ else
 fi
 
 # Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="${OPT_FPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
-JOBS_WORKDIR="${OPT_FPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
+JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
+JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
 # Paths to executables that must exist locally
 FPART_BIN="$(which fpart)"
@@ -606,7 +606,7 @@ work_list_free_workers_init
 echo_log "2" "======> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
 echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
 echo_log "2" "===> Start time: $(date)"
-echo_log "2" "===> Temp dir: ${OPT_FPDIR}"
+echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
 echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 
 # Record job information
