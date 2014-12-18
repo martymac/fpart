@@ -344,32 +344,63 @@ job_queue_info_load () {
         end_die "Invalid options value loaded from resumed job: OPT_SRCDIR/OPT_DSTDIR"
 }
 
-# Set the "done" flag within job queue
-job_queue_done () {
+# Set the "fp_done" (fpart done) flag within job queue
+job_queue_fp_done () {
     sleep 1 # Ensure this very last file gets created within the next second of
             # last job file's mtime. Necessary for filesystems that don't get
             # below the second for mtime precision (msdosfs).
-    touch "${JOBS_QUEUEDIR}/done"
+    touch "${JOBS_QUEUEDIR}/fp_done"
 }
 
-# Set the "stop" flag within job queue
-job_queue_stop () {
-    touch "${JOBS_QUEUEDIR}/stop"
+# Set the "sl_done" (sync loop done) flag within job queue
+job_queue_sl_done () {
+    touch "${JOBS_QUEUEDIR}/sl_done"
 }
 
-# Handle ^C: stop queue processing by setting the "stop" flag
-trap_queue () {
-    job_queue_stop
+# Set the "sl_stop" (sync loop stop) flag within job queue
+job_queue_sl_stop () {
+    touch "${JOBS_QUEUEDIR}/sl_stop"
+}
+
+# Handle ^C: stop queue processing by setting the "sl_stop" flag
+sigint_handler () {
+    job_queue_sl_stop
+    # Wait for queue processing to stop
+    wait
+    # Display current status before exiting
+    siginfo_handler
     end_die "Killed."
+}
+
+# Handle ^T: print info about queue status
+siginfo_handler () {
+    local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l)"
+    local _jobs_done="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l)"
+    local _jobs_percent="??"
+
+    [ ${_jobs_total} -ge 1 ] && \
+        _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
+
+    # Trim values
+    _jobs_total="$(( ${_jobs_total} + 0))"
+    _jobs_done="$(( ${_jobs_done} + 0))"
+
+    echo "===> Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: $((${_jobs_total} - ${_jobs_done}))"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
 # Returns empty string if no job is available
+# JOBS_QUEUEDIR can host several types of file :
+# <job_number>: a sync job to perform
+# 'info': info file regarding this fpsync run
+# 'sl_stop': the 'immediate stop' flag, set when ^C is hit
+# 'fp_done': set when fpart has finished crawling src_dir/ and generated jobs
+# 'sl_done': set when job_queue_loop() terminates (either normally or stopped)
 job_queue_next () {
     local _NEXT=""
-    if [ -f "${JOBS_QUEUEDIR}/stop" ]
+    if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
     then
-        echo "stop"
+        echo "sl_stop"
     else
         _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 | grep -v "info" | head -n 1)
         if [ -n "${_NEXT}" ]
@@ -383,16 +414,21 @@ job_queue_next () {
 
 # Main jobs' loop: pick up jobs within the queue directory and start them
 job_queue_loop () {
+    # Ignore SIGINT and SIGINFO from within loop
+    # Those signals are handled by the parent (master) process
+    trap '' SIGINT
+    trap '' SIGINFO
+
     local _NEXT=""
-    while [ "${_NEXT}" != "done" ] && [ "${_NEXT}" != "stop" ]
+    while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
     do
         local _PID=""
         if [ ${WORK_NUM} -lt ${OPT_JOBS} ]
         then
             _NEXT="$(job_queue_next)"
             if [ -n "${_NEXT}" ] && \
-                [ "${_NEXT}" != "done" ] && \
-                [ "${_NEXT}" != "stop" ]
+                [ "${_NEXT}" != "fp_done" ] && \
+                [ "${_NEXT}" != "sl_stop" ]
             then
                 if [ -z "${OPT_WRKRS}" ]
                 then
@@ -413,7 +449,7 @@ job_queue_loop () {
         sleep 0.2
     done
 
-    if [ "${_NEXT}" = "done" ]
+    if [ "${_NEXT}" = "fp_done" ]
     then
         echo_log "2" "=> [QMGR] Done submitting jobs. Waiting for them to finish."
     else
@@ -421,6 +457,9 @@ job_queue_loop () {
     fi
     wait
     echo_log "2" "=> [QMGR] No more job running."
+
+    # Set the 'sl_done' (sync done) flag to let the master process go
+    job_queue_sl_done
 }
 
 ########## Program start (main() !)
@@ -533,23 +572,24 @@ then
 else
     # When resuming a job, check if :
     # - the last fpart pass has completed
-    #   (the 'done' flag is present)
+    #   (the 'fp_done' flag is present)
     # - the last fpsync pass has *not* completed
-    #   (the 'done' flag is *still* present)
+    #   (the 'fp_done' flag is *still* present)
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
     # - the work queue exists
-    if [ ! -f "${JOBS_QUEUEDIR}/done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ]
+    if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ]
     then
-        end_die "Specified job is not resumable ('done' or 'info' flag missing)"
+        end_die "Specified job is not resumable ('fp_done' or 'info' flag missing)"
     fi
     [ ! -d "${JOBS_WORKDIR}" ] && \
         end_die "Specified job is not resumable (work queue missing)"
 
     # Job is resumable, try to reload job options and prepare queues
     job_queue_info_load
-    # Remove the "stop" flag, if any
-    rm -f "${JOBS_QUEUEDIR}/stop" 2>/dev/null
+    # Remove the "sl_stop" and "sl_done" flags, if any
+    rm -f "${JOBS_QUEUEDIR}/sl_stop" 2>/dev/null
+    rm -f "${JOBS_QUEUEDIR}/sl_done" 2>/dev/null
     # Move potentially-incomplete jobs to the jobs queue so that they can be
     # executed again. We consider the worst-case scenario and resume OPT_RJOBS
     # last jobs, some of them being partially finished.
@@ -625,8 +665,10 @@ echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 # Record job information
 job_queue_info_dump
 
-# Set trap and start job_queue_loop
-trap 'trap_queue' 2
+# Set traps and start job_queue_loop
+trap 'sigint_handler' SIGINT
+trap 'siginfo_handler' SIGINFO
+echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
 job_queue_loop&
 
 # When not resuming a previous job, start fpart
@@ -642,11 +684,15 @@ then
 fi
 
 # Tell job_queue_loop that crawling has finished
-job_queue_done
+job_queue_fp_done
 
 # Wait for job_queue_loop to terminate
+# Use an active wait to allow signal processing (^T)
 echo_log "1" "===> Waiting for Rsync jobs to complete..."
-wait
+while [ ! -f "${JOBS_QUEUEDIR}/sl_done" ]
+do
+    sleep 0.2
+done
 
 # Examine results and send an e-mail if requested
 RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
