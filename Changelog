@@ -1,5 +1,6 @@
 2014/??/??, 0.9.1 ('I run everywhere'):
     - add tools/fpsync: wrapper example around fpart+rsync
+    - fpart: print the number of files found in verbose mode only
 2013/11/13, 0.9-1:
     (this minor change only impacts tarball users, fpart code itself has not changed)
     - Backport the following patch to config.guess:

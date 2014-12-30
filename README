@@ -92,7 +92,6 @@ $ fpart -L -f 1 -o /tmp/part.out -W \
 foo/bar
 == /tmp/part.out.1 ==
 foo/baz
-2 file(s) found.
 
 This example crawls foo/ in live mode (option -L). For each file (option -f,
 1 file per partition), it generates a partition into /tmp/part.out.<n>

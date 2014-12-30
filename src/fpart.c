@@ -653,16 +653,17 @@ int main(int argc, char **argv)
     if((totalfiles <= 0) || (options.live_mode == OPT_LIVEMODE)) {
         uninit_file_entries(head, &options);
         /* display status */
-        fprintf(stderr, "%lld file(s) found.\n", totalfiles);
+        if(options.verbose >= OPT_VERBOSE)
+            fprintf(stderr, "%lld file(s) found.\n", totalfiles);
         uninit_options(&options);
         exit(EXIT_SUCCESS);
     }
 
     /* display status */
-    fprintf(stderr, "%lld file(s) found.\n", totalfiles);
-
-    if(options.verbose >= OPT_VERBOSE)
+    if(options.verbose >= OPT_VERBOSE) {
+        fprintf(stderr, "%lld file(s) found.\n", totalfiles);
         fprintf(stderr, "Sorting entries...\n");
+    }
 
 /************************************************
   Sort entries with a fixed number of partitions
