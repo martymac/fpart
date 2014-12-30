@@ -110,7 +110,7 @@ end_die () {
 # $1 = level (0 = quiet, 1 = verbose, >=2 more verbose)
 # $2 = message to log
 echo_log () {
-    is_num "$1" && [ "${OPT_VERBOSE}" -ge "$1" ] && [ -n "$2" ] && \
+    is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
         echo "$2"
     [ -n "$2" ] && \
         echo "$2" >> "${FPART_LOGFILE}"
@@ -362,14 +362,38 @@ job_queue_sl_stop () {
     touch "${JOBS_QUEUEDIR}/sl_stop"
 }
 
-# Handle ^C: stop queue processing by setting the "sl_stop" flag
+# Handle first ^C: stop queue processing by setting the "sl_stop" flag
+# then wait for sync jobs to complete and display status before exiting
 sigint_handler () {
+    SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
     job_queue_sl_stop
-    # Wait for queue processing to stop
-    wait
-    # Display current status before exiting
-    siginfo_handler
-    end_die "Killed."
+    if [ ${SIGINT_COUNT} -eq 1 ]
+    then
+        echo_log "1" "===> Interrupted. Waiting for running jobs to complete..."
+        echo_log "1" "===> (hit ^C again to kill them and exit)"
+        # Wait for queue processing to stop
+        wait
+        # Display current status before exiting
+        [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
+        # Exit program
+        end_die
+    fi
+}
+
+# Handle subsequent ^C from within job_queue_loop(): kill sync processes
+# to fast-unlock the main process (waiting for child processes to exit)
+job_queue_loop_sigint_handler () {
+    SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
+    if [ ${SIGINT_COUNT} -eq 2 ]
+    then
+        echo_log "1" "===> Interrupted again, killing remaining jobs"
+        for _JOB in ${WORK_LIST}
+        do
+            kill "$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+        done
+        # Wait for child processes to exit and let parent process end_die()
+        wait
+    fi
 }
 
 # Handle ^T: print info about queue status
@@ -414,9 +438,8 @@ job_queue_next () {
 
 # Main jobs' loop: pick up jobs within the queue directory and start them
 job_queue_loop () {
-    # Ignore SIGINT and SIGINFO from within loop
-    # Those signals are handled by the parent (master) process
-    trap '' SIGINT
+    trap 'job_queue_loop_sigint_handler' SIGINT
+    # Ignore SIGINFO from within loop, handled by the parent (master) process
     trap '' SIGINFO
 
     local _NEXT=""
@@ -522,7 +545,7 @@ FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} ${OPT_RSYNC} \
         2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
         \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        [ \"${OPT_VERBOSE}\" -ge \"2\" ] && \
+        [ ${OPT_VERBOSE} -ge 2 ] && \
         echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
@@ -533,6 +556,8 @@ FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
 # vfs.timestamp_precision sysctl. See vfs_timestamp(9).
 
 ## End of options' post-processing section, let's start for real now !
+
+SIGINT_COUNT="0"    # ^C counter
 
 WORK_NUM=0          # Current number of running processes
 WORK_LIST=""        # Work PID[:WORKER] list
