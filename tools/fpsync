@@ -719,10 +719,13 @@ do
     sleep 0.2
 done
 
+# Display final status
+[ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
+
 # Examine results and send an e-mail if requested
 RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
 MSG=$( { [ -z "${RET}" ] && echo 'Rsync completed without error.' ;} || \
-    { echo "Rsync errors detected, see logs:" && echo "${RET}" ;} )
+    { echo "Rsync completed with errors, see logs:" && echo "${RET}" ;} )
 if [ -n "${OPT_MAIL}" ]
 then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${OPT_MAIL}"
