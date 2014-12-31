@@ -35,16 +35,16 @@ FPSYNC_VERSION="0.9.1"
 
 ########## Default values for options
 
-# Number of rsync jobs to run in parallel ("workers", -n)
+# Number of sync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
 # Same, but autodetected
 #OPT_JOBS=$(sysctl -n hw.ncpu)  # On FreeBSD
 #OPT_JOBS=$(nproc)              # On Linux
-# Number of rsync jobs from resumed run, read from the 'info' file
+# Number of sync jobs from resumed run, read from the 'info' file
 OPT_RJOBS=
-# Maximum files per worker (-f)
+# Maximum files per sync job (-f)
 OPT_FPMAXPARTFILES="2000"
-# Maximum bytes to transfer per worker (-s)
+# Maximum bytes per sync job (-s)
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
@@ -63,7 +63,7 @@ OPT_SRCDIR=""
 # Destination directory
 OPT_DSTDIR=""
 
-# Mail - Uncomment to receive a mail when the whole rsync job has finished.
+# Mail - Uncomment to receive a mail when the whole run has finished.
 # The master machine (the one running this script) must be able to send mail
 # using the 'mail' command. No CLI option is provided to change it.
 #OPT_MAIL="address@mydomain.tld"
@@ -72,14 +72,14 @@ OPT_DSTDIR=""
 
 # Print help
 usage () {
-    echo "fpsync v${FPSYNC_VERSION} - Start multiple Rsync in parallel using fpart"
+    echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart and rsync"
     echo "Copyright (c) 2014 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [OPTIONS...] /src_dir/ /dst_dir/"
     echo "Usage: $0 [-r jobname] [OPTIONS...]"
-    echo "  -n x        start <x> concurrent Rsync workers"
-    echo "  -f y        transfer at most <y> files per worker"
-    echo "  -s z        transfer at most <z> bytes per worker"
+    echo "  -n x        start <x> concurrent sync jobs"
+    echo "  -f y        transfer at most <y> files per sync job"
+    echo "  -s z        transfer at most <z> bytes per sync job"
     echo "  -w wrks     space-separated list of SSH workers"
     echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
     echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
@@ -88,7 +88,8 @@ usage () {
     echo "              This option is mandatory when using SSH workers."
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
     echo "  -r jobname  resume job <jobname>"
-    echo "              (options -f, -s, /src_dir/ and /dst_dir/ ignored)"
+    echo "              (options -f, -s, -o, /src_dir/ and /dst_dir/"
+    echo "              are ignored when resuming a previous run)"
     echo "  -o options  override default rsync options with <options>"
     echo "              Use this option with care as certain options are"
     echo "              incompatible with parallel usage (e.g. --delete)"
@@ -409,7 +410,7 @@ siginfo_handler () {
     _jobs_total="$(( ${_jobs_total} + 0))"
     _jobs_done="$(( ${_jobs_done} + 0))"
 
-    echo "===> Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: $((${_jobs_total} - ${_jobs_done}))"
+    echo "<=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: $((${_jobs_total} - ${_jobs_done}))"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -438,6 +439,8 @@ job_queue_next () {
 
 # Main jobs' loop: pick up jobs within the queue directory and start them
 job_queue_loop () {
+    echo_log "1" "===> [QMGR] Starting queue manager"
+
     trap 'job_queue_loop_sigint_handler' SIGINT
     # Ignore SIGINFO from within loop, handled by the parent (master) process
     trap '' SIGINFO
@@ -474,12 +477,12 @@ job_queue_loop () {
 
     if [ "${_NEXT}" = "fp_done" ]
     then
-        echo_log "2" "=> [QMGR] Done submitting jobs. Waiting for them to finish."
+        echo_log "2" "<=== [QMGR] Done submitting jobs. Waiting for them to finish."
     else
-        echo_log "2" "=> [QMGR] Stopped. Waiting for jobs to finish."
+        echo_log "2" "<=== [QMGR] Stopped. Waiting for jobs to finish."
     fi
     wait
-    echo_log "2" "=> [QMGR] No more job running."
+    echo_log "2" "<=== [QMGR] Queue processed"
 
     # Set the 'sl_done' (sync done) flag to let the master process go
     job_queue_sl_done
@@ -637,7 +640,7 @@ fi
 # presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${OPT_WRKRS}" ]
 then
-    echo_log "2" "======> Validating requirements on SSH nodes..."
+    echo_log "2" "=====> Validating requirements on SSH nodes..."
 
     # First, blindly try to create dst_dir/ as well as a witness file on the
     # first node (only). Using a witness file will allow us to check for its
@@ -659,7 +662,7 @@ then
             end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTDIR}"
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
             end_die "Rsync executable not found on target ${_host}"
-        echo_log "2" "===> ${_host}: OK"
+        echo_log "2" "<=== ${_host}: OK"
     done
 
     # Remove witness file
@@ -681,11 +684,20 @@ fi
 work_list_free_workers_init
 
 # Let's rock !
-echo_log "2" "======> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
-echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo " (resumed)")"
+echo_log "2" "=====> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
+echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo ' (resumed)')"
 echo_log "2" "===> Start time: $(date)"
-echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
+echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"
+echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
 echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
+echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
+# The following options are ignored when resuming
+if [ -z "${OPT_JOBNAME}" ]
+then
+    echo_log "2" "===> Max files per sync job: ${OPT_FPMAXPARTFILES}"
+    echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
+    echo_log "2" "===> Rsync options: \"${OPT_RSYNC}\""
+fi
 
 # Record job information
 job_queue_info_dump
@@ -713,7 +725,7 @@ job_queue_fp_done
 
 # Wait for job_queue_loop to terminate
 # Use an active wait to allow signal processing (^T)
-echo_log "1" "===> Waiting for Rsync jobs to complete..."
+echo_log "1" "===> Waiting for sync jobs to complete..."
 while [ ! -f "${JOBS_QUEUEDIR}/sl_done" ]
 do
     sleep 0.2
@@ -730,8 +742,7 @@ if [ -n "${OPT_MAIL}" ]
 then
     echo "${MSG}" | ${MAIL_BIN} -s "Fpart job ${FPART_JOBNAME}" "${OPT_MAIL}"
 fi
-echo_log "2" "===> Jobs terminated."
-echo_log "1" "===> ${MSG}"
+echo_log "1" "<=== ${MSG}"
 echo_log "2" "<=== End time: $(date)"
 
 [ -n "${RET}" ] && exit 1
