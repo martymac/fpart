@@ -2,10 +2,10 @@ TODO (ideas) :
 **************
 
 Fpart:
+- Switch to ftw(3) for portability ?
 - Factorize code (err(3), ...)
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
-- Test on Mac OS X (anyone ?)
 - Add constraints, e.g. : force hardlinks to belong to the same partition
 - Make the program multithreaded for FS analysis
 - Display/accept size in a human-friendly format
@@ -19,3 +19,9 @@ Autotools:
 - Use config.h (for program version, data types, header inclusion,
   build options info [...])
 - Add -Wall to CFLAGS when possible (gcc, clang)
+
+Fpsync:
+- Add an option to exit after fpart pass (to generate jobs only)
+- Authorize rsync:// and ssh source and target URLs
+- Check if src_dir/ is the same on all workers (using a stat fingerprint)
+  and use the same method for dst_dir/ (stop using a witness file)
