@@ -230,13 +230,12 @@ parse_opts () {
     then
         if is_abs_path "$1" && is_abs_path "$2"
         then
-            :
+            OPT_SRCDIR="$1"
+            OPT_DSTDIR="$2"
         else
             usage
             end_die "Please supply an absolute path for both src_dir/ and dst_dir/"
         fi
-        OPT_SRCDIR="$1"
-        OPT_DSTDIR="$2"
     fi
 }
 
