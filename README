@@ -174,19 +174,35 @@ A program called 'fpsync' is provided within the tools/ directory. This tool is
 a shell script that wraps fpart and rsync to launch several rsync in parallel as
 presented in the previous section ("take 1"), but while the previous example
 used GNU Parallel to schedule transfers, this wrapper provides its own
--embedded- scheduler. It can execute several rsync instances locally or launch
+-embedded- scheduler. It can execute several rsync processes locally or launch
 rsync transfers on several nodes (workers) through SSH.
 
-Edit the script itself to configure it, then start it this way :
+The following examples show two typical usage :
 
-./fpsync [-n threads] src_dir/ dst_dir/
+$ fpsync -n 4 -f 1000 -s $((100 * 1024 * 1024)) \
+    /data/src/ /data/dst/
 
-If you plan to use several SSH workers, you will have to mount src_dir/,
-dst_dir/ and fpart log and partitions' directories on each of them (e.g. using
-NFS).
+will synchronize /data/src/ to /data/dst/ using 4 local workers, each one
+transferring at most 1000 files and 100 MB per synchronization job.
 
-Limitations :
-*************
+$ fpsync -n 8 -f 1000 -s $((100 * 1024 * 1024)) \
+    -w login@machine1 -w login@machine2 -d /mnt/nfs/fpsync \
+    /data/src/ /data/dst/
+
+will synchronize /data/src/ to /data/dst/ using the same transfer limits, but
+through 8 concurrent synchronization jobs spread over two machines (machine1 and
+machine2). Those machines can both access /data/src/ and /data/dst/, as well as
+/mnt/nfs/fpsync, which is fpsync's shared working directory.
+
+Jobs can be interrupted and resumed using the -r option and the job id presented
+when verbose mode (-v) is on. See :
+
+$ fpsync -h
+
+to get a list of all supported options.
+
+Limits :
+********
 
 Fpart will *NOT* modify data, it will *NOT* split your files !
 
@@ -202,11 +218,11 @@ not deduplicate FS crawling results.
 Installing :
 ************
 
-For FreeBSD users, fpart is already available in ports, see sysutils/fpart. You
-can install fpart from there or from sources if you really need the latest
-revision.
+For FreeBSD users, fpart is already available in ports, see sysutils/fpart.
+Fpart is also available from official repositories on Debian and Ubuntu.
 
-Installing from sources is simple. First, if there is no 'configure' script in
+If a pre-compiled package is not available for your favourite operating system,
+installing from sources is simple. First, if there is no 'configure' script in
 the main directory, run :
 
 $ autoreconf -i
