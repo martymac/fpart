@@ -89,5 +89,5 @@ AM_CONDITIONAL([LINUX], [test x$host_os_linux = xtrue])
 AM_CONDITIONAL([STATIC], [test x$static = xtrue])
 
 #AC_CONFIG_HEADERS([src/config.h])
-AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile tools/Makefile man/Makefile])
 AC_OUTPUT

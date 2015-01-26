@@ -1,4 +1,4 @@
-2015/??/??, 0.9.1 ('I run everywhere'):
+2015/??/??, 0.9.1 ('Let's play together'):
     - add tools/fpsync: a tool to sync directories in parallel using fpart and rsync
     - fpart: print the number of files found in verbose mode only
 2013/11/13, 0.9-1:
