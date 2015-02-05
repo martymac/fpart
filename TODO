@@ -21,7 +21,6 @@ Autotools:
 - Add -Wall to CFLAGS when possible (gcc, clang)
 
 Fpsync:
-- Create fpsync(1) man page
 - Add an option to exit after fpart pass (to generate jobs only)
 - Authorize rsync:// and ssh source and target URLs
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)

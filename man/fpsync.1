@@ -1,0 +1,231 @@
+.\" Copyright (c) 2015 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+.\" All rights reserved.
+.\" 
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 
+.\" THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.Dd January 27, 2015
+.Dt FPSYNC 1
+.Os
+.Sh NAME
+.Nm fpsync
+.Nd Synchronize directories in parallel using fpart and rsync.
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl v
+.Op Fl n Ar jobs
+.Op Fl f Ar files
+.Op Fl s Ar size
+.Op Fl w Ar wrks
+.Op Fl d Ar shdir
+.Op Fl t Ar tmpdir
+.Op Fl r Ar jobname
+.Op Fl o Ar rsyncopts
+.Ar src_dir/
+.Ar dst_dir/
+.Sh DESCRIPTION
+The
+.Nm
+tool synchronizes directories in parallel using
+.Xr fpart 1
+and
+.Xr rsync 1 .
+It computes subsets of
+.Ar src_dir/
+and spawns
+.Xr rsync 1
+jobs to synchronize them to
+.Ar dst_dir/ .
+.sp
+Synchronization jobs can be executed either locally or remotely (using SSH
+workers, see option
+.Fl w )
+and are executed on-the-fly while filesystem crawling goes on. This makes
+.Nm
+a good tool for migrating large filesystems.
+.Sh OPTIONS
+.Bl -tag -width indent
+.It Fl h
+Print help
+.It Fl v
+Verbose mode. Can be be specified several times to increase verbosity level.
+.It Ic -n Ar jobs
+Start
+.Ar jobs
+concurrent sync jobs (either locally or remotely, see below). Default: 2.
+.It Ic -f Ar files
+Transfer at most
+.Ar files
+files per sync job. Default: 2000.
+.It Ic -s Ar size
+Transfer at most
+.Ar size
+bytes per sync job. Default: 4294967296 (4 GB).
+.It Ic -w Ar wrks
+Use remote SSH
+.Ar wrks
+to synchronize files. Synchronization jobs are executed locally when this option
+is not set.
+.Ar wrks
+is a space-separated list of login@machine connection strings and can be
+specified several times. You must be allowed to connect to those machines
+using a SSH key to avoid user interaction.
+.It Ic -d Ar shdir
+Set
+.Nm
+shared directory to
+.Ar shdir .
+This option is mandatory when using SSH workers and set by default to
+.Ar tmpdir
+when running locally. The specified directory must be an absolute path ; it
+will be used to handle communications with SSH hosts (sharing partitions and
+log files) and, as a consequence, must be made available to all participating
+hosts (e.g. through a r/w NFS mount), including the master one running
+.Nm .
+.It Ic -t Ar tmpdir
+Set
+.Nm
+temporary directory to
+.Ar tmpdir .
+This directory remains local and does not need to be shared amongst SSH workers
+when using the
+.Fl w
+option. Default: /tmp/fpsync.
+.It Ic -r Ar jobname
+Resume job
+.Ar jobname
+and restart synchronizing remaining partitions from a previous run.
+.Ar jobname
+can be obtained using verbose mode (see option
+.Fl v ) .
+Note that filesystem crawling is skipped when resuming a previous run. As a
+consequence, options
+.Fl f ,
+.Fl s ,
+.Fl o ,
+.Ar src_dir/ ,
+and
+.Ar dst_dir/
+are ignored.
+.It Ic -o Ar rsyncopts
+Override default rsync options with
+.Ar rsyncopts .
+Use this option with care as certain options are incompatible with a parallel
+usage (e.g.
+.Fl -delete ) .
+Default:
+.Fl av -numeric-ids .
+.It Ar src_dir/
+Source directory. It must be absolute and available on all participating hosts
+(including the master one, running
+.Nm ) .
+.It Ar dst_dir/
+Destination directory. It must be absolute and available on all participating
+workers.
+.El
+.Sh RUNNING FPSYNC
+Each
+.Nm
+run generates a unique
+.Ar jobname ,
+which is displayed in verbose mode (see option
+.Fl v )
+and within log files.
+You can use that
+.Ar jobname
+to resume a previous run (see option
+.Fl r ) .
+.Nm
+will then restart synchronizing data from the parts that were being synchonized
+at the time it stopped.
+.sp
+This unique feature gives the administrator the ability to stop
+.Nm
+and restart it later, without having to restart the whole filesystem crawling
+and synchronization process. Note that resuming is only possible when
+filesystem crawling step has finished.
+.sp
+During synchronization, you can press CTRL-C to interrupt the process. The
+first CTRL-C prevents new synchronizations from being submitted and the
+process will wait for current synchronizations to be finished before exiting.
+If you press CTRL-C again, current synchronizations will be killed and
+.Nm
+will exit immediately.
+.sp
+On certain systems, CTRL-T can be pressed to get the status of current and
+remaining parts to be synchronized. This can also be achieved by sending a
+SIGINFO to the
+.Nm
+process.
+.sp
+Whether you use verbose mode or not, everything is logged within
+.Ar shdir/log/ .
+.Sh EXAMPLES
+Here are some examples:
+.Bl -tag -width indent
+.It Li "fpsync -n 4 /usr/src/ /var/src/"
+.sp
+Synchronizes /usr/src/ to /var/src/ using 4 local jobs.
+.It Li "fpsync -n 2 -w login@machine1 -w login@machine2 -d /mnt/fpsync \\"
+/mnt/src/ /mnt/dst/
+.sp
+Synchronizes /mnt/src/ to /mnt/dst/ using 2 concurrent jobs executed remotely
+on 2 SSH workers (machine1 and machine2). The shared directory is set to
+/mnt/fpsync and mounted on the machine running
+.Nm ,
+as well as on machine1 and machine2. The source directory (/mnt/src/) is also
+available on those 3 machines, while the destination directory (/mnt/dst/) is
+mounted on SSH workers only (machine1 and machine2).
+.El
+.Sh LIMITS
+Parallelizing
+.Xr rsync 1
+makes several options not usable, such as
+.Fl -delete .
+If your source directory is live while
+.Nm
+is running, you will have to delete extra files from destination directory. This
+is usually done by using a final -offline- rsync pass that will use this option.
+.sp
+.Nm
+enqueues synchronization jobs on disk, within the
+.Ar tmpdir/queue
+directory. Be careful to host this queue on a filesystem that can handle
+fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
+the queue to be processed in order when
+.Xr fpart 1
+generates several jobs per second. On FreeBSD,
+.Xr VFS 9
+timestamps' precision can be
+tuned using the 'vfs.timestamp_precision' sysctl. See
+.Xr vfs_timestamp 9 .
+.Sh SEE ALSO
+.Xr fpart 1 ,
+.Xr rsync 1
+.Sh AUTHOR, AVAILABILITY
+Fpsync has been written by
+.An Gana\(:el LAPLANCHE
+and is available under the BSD
+license on
+.Lk http://contribs.martymac.org
+.Sh BUGS
+No bug known (yet).
