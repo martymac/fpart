@@ -29,7 +29,6 @@
 # from src_dir/ to dst_dir/. Rsync jobs can execute either locally or over SSH.
 # This migration is incremental and will need a final rsync pass
 # (rsync -av -delete src_dir/ dst_dir/) to remove extra files from dst_dir/.
-# See the Configuration section below to set-up the script.
 
 FPSYNC_VERSION="0.9.1"
 
@@ -51,7 +50,7 @@ OPT_WRKRS=""
 # Fpart shared dir (must be shared amongst all workers, -d)
 OPT_FPSHDIR=""
 # Temporary dir (local, used for queue management, -t)
-OPT_TMPDIR="/tmp/fpart"
+OPT_TMPDIR="/tmp/fpsync"
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
 # Rsync options (-o)
@@ -92,13 +91,14 @@ usage () {
     echo "              are ignored when resuming a previous run)"
     echo "  -o options  override default rsync options with <options>"
     echo "              Use this option with care as certain options are"
-    echo "              incompatible with parallel usage (e.g. --delete)"
+    echo "              incompatible with a parallel usage (e.g. --delete)"
     echo "  -v          verbose mode (default: quiet)"
     echo "              This option can be be specified several times to"
     echo "              increase verbosity level."
     echo "  -h          this help"
     echo "  /src_dir/   source directory (absolute path)"
     echo "  /dst_dir/   destination directory (absolute path)"
+    echo "See fpsync(1) for more details."
 }
 
 # Print a message to stderr and exit with error code 1
@@ -438,7 +438,7 @@ job_queue_next () {
 
 # Main jobs' loop: pick up jobs within the queue directory and start them
 job_queue_loop () {
-    echo_log "1" "===> [QMGR] Starting queue manager"
+    echo_log "2" "===> [QMGR] Starting queue manager"
 
     # Trap SIGINT
     trap 'job_queue_loop_sigint_handler' 2
