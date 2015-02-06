@@ -1,8 +1,10 @@
-2015/??/??, 0.9.1 ('Let's play together'):
-    - add tools/fpsync: a tool to sync directories in parallel using fpart and rsync
+2015/02/06, 0.9.1 ('Let's play together'):
+    - add tools/fpsync: a tool to sync directories in parallel using fpart and
+      rsync. See fpsync(1) for more details.
     - fpart: print the number of files found in verbose mode only
 2013/11/13, 0.9-1:
-    (this minor change only impacts tarball users, fpart code itself has not changed)
+    (this minor change only impacts tarball users, fpart code itself has not
+    changed)
     - Backport the following patch to config.guess:
       http://git.savannah.gnu.org/gitweb/?p=config.git;a=commitdiff;h=29900d3bff1ce445087ece5cb2cac425df1c2f74
       it adds support for ppcle and ppc64le architectures.
