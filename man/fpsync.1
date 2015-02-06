@@ -185,8 +185,7 @@ Here are some examples:
 .It Li "fpsync -n 4 /usr/src/ /var/src/"
 .sp
 Synchronizes /usr/src/ to /var/src/ using 4 local jobs.
-.It Li "fpsync -n 2 -w login@machine1 -w login@machine2 -d /mnt/fpsync \\"
-/mnt/src/ /mnt/dst/
+.It Li "fpsync -n 2 -w login@machine1 -w login@machine2 -d /mnt/fpsync /mnt/src/ /mnt/dst/"
 .sp
 Synchronizes /mnt/src/ to /mnt/dst/ using 2 concurrent jobs executed remotely
 on 2 SSH workers (machine1 and machine2). The shared directory is set to
