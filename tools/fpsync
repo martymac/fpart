@@ -520,7 +520,7 @@ JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
 FPART_BIN="$(which fpart)"
 SSH_BIN="$(which ssh)"
 MAIL_BIN="$(which mail)"
-# Note: This script also uses tee, cut, sed, awk, sha1, date
+# Note: This script also uses tee, cut, sed, awk, date
 # which should come with your favourite operating system
 
 # Paths to executables that must exist either locally or remotely (depending
