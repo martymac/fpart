@@ -55,6 +55,8 @@ OPT_TMPDIR="/tmp/fpsync"
 OPT_JOBNAME=""
 # Rsync options (-o)
 OPT_RSYNC="-av --numeric-ids"
+# Fpart options (-O)
+OPT_FPART="-x '.zfs' -x '.snapshot*' -x '.ckpt'"
 # Sudo mode (-S)
 OPT_SUDO=""
 # Verbose mode (-v)
@@ -94,6 +96,7 @@ usage () {
     echo "  -o options  override default rsync options with <options>"
     echo "              Use this option with care as certain options are"
     echo "              incompatible with a parallel usage (e.g. --delete)"
+    echo "  -O options  override default fpart options with <options>"
     echo "  -S          use sudo for filesystem crawling and synchronizations"
     echo "  -v          verbose mode (default: quiet)"
     echo "              This option can be be specified several times to"
@@ -134,7 +137,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:t:r:o:Svh" opt
+    while getopts "n:f:s:w:d:t:r:o:O:Svh" opt
     do
         case "${opt}" in
         "n")
@@ -199,6 +202,14 @@ parse_opts () {
                 OPT_RSYNC="${OPTARG}"
             else
                 end_die "Invalid rsync options supplied"
+            fi
+            ;;
+        "O")
+            if [ -n "${OPTARG}" ]
+            then
+                OPT_FPART="${OPTARG}"
+            else
+                end_die "Invalid fpart options supplied"
             fi
             ;;
         "S")
@@ -546,9 +557,6 @@ FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
 FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
-# Fpart's common options
-FPART_OPTIONS="-x '.zfs' -x '.snapshot*' -x '.ckpt'"
-
 # Fpart hooks (black magic is here !)
 FPART_COMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
@@ -739,7 +747,7 @@ then
         ${SUDO} "${FPART_BIN}" \
         -f "${OPT_FPMAXPARTFILES}" \
         -s "${OPT_FPMAXPARTSIZE}" \
-        -o "${FPART_PARTSTMPL}" ${FPART_OPTIONS} -Z -L \
+        -o "${FPART_PARTSTMPL}" ${OPT_FPART} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 fi
 

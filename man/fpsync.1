@@ -40,9 +40,10 @@
 .Op Fl t Ar tmpdir
 .Op Fl r Ar jobname
 .Op Fl o Ar rsyncopts
+.Op Fl O Ar fpartopts
 .Op Fl S
-.Ar src_dir/
-.Ar dst_dir/
+.Pa src_dir/
+.Pa dst_dir/
 .Sh DESCRIPTION
 The
 .Nm
@@ -51,11 +52,11 @@ tool synchronizes directories in parallel using
 and
 .Xr rsync 1 .
 It computes subsets of
-.Ar src_dir/
+.Pa src_dir/
 and spawns
 .Xr rsync 1
 jobs to synchronize them to
-.Ar dst_dir/ .
+.Pa dst_dir/ .
 .sp
 Synchronization jobs can be executed either locally or remotely (using SSH
 workers, see option
@@ -72,15 +73,21 @@ Verbose mode. Can be be specified several times to increase verbosity level.
 .It Ic -n Ar jobs
 Start
 .Ar jobs
-concurrent sync jobs (either locally or remotely, see below). Default: 2.
+concurrent sync jobs (either locally or remotely, see below). Default:
+.Sy 2
 .It Ic -f Ar files
 Transfer at most
 .Ar files
-files per sync job. Default: 2000.
+files per sync job. Default:
+.Sy 2000
 .It Ic -s Ar size
 Transfer at most
 .Ar size
-bytes per sync job. Default: 4294967296 (4 GB).
+bytes per sync job.
+.br
+Default:
+.Sy 4294967296
+(4 GB)
 .It Ic -w Ar wrks
 Use remote SSH
 .Ar wrks
@@ -110,7 +117,8 @@ temporary directory to
 This directory remains local and does not need to be shared amongst SSH workers
 when using the
 .Fl w
-option. Default: /tmp/fpsync.
+option. Default:
+.Pa /tmp/fpsync
 .It Ic -r Ar jobname
 Resume job
 .Ar jobname
@@ -123,27 +131,39 @@ consequence, options
 .Fl f ,
 .Fl s ,
 .Fl o ,
-.Ar src_dir/ ,
+.Fl O ,
+.Fl S ,
+.Pa src_dir/ ,
 and
-.Ar dst_dir/
+.Pa dst_dir/
 are ignored.
 .It Ic -o Ar rsyncopts
-Override default rsync options with
+Override default
+.Xr rsync 1
+options with
 .Ar rsyncopts .
 Use this option with care as certain options are incompatible with a parallel
 usage (e.g.
-.Fl -delete ) .
+.Cm --delete ) .
 Default:
-.Fl av -numeric-ids .
+.Cm -av --numeric-ids
+.It Ic -O Ar fpartopts
+Override default
+.Xr fpart 1
+options with
+.Ar fpartopts .
+.br
+Default:
+.Cm -x '.zfs' -x '.snapshot*' -x '.ckpt'
 .It Fl S
 Sudo mode. Use
-.Xr sudo 1
+.Xr sudo 8
 for filesystem crawling and synchronizations.
-.It Ar src_dir/
+.It Pa src_dir/
 Source directory. It must be absolute and available on all participating hosts
 (including the master one, running
 .Nm ) .
-.It Ar dst_dir/
+.It Pa dst_dir/
 Destination directory. It must be absolute and available on all participating
 workers.
 .El
@@ -183,36 +203,49 @@ SIGINFO to the
 process.
 .sp
 Whether you use verbose mode or not, everything is logged within
-.Ar shdir/log/ .
+.Pa shdir/log/ .
 .Sh EXAMPLES
 Here are some examples:
 .Bl -tag -width indent
 .It Li "fpsync -n 4 /usr/src/ /var/src/"
 .sp
-Synchronizes /usr/src/ to /var/src/ using 4 local jobs.
+Synchronizes
+.Pa /usr/src/
+to
+.Pa /var/src/
+using 4 local jobs.
 .It Li "fpsync -n 2 -w login@machine1 -w login@machine2 -d /mnt/fpsync /mnt/src/ /mnt/dst/"
 .sp
-Synchronizes /mnt/src/ to /mnt/dst/ using 2 concurrent jobs executed remotely
+Synchronizes
+.Pa /mnt/src/
+to
+.Pa /mnt/dst/
+using 2 concurrent jobs executed remotely
 on 2 SSH workers (machine1 and machine2). The shared directory is set to
-/mnt/fpsync and mounted on the machine running
+.Pa /mnt/fpsync
+and mounted on the machine running
 .Nm ,
-as well as on machine1 and machine2. The source directory (/mnt/src/) is also
-available on those 3 machines, while the destination directory (/mnt/dst/) is
-mounted on SSH workers only (machine1 and machine2).
+as well as on machine1 and machine2. The source directory
+.Pa ( /mnt/src/ )
+is also available on those 3 machines, while the destination directory
+.Pa ( /mnt/dst/ )
+is mounted on SSH workers only (machine1 and machine2).
 .El
 .Sh LIMITS
 Parallelizing
 .Xr rsync 1
 makes several options not usable, such as
-.Fl -delete .
+.Cm --delete .
 If your source directory is live while
 .Nm
 is running, you will have to delete extra files from destination directory. This
-is usually done by using a final -offline- rsync pass that will use this option.
+is usually done by using a final -offline-
+.Xr rsync 1
+pass that will use this option.
 .sp
 .Nm
 enqueues synchronization jobs on disk, within the
-.Ar tmpdir/queue
+.Pa tmpdir/queue
 directory. Be careful to host this queue on a filesystem that can handle
 fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
 the queue to be processed in order when
@@ -225,7 +258,7 @@ tuned using the 'vfs.timestamp_precision' sysctl. See
 .Sh SEE ALSO
 .Xr fpart 1 ,
 .Xr rsync 1 ,
-.Xr sudo 1
+.Xr sudo 8
 .Sh AUTHOR, AVAILABILITY
 Fpsync has been written by
 .An Gana\(:el LAPLANCHE
