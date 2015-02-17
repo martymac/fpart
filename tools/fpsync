@@ -537,17 +537,22 @@ JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
 FPART_BIN="$(which fpart)"
 SSH_BIN="$(which ssh)"
 MAIL_BIN="$(which mail)"
-# Note: This script also uses tee, cut, sed, awk, date
-# which should come with your favourite operating system
+
+# Paths to executables that must exist both locally and remotely
+SUDO_BIN="$(which sudo)"
 
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
 RSYNC_BIN="$(which rsync)"
-SUDO_BIN="$(which sudo)"
 
 # Do we need sudo ?
-[ -n "${OPT_SUDO}" ] && SUDO="${SUDO_BIN}"
+if [ -n "${OPT_SUDO}" ]
+then
+    SUDO="${SUDO_BIN}"
+else
+    SUDO=""
+fi
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
@@ -585,10 +590,14 @@ WORK_LIST=""        # Work PID[:WORKER] list
 WORK_FREEWORKERS="" # Free workers' list
 
 # Check for essential binaries
-if [ ! -x "${FPART_BIN}" ] || [ ! -x "${SSH_BIN}" ] || [ ! -x "${MAIL_BIN}" ]
-then
-    end_die "External tools are missing, check your configuration"
-fi
+[ ! -x "${FPART_BIN}" ] && \
+    end_die "Fpart is missing locally, check your configuration"
+[ -n "${OPT_WRKRS}" ] && [ ! -x "${SSH_BIN}" ] && \
+    end_die "SSH is missing locally, check your configuration"
+[ -n "${OPT_MAIL}" ] && [ ! -x "${MAIL_BIN}" ] && \
+    end_die "Mail is missing locally, check your configuration"
+[ -n "${OPT_SUDO}" ] && [ ! -x "${SUDO}" ] && \
+    end_die "Sudo is missing locally, check your configuration"
 
 # Create / check for fpart shared directories
 if [ -z "${OPT_JOBNAME}" ]
@@ -677,8 +686,8 @@ then
         # (typically a local mount point where the shared storage area *should*
         # be mounted but isn't, for any reason).
         [ "${_host}" = "${_FIRST_HOST}" ] && \
-        "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTDIR}\" && \
-            ${SUDO} touch \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
+            "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTDIR}\" && \
+                ${SUDO} touch \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
 
         # Check for src_dir/ and dst_dir/ (witness file)
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${OPT_SRCDIR}\" ]'" || \
@@ -704,9 +713,7 @@ else
             end_die "Cannot create destination directory: ${OPT_DSTDIR}"
     fi
     [ ! -x "${RSYNC_BIN}" ] && \
-        end_die "Rsync executable not found"
-    [ -n "${OPT_SUDO}" ] && [ ! -x "${SUDO}" ] && \
-        end_die "Sudo executable not found"
+        end_die "Rsync is missing locally, check your configuration"
 fi
 
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
