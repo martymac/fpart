@@ -1,3 +1,6 @@
+2015/??/??, 0.9.2 :
+    - fpsync: add option '-S' to use sudo(1) for filesystem crawling and synchronizations
+    - add RPM .spec file (see the contribs/package/rpm directory)
 2015/02/06, 0.9.1 ('Let's play together'):
     - add tools/fpsync: a tool to sync directories in parallel using fpart and
       rsync. See fpsync(1) for more details.

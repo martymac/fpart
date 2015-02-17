@@ -40,6 +40,7 @@
 .Op Fl t Ar tmpdir
 .Op Fl r Ar jobname
 .Op Fl o Ar rsyncopts
+.Op Fl S
 .Ar src_dir/
 .Ar dst_dir/
 .Sh DESCRIPTION
@@ -134,6 +135,10 @@ usage (e.g.
 .Fl -delete ) .
 Default:
 .Fl av -numeric-ids .
+.It Fl S
+Sudo mode. Use
+.Xr sudo 1
+for filesystem crawling and synchronizations.
 .It Ar src_dir/
 Source directory. It must be absolute and available on all participating hosts
 (including the master one, running
@@ -219,7 +224,8 @@ tuned using the 'vfs.timestamp_precision' sysctl. See
 .Xr vfs_timestamp 9 .
 .Sh SEE ALSO
 .Xr fpart 1 ,
-.Xr rsync 1
+.Xr rsync 1 ,
+.Xr sudo 1
 .Sh AUTHOR, AVAILABILITY
 Fpsync has been written by
 .An Gana\(:el LAPLANCHE

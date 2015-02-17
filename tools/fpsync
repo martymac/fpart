@@ -55,6 +55,8 @@ OPT_TMPDIR="/tmp/fpsync"
 OPT_JOBNAME=""
 # Rsync options (-o)
 OPT_RSYNC="-av --numeric-ids"
+# Sudo mode (-S)
+OPT_SUDO=""
 # Verbose mode (-v)
 OPT_VERBOSE="0"
 # Source directory
@@ -92,6 +94,7 @@ usage () {
     echo "  -o options  override default rsync options with <options>"
     echo "              Use this option with care as certain options are"
     echo "              incompatible with a parallel usage (e.g. --delete)"
+    echo "  -S          use sudo for filesystem crawling and synchronizations"
     echo "  -v          verbose mode (default: quiet)"
     echo "              This option can be be specified several times to"
     echo "              increase verbosity level."
@@ -131,7 +134,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:t:r:o:vh" opt
+    while getopts "n:f:s:w:d:t:r:o:Svh" opt
     do
         case "${opt}" in
         "n")
@@ -197,6 +200,9 @@ parse_opts () {
             else
                 end_die "Invalid rsync options supplied"
             fi
+            ;;
+        "S")
+            OPT_SUDO="yes"
             ;;
         "v")
             OPT_VERBOSE="$((${OPT_VERBOSE} + 1))"
@@ -527,6 +533,10 @@ MAIL_BIN="$(which mail)"
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
 RSYNC_BIN="$(which rsync)"
+SUDO_BIN="$(which sudo)"
+
+# Do we need sudo ?
+[ -n "${OPT_SUDO}" ] && SUDO="${SUDO_BIN}"
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
@@ -540,7 +550,7 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
 
 # Fpart hooks (black magic is here !)
-FPART_COMMAND="/bin/sh -c '${RSYNC_BIN} ${OPT_RSYNC} \
+FPART_COMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
         \\\"${OPT_SRCDIR}/\\\" \
         \\\"${OPT_DSTDIR}/\\\"' \
@@ -642,24 +652,33 @@ if [ -n "${OPT_WRKRS}" ]
 then
     echo_log "2" "=====> Validating requirements on SSH nodes..."
 
-    # First, blindly try to create dst_dir/ as well as a witness file on the
-    # first node (only). Using a witness file will allow us to check for its
-    # presence/visibility from other nodes, avoiding "split-brain" situations
-    # where dst_dir/ exists but is not shared amongst all nodes (typically a
-    # local mount point where the shared storage area *should* be mounted but
-    # isn't, for any reason).
     _FIRST_HOST="$(echo ${OPT_WRKRS} | awk '{print $1}')"
-    "${SSH_BIN}" "${_FIRST_HOST}" \
-        "/bin/sh -c 'mkdir -p \"${OPT_DSTDIR}\" && \
-        touch \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
-
-    # Then, check for src_dir/, witness file and rsync presence on each node.
     for _host in ${OPT_WRKRS}
     do
+        # Check for sudo presence (it must be passwordless)
+        if [ -n "${OPT_SUDO}" ]
+        then
+            "${SSH_BIN}" "${_host}" "${SUDO} /bin/sh -c ':' 2>/dev/null" || \
+                end_die "Sudo executable not found or requires password on target ${_host}"
+        fi
+
+        # Blindly try to create dst_dir/ as well as a witness file on the first
+        # node. Using a witness file will allow us to check for its
+        # presence/visibility from other nodes, avoiding "split-brain"
+        # situations where dst_dir/ exists but is not shared amongst all nodes
+        # (typically a local mount point where the shared storage area *should*
+        # be mounted but isn't, for any reason).
+        [ "${_host}" = "${_FIRST_HOST}" ] && \
+        "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTDIR}\" && \
+            ${SUDO} touch \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
+
+        # Check for src_dir/ and dst_dir/ (witness file)
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${OPT_SRCDIR}\" ]'" || \
             end_die "Source directory does not exist on target ${_host} (or is not a directory): ${OPT_SRCDIR}"
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTDIR}/${FPART_JOBNAME}\" ]'" || \
             end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTDIR}"
+
+        # Finally, check for rsync presence
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
             end_die "Rsync executable not found on target ${_host}"
         echo_log "2" "<=== ${_host}: OK"
@@ -667,7 +686,7 @@ then
 
     # Remove witness file
     "${SSH_BIN}" "${_FIRST_HOST}" \
-        "/bin/sh -c 'rm -f \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
+        "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
     unset _FIRST_HOST
 else
     # Local usage - create dst_dir/ and check for rsync presence
@@ -678,6 +697,8 @@ else
     fi
     [ ! -x "${RSYNC_BIN}" ] && \
         end_die "Rsync executable not found"
+    [ -n "${OPT_SUDO}" ] && [ ! -x "${SUDO}" ] && \
+        end_die "Sudo executable not found"
 fi
 
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
@@ -715,7 +736,9 @@ then
     # Start fpart from src_dir/ directory and produce jobs within
     # ${JOBS_QUEUEDIR}/
     cd "${OPT_SRCDIR}" && \
-        "${FPART_BIN}" -f "${OPT_FPMAXPARTFILES}" -s "${OPT_FPMAXPARTSIZE}" \
+        ${SUDO} "${FPART_BIN}" \
+        -f "${OPT_FPMAXPARTFILES}" \
+        -s "${OPT_FPMAXPARTSIZE}" \
         -o "${FPART_PARTSTMPL}" ${FPART_OPTIONS} -Z -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
 fi
