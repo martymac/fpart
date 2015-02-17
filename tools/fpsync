@@ -547,7 +547,7 @@ FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Fpart's common options
-FPART_OPTIONS="-x '.zfs' -x '.snapshot*'"
+FPART_OPTIONS="-x '.zfs' -x '.snapshot*' -x '.ckpt'"
 
 # Fpart hooks (black magic is here !)
 FPART_COMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
