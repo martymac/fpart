@@ -56,7 +56,7 @@ OPT_JOBNAME=""
 # Rsync options (-o)
 OPT_RSYNC="-av --numeric-ids"
 # Fpart options (-O)
-OPT_FPART="-x '.zfs' -x '.snapshot*' -x '.ckpt'"
+OPT_FPART="-x .zfs -x .snapshot* -x .ckpt"
 # Sudo mode (-S)
 OPT_SUDO=""
 # Verbose mode (-v)
