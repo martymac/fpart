@@ -1,4 +1,4 @@
-2015/??/??, 0.9.2 :
+2015/02/19, 0.9.2 ('What's that?'):
     - fpsync: add option '-S' to use sudo(1) for filesystem crawling and synchronizations
     - fpsync: add option '-O' to override default fpart(1) options
     - add RPM .spec file (see the contribs/package/rpm directory)
