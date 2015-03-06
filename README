@@ -4,7 +4,7 @@ What is fpart ?
 ***************
 
 Fpart is a tool that helps you sort file trees and pack them into bags (called
-"partitions"). It is developped in C and available under the BSD license.
+"partitions"). It is developed in C and available under the BSD license.
 
 It splits a list of directories and file trees into a certain number of
 partitions, trying to produce partitions with the same size and number of files.
@@ -258,7 +258,7 @@ which was developped by Jean-Baptiste Denis as the original proof of concept.
 Author / Licence :
 ******************
 
-Fpart has been written by Ganaël LAPLANCHE <ganael.laplanche@martymac.org>
+Fpart has been written by GanaÃ«l LAPLANCHE <ganael.laplanche@martymac.org>
 and is available under the BSD license (see COPYING for details).
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
