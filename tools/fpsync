@@ -26,11 +26,11 @@
 
 # This script is a simple wrapper showing how fpart can be used to migrate data.
 # It uses fpart and rsync to spawn multiple rsync instances to migrate data
-# from src_dir/ to dst_dir/. Rsync jobs can execute either locally or over SSH.
+# from src_dir/ to dst_url/. Rsync jobs can execute either locally or over SSH.
 # This migration is incremental and will need a final rsync pass
-# (rsync -av -delete src_dir/ dst_dir/) to remove extra files from dst_dir/.
+# (rsync -av -delete src_dir/ dst_url/) to remove extra files from dst_url/.
 
-FPSYNC_VERSION="0.9.2"
+FPSYNC_VERSION="0.9.3"
 
 ########## Default values for options
 
@@ -64,7 +64,7 @@ OPT_VERBOSE="0"
 # Source directory
 OPT_SRCDIR=""
 # Destination directory
-OPT_DSTDIR=""
+OPT_DSTURL=""
 
 # Mail - Uncomment to receive a mail when the whole run has finished.
 # The master machine (the one running this script) must be able to send mail
@@ -78,7 +78,7 @@ usage () {
     echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart and rsync"
     echo "Copyright (c) 2014-2015 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
-    echo "Usage: $0 [OPTIONS...] /src_dir/ /dst_dir/"
+    echo "Usage: $0 [OPTIONS...] src_dir/ dst_url/"
     echo "Usage: $0 [-r jobname] [OPTIONS...]"
     echo "  -n x        start <x> concurrent sync jobs"
     echo "  -f y        transfer at most <y> files per sync job"
@@ -91,7 +91,7 @@ usage () {
     echo "              This option is mandatory when using SSH workers."
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
     echo "  -r jobname  resume job <jobname>"
-    echo "              (options -f, -s, -o, /src_dir/ and /dst_dir/"
+    echo "              (options -f, -s, -o, /src_dir/ and /dst_url/"
     echo "              are ignored when resuming a previous run)"
     echo "  -o options  override default rsync options with <options>"
     echo "              Use this option with care as certain options are"
@@ -102,8 +102,8 @@ usage () {
     echo "              This option can be be specified several times to"
     echo "              increase verbosity level."
     echo "  -h          this help"
-    echo "  /src_dir/   source directory (absolute path)"
-    echo "  /dst_dir/   destination directory (absolute path)"
+    echo "  src_dir/    source directory (absolute path)"
+    echo "  dst_url/    destination URL, as supported by rsync(1)"
     echo "See fpsync(1) for more details."
 }
 
@@ -126,6 +126,15 @@ echo_log () {
 # Check if $1 is an absolute path
 is_abs_path() {
     echo "$1" | grep -qE "^/"
+}
+
+# Check if $1 is a valid rsync URL
+# Cf. rsync(1) :
+#   SSH:   [USER@]HOST:DEST
+#   Rsync: [USER@]HOST::DEST
+#   Rsync: rsync://[USER@]HOST[:PORT]/DEST
+is_remote_path() {
+    echo "$1" | grep -qE -e "^([^@:/]+@)?[^@:/]+:{1,2}/([^/]|$)" -e "^rsync://([^@:/]+@)?[^@:/]+(:[0-9]+)?/"
 }
 
 # Check if $1 is a number
@@ -242,16 +251,24 @@ parse_opts () {
                 end_die "Please supply a shared dir when specifying workers"
     fi
 
-    # Check for src and dst dirs presence and validity
+    # Check for src_dir and dst_url presence and validity
     if [ -z "${OPT_JOBNAME}" ]
     then
-        if is_abs_path "$1" && is_abs_path "$2"
+        # Check src dir, must be an absolute path
+        if is_abs_path "$1"
         then
             OPT_SRCDIR="$1"
-            OPT_DSTDIR="$2"
         else
             usage
-            end_die "Please supply an absolute path for both src_dir/ and dst_dir/"
+            end_die "Please supply an absolute path for src_dir/"
+        fi
+        # Check dst_url, must be either an absolute path or a rsync URL
+        if is_abs_path "$2" || is_remote_path "$2"
+        then
+            OPT_DSTURL="$2"
+        else
+            usage
+            end_die "Please supply either an absolute path or a rsync URL for dst_url/"
         fi
     fi
 }
@@ -345,7 +362,7 @@ job_queue_info_dump () {
 # Job information used for resuming, do not edit !
 OPT_RJOBS="${OPT_JOBS}"
 OPT_SRCDIR="${OPT_SRCDIR}"
-OPT_DSTDIR="${OPT_DSTDIR}"
+OPT_DSTURL="${OPT_DSTURL}"
 EOF
 }
 
@@ -357,8 +374,12 @@ job_queue_info_load () {
     # Validate loaded options
     { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
         end_die "Invalid option value loaded from resumed job: OPT_RJOBS"
-    { is_abs_path "${OPT_SRCDIR}" && is_abs_path "${OPT_DSTDIR}" ;} || \
-        end_die "Invalid options value loaded from resumed job: OPT_SRCDIR/OPT_DSTDIR"
+
+    is_abs_path "${OPT_SRCDIR}" || \
+        end_die "Invalid options value loaded from resumed job: OPT_SRCDIR"
+
+    is_abs_path "${OPT_DSTURL}" || is_remote_path "${OPT_DSTURL}" || \
+        end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
 }
 
 # Set the "fp_done" (fpart done) flag within job queue
@@ -566,7 +587,7 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_COMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
         --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
         \\\"${OPT_SRCDIR}/\\\" \
-        \\\"${OPT_DSTDIR}/\\\"' \
+        \\\"${OPT_DSTURL}/\\\"' \
         1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
         2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
 FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
@@ -663,7 +684,7 @@ then
         end_die "Source directory does not exist (or is not a directory): ${OPT_SRCDIR}"
 fi
 
-# When using SSH, validate src_dir/ and dst_dir/ remotely and check for rsync
+# When using SSH, validate src_dir/ and dst_url/ remotely and check for rsync
 # presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${OPT_WRKRS}" ]
 then
@@ -679,38 +700,52 @@ then
                 end_die "Sudo executable not found or requires password on target ${_host}"
         fi
 
-        # Blindly try to create dst_dir/ as well as a witness file on the first
-        # node. Using a witness file will allow us to check for its
-        # presence/visibility from other nodes, avoiding "split-brain"
-        # situations where dst_dir/ exists but is not shared amongst all nodes
-        # (typically a local mount point where the shared storage area *should*
-        # be mounted but isn't, for any reason).
-        [ "${_host}" = "${_FIRST_HOST}" ] && \
-            "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTDIR}\" && \
-                ${SUDO} touch \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
+        # When using a local (or NFS-mounted) dest dir...
+        if is_abs_path "${OPT_DSTURL}"
+        then
+            # ...blindly try to create dst_url/ as well as a witness file on the first
+            # node. Using a witness file will allow us to check for its
+            # presence/visibility from other nodes, avoiding "split-brain"
+            # situations where dst_url/ exists but is not shared amongst all nodes
+            # (typically a local mount point where the shared storage area *should*
+            # be mounted but isn't, for any reason).
+            [ "${_host}" = "${_FIRST_HOST}" ] && \
+                "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTURL}\" && \
+                    ${SUDO} touch \"${OPT_DSTURL}/${FPART_JOBNAME}\"' 2>/dev/null"
+        fi
 
-        # Check for src_dir/ and dst_dir/ (witness file)
+        # Check for src_dir/ presence
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${OPT_SRCDIR}\" ]'" || \
             end_die "Source directory does not exist on target ${_host} (or is not a directory): ${OPT_SRCDIR}"
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTDIR}/${FPART_JOBNAME}\" ]'" || \
-            end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTDIR}"
+
+        # Check for dst_url/ presence (witness file)
+        if is_abs_path "${OPT_DSTURL}"
+        then
+            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPART_JOBNAME}\" ]'" || \
+                end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTURL}"
+        fi
 
         # Finally, check for rsync presence
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
             end_die "Rsync executable not found on target ${_host}"
+
         echo_log "2" "<=== ${_host}: OK"
     done
 
     # Remove witness file
-    "${SSH_BIN}" "${_FIRST_HOST}" \
-        "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTDIR}/${FPART_JOBNAME}\"' 2>/dev/null"
+    if is_abs_path "${OPT_DSTURL}"
+    then
+        "${SSH_BIN}" "${_FIRST_HOST}" \
+            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPART_JOBNAME}\"' 2>/dev/null"
+    fi
+
     unset _FIRST_HOST
 else
-    # Local usage - create dst_dir/ and check for rsync presence
-    if [ ! -d "${OPT_DSTDIR}" ]
+    # Local usage - create dst_url/ and check for rsync presence
+    if is_abs_path "${OPT_DSTURL}" && [ ! -d "${OPT_DSTURL}" ]
     then
-        mkdir -p "${OPT_DSTDIR}" 2>/dev/null || \
-            end_die "Cannot create destination directory: ${OPT_DSTDIR}"
+        mkdir -p "${OPT_DSTURL}" 2>/dev/null || \
+            end_die "Cannot create destination directory: ${OPT_DSTURL}"
     fi
     [ ! -x "${RSYNC_BIN}" ] && \
         end_die "Rsync is missing locally, check your configuration"
@@ -720,7 +755,7 @@ fi
 work_list_free_workers_init
 
 # Let's rock !
-echo_log "2" "=====> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTDIR}"
+echo_log "2" "=====> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTURL}"
 echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo ' (resumed)')"
 echo_log "2" "===> Start time: $(date)"
 echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"

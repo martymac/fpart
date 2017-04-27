@@ -43,7 +43,7 @@
 .Op Fl O Ar fpartopts
 .Op Fl S
 .Pa src_dir/
-.Pa dst_dir/
+.Pa dst_url/
 .Sh DESCRIPTION
 The
 .Nm
@@ -56,7 +56,7 @@ It computes subsets of
 and spawns
 .Xr rsync 1
 jobs to synchronize them to
-.Pa dst_dir/ .
+.Pa dst_url/ .
 .sp
 Synchronization jobs can be executed either locally or remotely (using SSH
 workers, see option
@@ -135,7 +135,7 @@ consequence, options
 .Fl S ,
 .Pa src_dir/ ,
 and
-.Pa dst_dir/
+.Pa dst_url/
 are ignored.
 .It Ic -o Ar rsyncopts
 Override default
@@ -163,9 +163,10 @@ for filesystem crawling and synchronizations.
 Source directory. It must be absolute and available on all participating hosts
 (including the master one, running
 .Nm ) .
-.It Pa dst_dir/
-Destination directory. It must be absolute and available on all participating
-workers.
+.It Pa dst_url/
+Destination URL. It may be a local path or a remote URL, as supported by
+.Xr rsync 1 .
+All participating workers must be able to reach that target.
 .El
 .Sh RUNNING FPSYNC
 Each

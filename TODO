@@ -22,6 +22,5 @@ Autotools:
 
 Fpsync:
 - Add an option to exit after fpart pass (to generate jobs only)
-- Authorize rsync:// and ssh source and target URLs
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)

@@ -1,5 +1,5 @@
 Name:    fpart
-Version: 0.9.2
+Version: 0.9.3
 Release: 1%{?dist}
 Group:   Applications/System
 License: BSD
@@ -43,6 +43,9 @@ mkdir -p %{RPM_BUILD_ROOT}%{_docdir}
 %{_bindir}/fpsync
 
 %changelog
+* Thu Apr 27 2017 Ganael Laplanche <ganael.laplanche@martymac.org> - 0.9.3
+- Version 0.9.3
+
 * Tue Feb 17 2015 Ganael Laplanche <ganael.laplanche@martymac.org> - 0.9.2
 - Version 0.9.2
 
