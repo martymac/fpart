@@ -239,21 +239,27 @@ Finally, install fpart (as root) :
 See also :
 **********
 
-See fpart(1) and fpsync(1) for more details.
+* See fpart(1) and fpsync(1) for more details.
 
-Article about data migration using fpart and rsync (GNU Linux Magazine #164 - October 2013, french) :
-http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers
+* Article about data migration using fpart and rsync (GNU Linux Magazine #164 - October 2013, french) :
+  http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers
 
-The partition problem is detailed here :
-http://en.wikipedia.org/wiki/Partition_problem
-
+* The partition problem is detailed here :
+  http://en.wikipedia.org/wiki/Partition_problem
 and here :
-http://en.wikipedia.org/wiki/Bin_packing_problem
+  http://en.wikipedia.org/wiki/Bin_packing_problem
 
-I am sure you will also be interested in :
-https://github.com/jbd/packo
+* I am sure you will also be interested in :
+  https://github.com/jbd/packo
+which was developped by Jean-Baptiste Denis as the original proof of concept
+See also his newer tool, msrsync :
+  https://github.com/jbd/msrsync
 
-which was developped by Jean-Baptiste Denis as the original proof of concept.
+* Finally, Harry Mangalam has an excellent article about data transfer here :
+  http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
+Check out his parsync and parsyncfp (using fpart) tools here :
+  https://github.com/hjmangalam/parsync
+  https://github.com/hjmangalam/parsyncfp
 
 Author / Licence :
 ******************

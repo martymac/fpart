@@ -1,5 +1,6 @@
-2017/04/27, 0.9.3 ('Funny'):
+2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
+      Suggested and tested by Harry Mangalam. Thanks, Harry!
 2015/02/19, 0.9.2 ('What's that?'):
     - fpsync: add option '-S' to use sudo(1) for filesystem crawling and synchronizations
     - fpsync: add option '-O' to override default fpart(1) options
