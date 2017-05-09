@@ -2,6 +2,7 @@ TODO (ideas) :
 **************
 
 Fpart:
+- Add an option to generate compressed file lists
 - Switch to ftw(3) for portability ?
 - Factorize code (err(3), ...)
 - Add an option to specify that a directory matching a path or a pattern should
