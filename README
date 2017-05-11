@@ -255,11 +255,15 @@ which was developped by Jean-Baptiste Denis as the original proof of concept
 See also his newer tool, msrsync :
   https://github.com/jbd/msrsync
 
-* Finally, Harry Mangalam has an excellent article about data transfer here :
+* Harry Mangalam, from UCI, has an excellent article about data transfer here :
   http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
 Check out his parsync and parsyncfp (using fpart) tools here :
   https://github.com/hjmangalam/parsync
   https://github.com/hjmangalam/parsyncfp
+
+* Finally, Intel has written a white paper about data migration, presenting
+fpart and MCP tools :
+  http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
 
 Author / Licence :
 ******************
