@@ -27,6 +27,15 @@
  * SUCH DAMAGE.
  *
  * $OpenBSD: fts.c,v 1.22 1999/10/03 19:22:22 millert Exp $
+ *
+ * This version of fts has been patched to build on Solaris and GNU/Linux.
+ * Solaris notes : 
+ *   - no support for FTS_WHITEOUT (sparse files)
+ *   - no support for O_CLOEXEC and O_DIRECTORY flags
+ * GNU/Linux notes :
+ *   - the FTS_NOSTAT speedup trick is disabled
+ *   - no support for FTS_WHITEOUT (sparse files)
+ *
  */
 
 #if 0
@@ -35,24 +44,82 @@ static char sccsid[] = "@(#)fts.c	8.6 (Berkeley) 8/14/94";
 #endif /* LIBC_SCCS and not lint */
 #endif
 
+#if defined(__FreeBSD__)
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 318913 2017-05-26 01:14:58Z pfg $");
 
-#include "namespace.h"
+#include "/usr/src/lib/libc/include/namespace.h"
+#else
+#define _open open
+#define _close close
+#define _fstat fstat
+#define _dirfd dirfd
+#endif
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 
+#if defined(__sun) || defined(__sun__)
+#include <sys/statfs.h>
+#include <sys/statvfs.h>
+#include <sys/types.h>
+#else
+#if defined(__linux__)
+#include <sys/vfs.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#endif
+#endif
+
+#if defined(O_CLOEXEC)
+#define _HAS_O_CLOEXEC
+#else
+#define O_CLOEXEC 0
+#if defined(DEBUG)
+#warning O_CLOEXEC not supported by open(2)
+#endif
+#endif
+
+#if defined(O_DIRECTORY)
+#define _HAS_O_DIRECTORY
+#else
+#define O_DIRECTORY 0
+#if defined(DEBUG)
+#warning O_DIRECTORY not supported by open(2)
+#endif
+#endif
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fts.h>
+#include "fts.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "un-namespace.h"
+#if defined(__FreeBSD__)
+#include "/usr/src/lib/libc/include/un-namespace.h"
+#include "/usr/src/lib/libc/gen/gen-private.h"
+#endif
 
-#include "gen-private.h"
+#if defined(__sun) || defined(__sun__) || defined(__linux__)
+void *
+reallocf(void *ptr, size_t size)
+{
+	void *nptr;
+
+	nptr = realloc(ptr, size);
+
+	/*
+	 * When the System V compatibility option (malloc "V" flag) is
+	 * in effect, realloc(ptr, 0) frees the memory and returns NULL.
+	 * So, to avoid double free, call free() only when size != 0.
+	 * realloc(ptr, 0) can't fail when ptr != NULL.
+	 */
+	if (!nptr && ptr && size != 0)
+		free(ptr);
+	return (nptr);
+}
+#endif
 
 static FTSENT	*fts_alloc(FTS *, char *, size_t);
 static FTSENT	*fts_build(FTS *, int);
@@ -64,7 +131,9 @@ static int	 fts_palloc(FTS *, size_t);
 static FTSENT	*fts_sort(FTS *, FTSENT *, size_t);
 static int	 fts_stat(FTS *, FTSENT *, int, int);
 static int	 fts_safe_changedir(FTS *, FTSENT *, int, char *);
+#if !defined(__linux__)
 static int	 fts_ufslinks(FTS *, const FTSENT *);
+#endif
 
 #define	ISDOT(a)	(a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])))
 
@@ -86,11 +155,17 @@ static int	 fts_ufslinks(FTS *, const FTSENT *);
  */
 struct _fts_private {
 	FTS		ftsp_fts;
+#if defined(__sun) || defined(__sun__)
+	struct statvfs  ftsp_statvfs;
+#else
 	struct statfs	ftsp_statfs;
+#endif
+
 	dev_t		ftsp_dev;
 	int		ftsp_linksreliable;
 };
 
+#if !defined(__linux__)
 /*
  * The "FTS_NOSTAT" option can avoid a lot of calls to stat(2) if it
  * knows that a directory could not possibly have subdirectories.  This
@@ -107,6 +182,7 @@ static const char *ufslike_filesystems[] = {
 	"ext2fs",
 	0
 };
+#endif
 
 FTS *
 fts_open(char * const *argv, int options,
@@ -208,7 +284,7 @@ fts_open(char * const *argv, int options,
 	 * descriptor we run anyway, just more slowly.
 	 */
 	if (!ISSET(FTS_NOCHDIR) &&
-	    (sp->fts_rfd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
+           (sp->fts_rfd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
 		SET(FTS_NOCHDIR);
 
 	return (sp);
@@ -630,7 +706,10 @@ fts_build(FTS *sp, int type)
 	DIR *dirp;
 	void *oldaddr;
 	char *cp;
-	int cderrno, descend, oflag, saved_errno, nostat, doadjust;
+	int cderrno, descend, saved_errno, nostat, doadjust;
+#ifdef FTS_WHITEOUT
+	int oflag;
+#endif
 	long level;
 	long nlinks;	/* has to be signed because -1 is a magic value */
 	size_t dnamlen, len, maxlen, nitems;
@@ -668,9 +747,11 @@ fts_build(FTS *sp, int type)
 		/* Be quiet about nostat, GCC. */
 		nostat = 0;
 	} else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
+#if !defined(__linux__)
 		if (fts_ufslinks(sp, cur))
 			nlinks = cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
 		else
+#endif
 			nlinks = -1;
 		nostat = 1;
 	} else {
@@ -737,7 +818,11 @@ fts_build(FTS *sp, int type)
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
 	for (head = tail = NULL, nitems = 0; dirp && (dp = readdir(dirp));) {
+#if defined(__sun) || defined(__sun__) || defined(__linux__)
+		dnamlen = strlen(dp->d_name);
+#else
 		dnamlen = dp->d_namlen;
+#endif
 		if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
 			continue;
 
@@ -1148,6 +1233,7 @@ bail:
 	return (ret);
 }
 
+#if !defined(__linux__)
 /*
  * Check if the filesystem for "ent" has UFS-style links.
  */
@@ -1165,11 +1251,19 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 	 * avoidance.
 	 */
 	if (priv->ftsp_dev != ent->fts_dev) {
+#if defined(__sun) || defined(__sun__)
+		if (statvfs(ent->fts_path, &priv->ftsp_statvfs) != -1) {
+#else
 		if (statfs(ent->fts_path, &priv->ftsp_statfs) != -1) {
+#endif
 			priv->ftsp_dev = ent->fts_dev;
 			priv->ftsp_linksreliable = 0;
 			for (cpp = ufslike_filesystems; *cpp; cpp++) {
+#if defined(__sun) || defined(__sun__)
+				if (strcmp(priv->ftsp_statvfs.f_basetype,
+#else
 				if (strcmp(priv->ftsp_statfs.f_fstypename,
+#endif
 				    *cpp) == 0) {
 					priv->ftsp_linksreliable = 1;
 					break;
@@ -1181,3 +1275,4 @@ fts_ufslinks(FTS *sp, const FTSENT *ent)
 	}
 	return (priv->ftsp_linksreliable);
 }
+#endif

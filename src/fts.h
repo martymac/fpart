@@ -33,7 +33,30 @@
 #ifndef	_FTS_H_
 #define	_FTS_H_
 
+#if !defined(__FreeBSD__) && !defined(__linux__)
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+
+#if defined(__sun) || defined(__sun__)
+/* IllumOS provides dirfd() , see /usr/include/dirent.h */
+#if !(defined(__EXTENSIONS__) || !defined(__XOPEN_OR_POSIX) || \
+        defined(_ATFILE_SOURCE))
+#define dirfd(X) ((X)->d_fd)
+#endif
+#endif
+#endif
+
+#if defined(__FreeBSD__)
 #include <sys/_types.h>
+#else
+#if defined(__linux__)
+#include <glob.h>
+#else
+#define __dev_t dev_t
+#define __size_t size_t
+#define __ino_t ino_t
+#define __nlink_t nlink_t
+#endif
+#endif
 
 typedef struct {
 	struct _ftsent *fts_cur;	/* current node */
@@ -54,7 +77,9 @@ typedef struct {
 #define	FTS_PHYSICAL	0x010		/* physical walk */
 #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
 #define	FTS_XDEV	0x040		/* don't cross devices */
+#if !defined(__sun) && !defined(__sun__) && !defined(__linux__)
 #define	FTS_WHITEOUT	0x080		/* return whiteout information */
+#endif
 #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
 
 #define	FTS_NAMEONLY	0x100		/* (private) child names only */
@@ -117,9 +142,11 @@ typedef struct _ftsent {
 	FTS *fts_fts;			/* back pointer to main FTS */
 } FTSENT;
 
+#if defined(__FreeBSD__)
 #include <sys/cdefs.h>
 
 __BEGIN_DECLS
+#endif
 FTSENT	*fts_children(FTS *, int);
 int	 fts_close(FTS *);
 void	*fts_get_clientptr(FTS *);
@@ -131,6 +158,8 @@ FTS	*fts_open(char * const *, int,
 FTSENT	*fts_read(FTS *);
 int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
+#if defined(__FreeBSD__)
 __END_DECLS
+#endif
 
 #endif /* !_FTS_H_ */
