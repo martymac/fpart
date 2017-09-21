@@ -1,3 +1,5 @@
+2017/09/21, 0.9.4 ('Dancing'):
+    - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
 2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!

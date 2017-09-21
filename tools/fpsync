@@ -30,7 +30,7 @@
 # This migration is incremental and will need a final rsync pass
 # (rsync -av -delete src_dir/ dst_url/) to remove extra files from dst_url/.
 
-FPSYNC_VERSION="0.9.3"
+FPSYNC_VERSION="0.9.4"
 
 ########## Default values for options
 
