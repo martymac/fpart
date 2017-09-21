@@ -27,26 +27,23 @@
  * SUCH DAMAGE.
  *
  *	@(#)fts.h	8.3 (Berkeley) 8/14/94
- * $FreeBSD: head/include/fts.h 203964 2010-02-16 19:39:50Z imp $
+ * $FreeBSD: head/include/fts.h 250887 2013-05-21 21:20:10Z ed $
  */
 
 #ifndef	_FTS_H_
 #define	_FTS_H_
 
-#if !defined(__FreeBSD__) && !defined(__linux__)
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#define dirfd(X) ((X)->d_fd)
-#endif
+#include <sys/_types.h>
 
 typedef struct {
 	struct _ftsent *fts_cur;	/* current node */
 	struct _ftsent *fts_child;	/* linked list of children */
 	struct _ftsent **fts_array;	/* sort array */
-	dev_t fts_dev;			/* starting device # */
+	__dev_t fts_dev;		/* starting device # */
 	char *fts_path;			/* path for this descent */
 	int fts_rfd;			/* fd for root */
-	size_t fts_pathlen;		/* sizeof(path) */
-	size_t fts_nitems;		/* elements in the sort array */
+	__size_t fts_pathlen;		/* sizeof(path) */
+	__size_t fts_nitems;		/* elements in the sort array */
 	int (*fts_compar)		/* compare function */
 	    (const struct _ftsent * const *, const struct _ftsent * const *);
 
@@ -57,9 +54,7 @@ typedef struct {
 #define	FTS_PHYSICAL	0x010		/* physical walk */
 #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
 #define	FTS_XDEV	0x040		/* don't cross devices */
-#if !defined(__sun) && !defined(__sun__) && !defined(__linux__)
 #define	FTS_WHITEOUT	0x080		/* return whiteout information */
-#endif
 #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
 
 #define	FTS_NAMEONLY	0x100		/* (private) child names only */
@@ -79,12 +74,12 @@ typedef struct _ftsent {
 	char *fts_path;			/* root path */
 	int fts_errno;			/* errno for this node */
 	int fts_symfd;			/* fd for symlink */
-	size_t fts_pathlen;		/* strlen(fts_path) */
-	size_t fts_namelen;		/* strlen(fts_name) */
+	__size_t fts_pathlen;		/* strlen(fts_path) */
+	__size_t fts_namelen;		/* strlen(fts_name) */
 
-	ino_t fts_ino;			/* inode */
-	dev_t fts_dev;			/* device */
-	nlink_t fts_nlink;		/* link count */
+	__ino_t fts_ino;		/* inode */
+	__dev_t fts_dev;		/* device */
+	__nlink_t fts_nlink;		/* link count */
 
 #define	FTS_ROOTPARENTLEVEL	-1
 #define	FTS_ROOTLEVEL		 0
@@ -122,13 +117,9 @@ typedef struct _ftsent {
 	FTS *fts_fts;			/* back pointer to main FTS */
 } FTSENT;
 
-#if defined(__FreeBSD__)
 #include <sys/cdefs.h>
-#endif
 
-#if defined(__FreeBSD__)
 __BEGIN_DECLS
-#endif
 FTSENT	*fts_children(FTS *, int);
 int	 fts_close(FTS *);
 void	*fts_get_clientptr(FTS *);
@@ -140,8 +131,6 @@ FTS	*fts_open(char * const *, int,
 FTSENT	*fts_read(FTS *);
 int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
-#if defined(__FreeBSD__)
 __END_DECLS
-#endif
 
 #endif /* !_FTS_H_ */
