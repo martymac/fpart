@@ -30,9 +30,10 @@ Compatibility :
 
 Fpart has been successfully tested on :
 
-* FreeBSD 7.x, 8.x, 9.x (i386, amd64)
+* FreeBSD (i386, amd64)
 * GNU/Linux (x86_64, arm)
 * Solaris 9, 10 (Sparc, i386)
+* OpenIndiana (i386)
 * NetBSD (amd64, alpha)
 * Mac OS X (10.6, 10.8)
 
@@ -241,6 +242,18 @@ to configure and build fpart.
 Finally, install fpart (as root) :
 
 # make install
+
+Configuring fpsync(1) :
+***********************
+
+This step is not needed on FreeBSD and Linux platforms.
+
+On OpenIndiana, if you need to use fpsync(1), the script will need adjustments :
+
+* Change shebang from /bin/sh to a more powerful shell that understands local
+  variables, such as /bin/bash.
+* Adapt fpart(1) and grep(1) paths (use ggrep(1) instead of grep(1) as default
+  grep(1) doesn't know about -E flag).
 
 See also :
 **********
