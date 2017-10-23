@@ -1,6 +1,12 @@
 2017/09/21, 0.9.4 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files
+    - fpsync: add option -E to work with directories (enables rsync(1)'s --delete)
+      That option finally enables fpsync(1) to parallelize the so-called final
+      rsync(1) pass, needed to remove extra files with the --delete option!
+      (of course it can also be used on a regular basis instead of the usual
+      'file' mode: you will get a perfect mirror without needing any extra
+      --delete pass)
 2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!

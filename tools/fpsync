@@ -45,6 +45,8 @@ OPT_RJOBS=
 OPT_FPMAXPARTFILES="2000"
 # Maximum bytes per sync job (-s)
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
+# Work on a per-directory basis (disabled by default)
+OPT_DIRSONLY=""
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
 # Fpart shared dir (must be shared amongst all workers, -d)
@@ -54,9 +56,9 @@ OPT_TMPDIR="/tmp/fpsync"
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
 # Rsync options (-o)
-OPT_RSYNC="-av --numeric-ids"
+OPT_RSYNC="-lptgoD -v --numeric-ids"
 # Fpart options (-O)
-OPT_FPART="-x .zfs -x .snapshot* -x .ckpt"
+OPT_FPART="-e -x .zfs -x .snapshot* -x .ckpt"
 # Sudo mode (-S)
 OPT_SUDO=""
 # Verbose mode (-v)
@@ -83,6 +85,7 @@ usage () {
     echo "  -n x        start <x> concurrent sync jobs"
     echo "  -f y        transfer at most <y> files per sync job"
     echo "  -s z        transfer at most <z> bytes per sync job"
+    echo "  -E          work on a per-directory basis (enables rsync(1)'s --delete)"
     echo "  -w wrks     space-separated list of SSH workers"
     echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
     echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
@@ -146,7 +149,7 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:w:d:t:r:o:O:Svh" opt
+    while getopts "n:f:s:Ew:d:t:r:o:O:Svh" opt
     do
         case "${opt}" in
         "n")
@@ -172,6 +175,9 @@ parse_opts () {
             else
                 end_die "Option -s expects a numeric value > 0"
             fi
+            ;;
+        "E")
+            OPT_DIRSONLY="yes"
             ;;
         "w")
             if [ -n "${OPTARG}" ]
@@ -583,17 +589,31 @@ FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
 FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
+# Prepare mode-specific rsync and fpart options
+# We do *not* want fpart option -Z in dirs-only mode because un-readable
+# directories will be created when rsync(1)'ing the parent.
+if [ -n "${OPT_DIRSONLY}" ]
+then
+    # Dirs-only mode, single-depth rsync(1)
+    RSYNC_MODEOPTS="-d --relative --delete"
+    FPART_MODEOPTS="-E"
+else
+    # File-based mode, recursive rsync(1)
+    RSYNC_MODEOPTS="-r"
+    FPART_MODEOPTS="-Z"
+fi
+
 # Fpart hooks (black magic is here !)
-FPART_COMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
-        --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
-        \\\"${OPT_SRCDIR}/\\\" \
-        \\\"${OPT_DSTURL}/\\\"' \
-        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
-FPART_POSTHOOK="echo \"${FPART_COMMAND}\" > \
-        \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-        [ ${OPT_VERBOSE} -ge 2 ] && \
-        echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
+FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
+    ${RSYNC_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
+    \\\"${OPT_SRCDIR}/\\\" \
+    \\\"${OPT_DSTURL}/\\\"' \
+    1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+    2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
+    \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+    [ ${OPT_VERBOSE} -ge 2 ] && \
+    echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
 # fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
@@ -789,8 +809,9 @@ then
         ${SUDO} "${FPART_BIN}" \
         -f "${OPT_FPMAXPARTFILES}" \
         -s "${OPT_FPMAXPARTSIZE}" \
-        -o "${FPART_PARTSTMPL}" ${OPT_FPART} -Z -L \
-        -W "${FPART_POSTHOOK}" . 2>&1 | tee -a "${FPART_LOGFILE}"
+        -o "${FPART_PARTSTMPL}" ${OPT_FPART} ${FPART_MODEOPTS} -L \
+        -W "${FPART_POSTHOOK}" . 2>&1 | \
+        tee -a "${FPART_LOGFILE}"
 fi
 
 # Tell job_queue_loop that crawling has finished

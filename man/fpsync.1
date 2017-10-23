@@ -1,6 +1,6 @@
 .\" Copyright (c) 2017 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 .\" All rights reserved.
-.\" 
+.\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
 .\" are met:
@@ -9,7 +9,7 @@
 .\" 2. Redistributions in binary form must reproduce the above copyright
 .\"    notice, this list of conditions and the following disclaimer in the
 .\"    documentation and/or other materials provided with the distribution.
-.\" 
+.\"
 .\" THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
 .\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 .\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,6 +35,7 @@
 .Op Fl n Ar jobs
 .Op Fl f Ar files
 .Op Fl s Ar size
+.Op Fl E
 .Op Fl w Ar wrks
 .Op Fl d Ar shdir
 .Op Fl t Ar tmpdir
@@ -88,6 +89,15 @@ bytes per sync job.
 Default:
 .Sy 4294967296
 (4 GB)
+.It Fl E
+Work on a per-directory basis. In that mode,
+.Nm
+works with lists of directories instead of files. That mode may generate
+coarse-grained lists but enables
+.Xr rsync 1 's
+.Cm --delete
+option by default, making it a good candidate for a final (cleaning) pass after
+several incremental passes using standard (file) mode.
 .It Ic -w Ar wrks
 Use remote SSH
 .Ar wrks
@@ -146,7 +156,7 @@ Use this option with care as certain options are incompatible with a parallel
 usage (e.g.
 .Cm --delete ) .
 Default:
-.Cm -av --numeric-ids
+.Cm -lptgoD -v --numeric-ids
 .It Ic -O Ar fpartopts
 Override default
 .Xr fpart 1
@@ -154,7 +164,7 @@ options with
 .Ar fpartopts .
 .br
 Default:
-.Cm -x .zfs -x .snapshot* -x .ckpt
+.Cm -e -x .zfs -x .snapshot* -x .ckpt
 .It Fl S
 Sudo mode. Use
 .Xr sudo 8
@@ -240,9 +250,13 @@ makes several options not usable, such as
 If your source directory is live while
 .Nm
 is running, you will have to delete extra files from destination directory. This
-is usually done by using a final -offline-
+is traditionally done by using a final -offline-
 .Xr rsync 1
-pass that will use this option.
+pass that will use this option, but you can also use
+.Nm
+and option
+.Cm -E
+to perform the same task using several workers.
 .sp
 .Nm
 enqueues synchronization jobs on disk, within the
