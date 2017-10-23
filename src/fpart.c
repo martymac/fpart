@@ -61,7 +61,8 @@ static void
 version(void)
 {
     fprintf(stderr, "fpart v" FPART_VERSION "\n"
-        "Copyright (c) 2011-2017 Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
+        "Copyright (c) 2011-2017 "
+        "Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
         "WWW: http://contribs.martymac.org\n");
     fprintf(stderr, "Build options: debug=");
 #if defined(DEBUG)
@@ -129,6 +130,7 @@ usage(void)
         "<depth>\n");
     fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "
         "implies -z)\n");
+    fprintf(stderr, "  -E\tpack directories instead of files (implies -D)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Live mode:\n");
     fprintf(stderr, "  -L\tlive mode: generate partitions during filesystem "
@@ -252,9 +254,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DLw:W:p:q:r:"
+        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DELw:W:p:q:r:"
 #else
-        "?hVn:f:s:i:ao:evlby:x:zZd:DLw:W:p:q:r:"
+        "?hVn:f:s:i:ao:evlby:x:zZd:DELw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
@@ -404,6 +406,11 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 options->leaf_dirs = OPT_LEAFDIRS;
                 options->empty_dirs = OPT_EMPTYDIRS;
                 break;
+            case 'E':
+                options->dirs_only = OPT_DIRSONLY;
+                options->leaf_dirs = OPT_LEAFDIRS;
+                options->empty_dirs = OPT_EMPTYDIRS;
+                break;
             case 'L':
                 options->live_mode = OPT_LIVEMODE;
                 break;
@@ -515,11 +522,22 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             (options->empty_dirs != DFLT_OPT_EMPTYDIRS) ||
             (options->dnr_empty != DFLT_OPT_DNREMPTY) ||
             (options->dir_depth != DFLT_OPT_DIR_DEPTH) ||
-            (options->leaf_dirs != DFLT_OPT_LEAFDIRS)) {
+            (options->leaf_dirs != DFLT_OPT_LEAFDIRS) ||
+            (options->dirs_only != DFLT_OPT_DIRSONLY)) {
             fprintf(stderr,
                 "Option -a is incompatible with crawling-related options.\n");
             return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
         }
+    }
+
+    /* We do not want to mix -E and -d as directory sizes are computed
+       differently for those options: -E produces a single-depth total while -d
+       computes a recursive total */
+    if((options->dirs_only == OPT_DIRSONLY) &&
+        (options->dir_depth != DFLT_OPT_DIR_DEPTH)) {
+        fprintf(stderr,
+            "Option -E is incompatible with option -d.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
     if((options->live_mode == OPT_NOLIVEMODE) &&

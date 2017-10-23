@@ -1,6 +1,6 @@
 .\" Copyright (c) 2011-2017 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 .\" All rights reserved.
-.\" 
+.\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
 .\" are met:
@@ -9,7 +9,7 @@
 .\" 2. Redistributions in binary form must reproduce the above copyright
 .\"    notice, this list of conditions and the following disclaimer in the
 .\"    documentation and/or other materials provided with the distribution.
-.\" 
+.\"
 .\" THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
 .\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 .\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -48,6 +48,7 @@
 .Op Fl Z
 .Op Fl d Ar depth
 .Op Fl D
+.Op Fl E
 .Op Fl L
 .Op Fl w Ar cmd
 .Op Fl W Ar cmd
@@ -200,6 +201,12 @@ Implies
 .Fl z .
 Pack leaf directories: if a directory contains files only, it will be packed as
 a single entry.
+.It Fl E
+Implies
+.Fl D .
+Pack directories only (work on a per-directory basis): in that mode, no file
+will be packed. Instead, each directory will be packed as a single entry with
+a size being the sum of all top-level files' sizes.
 .El
 .Sh LIVE MODE
 .Bl -tag -width indent

@@ -557,7 +557,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 }
 
 /* Compare entries to list directories first
-   - compar() function used by fts_open() when in leaf dirs mode */
+   - compar() function used by fts_open() when in leaf_dirs mode */
 static int
 #if (defined(__linux__) || defined(__NetBSD__)) && !defined(EMBED_FTS)
 fts_dirsfirst(const FTSENT **a, const FTSENT **b)
@@ -613,8 +613,20 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
         FTS_XDEV : 0;
 
     char *fts_argv[] = { file_path, NULL };
-    if((ftsp = fts_open(fts_argv, fts_options,
-        (options->leaf_dirs == OPT_LEAFDIRS) ? &fts_dirsfirst : NULL)) == NULL) {
+
+    /* sort function */
+#if (defined(__linux__) || defined(__NetBSD__)) && !defined(EMBED_FTS)
+    int (*fts_sortfuncp)(const FTSENT **, const FTSENT **);
+#else
+    int (*fts_sortfuncp)(const FTSENT * const *, const FTSENT * const *);
+#endif
+    if((options->dirs_only == OPT_DIRSONLY) ||
+       (options->leaf_dirs == OPT_LEAFDIRS))
+        fts_sortfuncp = &fts_dirsfirst;
+    else
+        fts_sortfuncp = NULL;
+
+    if((ftsp = fts_open(fts_argv, fts_options, fts_sortfuncp)) == NULL) {
         fprintf(stderr, "%s: fts_open()\n", file_path);
         return (0);
     }
@@ -623,6 +635,7 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     unsigned char curdir_empty = 1;
     unsigned char curdir_dirsfound = 0;
     unsigned char curdir_addme = 0;
+    fsize_t curdir_size = 0;
 
     while((p = fts_read(ftsp)) != NULL) {
         switch (p->fts_info) {
@@ -665,23 +678,20 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             case FTS_DP:
             {
 add_directory:
-                /* if empty_dirs display requested and current dir is empty,
-                   add directory entry */
-                if((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty)
-                    curdir_addme = 1;
-
-                /* if leaf dirs mode activated and current directory is a leaf,
-                   add directory entry */
-                if((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))
+                /* if dirs_only mode activated or
+                   leaf_dirs mode activated and current directory is a leaf or
+                   empty_dirs display requested and current dir is empty */
+                if((options->dirs_only == OPT_DIRSONLY) ||
+                    ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound)) ||
+                    ((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty))
                     curdir_addme = 1;
 
                 /* add directory if necessary */
                 if(curdir_addme) {
-                    fsize_t curdir_size = 0;
                     char *curdir_entry_path = NULL;
 
                     /* check for name validity regarding include/exclude
-                       options; directory is a leaf */
+                       options */
                     if(!valid_filename(p->fts_name, options, 1)) {
                         if(options->verbose >= OPT_VERBOSE)
                             fprintf(stderr, "Skipping directory: '%s'\n",
@@ -716,9 +726,10 @@ add_directory:
                         curdir_size = 0;
                     else if(curdir_empty)
                         curdir_size = 0;
-                    else
+                    else if(options->dirs_only == OPT_NODIRSONLY)
                         curdir_size =
                             get_size(p->fts_accpath, p->fts_statp, options);
+                    /* else leave curdir_size untouched */
 
                     /* add or display it */
                     if(handle_file_entry
@@ -741,6 +752,7 @@ reset_directory:
                 curdir_empty = 0;
                 curdir_dirsfound = 1;
                 curdir_addme = 0;
+                curdir_size = 0;
                 continue;
             }
 
@@ -776,28 +788,34 @@ reset_directory:
             /* XXX default means remaining file types:
                FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
-                curdir_empty = 0; /* mark current dir as non empty */
+                /* get current file size and add it to our current directory
+                   size. We must have visited all directories first for that
+                   total to be right ; this is achieved by using a compar()
+                   function with fts_open() */
+                fsize_t curfile_size =
+                    get_size(p->fts_accpath, p->fts_statp, options);
 
-                /* check for name validity regarding include/exclude options,*/
+                curdir_empty = 0; /* mark current dir as non empty */
+                curdir_size += curfile_size;
+
+                /* skip file entry when in dirs_only mode or
+                   in leaf_dirs mode (option -D) and no directory has been
+                   found in current directory (i.e. we are in a leaf directory).
+                   We must have visited all directories first */
+                if((options->dirs_only == OPT_DIRSONLY) ||
+                    ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound)))
+                    continue;
+
+                /* check for name validity regarding include/exclude options */
                 if(!valid_filename(p->fts_name, options, 1)) {
                     if(options->verbose >= OPT_VERBOSE)
                         fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
                     continue;
                 }
 
-                /* skip file entry when in leaf dirs mode (option -D) and no
-                   directory has been found in current directory (i.e. we are
-                   in a leaf directory). We must have visited all directories
-                   first ; this is achieved by using a compar() function with
-                   fts_open() */
-                if((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))
-                    continue;
-
                 /* add or display it */
                 if(handle_file_entry
-                    (head, p->fts_path,
-                    get_size(p->fts_accpath, p->fts_statp, options),
-                    options) == 0)
+                    (head, p->fts_path, curfile_size, options) == 0)
                     (*count)++;
                 else {
                     fprintf(stderr, "%s(): cannot add file entry\n", __func__);

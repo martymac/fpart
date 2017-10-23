@@ -94,19 +94,24 @@ struct program_options {
 #define DFLT_OPT_EMPTYDIRS          OPT_NOEMPTYDIRS
     unsigned char empty_dirs;
 /* treat un-readable directories as empty (option -Z) */
-#define OPT_NODNREMPTY             0
-#define OPT_DNREMPTY               1
-#define DFLT_OPT_DNREMPTY          OPT_NODNREMPTY
+#define OPT_NODNREMPTY              0
+#define OPT_DNREMPTY                1
+#define DFLT_OPT_DNREMPTY           OPT_NODNREMPTY
     unsigned char dnr_empty;
 /* display directories after certain depth (option -d) */
 #define OPT_NODIRDEPTH              -1
 #define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH
     int dir_depth;
 /* pack leaf directories (option -D) */
-#define OPT_NOLEAFDIRS               0
-#define OPT_LEAFDIRS                 1
-#define DFLT_OPT_LEAFDIRS            OPT_NOLEAFDIRS
+#define OPT_NOLEAFDIRS              0
+#define OPT_LEAFDIRS                1
+#define DFLT_OPT_LEAFDIRS           OPT_NOLEAFDIRS
     unsigned char leaf_dirs;
+/* pack directories only (option -E) */
+#define OPT_NODIRSONLY              0
+#define OPT_DIRSONLY                1
+#define DFLT_OPT_DIRSONLY           OPT_NODIRSONLY
+    unsigned char dirs_only;
 /* live mode (option -L) */
 #define OPT_NOLIVEMODE              0
 #define OPT_LIVEMODE                1
