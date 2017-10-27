@@ -378,20 +378,22 @@ handle_file_entry(struct file_entry **head, char *path, fsize_t size,
     assert(options != NULL);
 
     if(options->live_mode == OPT_LIVEMODE)
-        return (live_print_file_entry(path, size, options->out_filename,
-            options));
+        return (live_print_file_entry(path, size, options));
     else
         return (add_file_entry(head, path, size, options));
 }
 
 /* Print a file entry */
 int
-live_print_file_entry(char *path, fsize_t size, char *out_template,
+live_print_file_entry(char *path, fsize_t size,
     struct program_options *options)
 {
     assert(path != NULL);
     assert(options != NULL);
     assert(options->live_mode == OPT_LIVEMODE);
+
+    char *out_template = options->out_filename;
+    char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
 
     /* beginning of a new partition */
     if(live_status.partition_num_files == 0) {
@@ -445,7 +447,7 @@ live_print_file_entry(char *path, fsize_t size, char *out_template,
         /* print to fd */
         size_t to_write = strlen(path);
         if((write(live_status.fd, path, to_write) != (ssize_t)to_write) ||
-            (write(live_status.fd, "\n", 1) != 1)) {
+            (write(live_status.fd, ln_term, 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
             /* do not close(livefd) and free(live_status.filename) here because
                it will be useful and free'd in uninit_file_entries() below */
@@ -901,11 +903,15 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 /* Print a double-linked list of file_entries from head
    - if no filename template given, print to stdout */
 int
-print_file_entries(struct file_entry *head, char *out_template,
-    pnum_t num_parts)
+print_file_entries(struct file_entry *head, pnum_t num_parts,
+    struct program_options *options)
 {
     assert(head != NULL);
     assert(num_parts > 0);
+    assert(options != NULL);
+
+    char *out_template = options->out_filename;
+    char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
 
     /* no template provided, just print to stdout and return */
     if(out_template == NULL) {
@@ -966,7 +972,7 @@ print_file_entries(struct file_entry *head, char *out_template,
                (head->partition_index < ((current_chunk + 1) * PRINT_FE_CHUNKS))) {
                 size_t to_write = strlen(head->path);
                 if((write(fd[head->partition_index % PRINT_FE_CHUNKS], head->path, to_write) != (ssize_t)to_write) ||
-                    (write(fd[head->partition_index % PRINT_FE_CHUNKS], "\n", 1) != 1)) {
+                    (write(fd[head->partition_index % PRINT_FE_CHUNKS], ln_term, 1) != 1)) {
                     fprintf(stderr, "%s\n", strerror(errno));
                     /* close all open descriptors */
                     pnum_t i;

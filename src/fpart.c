@@ -103,6 +103,8 @@ usage(void)
     fprintf(stderr, "Output control:\n");
     fprintf(stderr, "  -o\toutput partitions to <outfile> template "
         "(stdout if '-' is specified)\n");
+    fprintf(stderr, "  -0\tend filenames with a null (\\0) character when "
+        "using option -o\n");
     fprintf(stderr, "  -e\tadd ending slash to directories\n");
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once to "
         "increase verbosity)\n");
@@ -254,9 +256,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "?hVn:f:s:i:ao:evlby:Y:x:X:zZd:DELw:W:p:q:r:"
+        "?hVn:f:s:i:ao:0evlby:Y:x:X:zZd:DELw:W:p:q:r:"
 #else
-        "?hVn:f:s:i:ao:evlby:x:zZd:DELw:W:p:q:r:"
+        "?hVn:f:s:i:ao:0evlby:x:zZd:DELw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
@@ -339,6 +341,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 }
                 break;
             }
+            case '0':
+                options->out_zero = OPT_OUT0;
+                break;
             case 'e':
                 options->add_slash = OPT_ADDSLASH;
                 break;
@@ -528,6 +533,13 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 "Option -a is incompatible with crawling-related options.\n");
             return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
         }
+    }
+
+    if((options->out_zero == OPT_OUT0) &&
+        options->out_filename == NULL) {
+        fprintf(stderr,
+            "Option -0 is valid only when used with option -o.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
     /* We do not want to mix -E and -d as directory sizes are computed
@@ -785,7 +797,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Writing output lists...\n");
 
     /* print file entries */
-    print_file_entries(head, options.out_filename, num_parts);
+    print_file_entries(head, num_parts, &options);
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Cleaning up...\n");

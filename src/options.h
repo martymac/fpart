@@ -55,6 +55,11 @@ struct program_options {
     unsigned char arbitrary_values;
 /* output file (option -o); NULL = stdout, "filename" */
     char *out_filename;
+/* add a null character after filename in file lists */
+#define OPT_NOOUT0                  0
+#define OPT_OUT0                    1
+#define DFLT_OPT_OUT0               OPT_NOOUT0
+    unsigned char out_zero;
 /* add slash to directories (option -e) */
 #define OPT_NOADDSLASH              0
 #define OPT_ADDSLASH                1

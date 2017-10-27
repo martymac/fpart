@@ -47,6 +47,8 @@ init_options(struct program_options *options)
     assert(DFLT_OPT_MAX_SIZE >= 0);
     assert((DFLT_OPT_ARBITRARYVALUES == OPT_NOARBITRARYVALUES) ||
            (DFLT_OPT_ARBITRARYVALUES == OPT_ARBITRARYVALUES));
+    assert((DFLT_OPT_OUT0 == OPT_NOOUT0) ||
+           (DFLT_OPT_OUT0 == OPT_OUT0));
     assert((DFLT_OPT_ADDSLASH == OPT_NOADDSLASH) ||
            (DFLT_OPT_ADDSLASH == OPT_ADDSLASH));
     assert((DFLT_OPT_VERBOSE == OPT_NOVERBOSE) ||
@@ -63,6 +65,8 @@ init_options(struct program_options *options)
     assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
     assert((DFLT_OPT_LEAFDIRS == OPT_NOLEAFDIRS) ||
            (DFLT_OPT_LEAFDIRS == OPT_LEAFDIRS));
+    assert((DFLT_OPT_DIRSONLY == OPT_NODIRSONLY) ||
+           (DFLT_OPT_DIRSONLY == OPT_DIRSONLY));
     assert((DFLT_OPT_LIVEMODE == OPT_NOLIVEMODE) ||
            (DFLT_OPT_LIVEMODE == OPT_LIVEMODE));
     assert(DFLT_OPT_PRELOAD_SIZE >= 0);
@@ -76,6 +80,7 @@ init_options(struct program_options *options)
     options->in_filename = NULL;
     options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;
     options->out_filename = NULL;
+    options->out_zero = DFLT_OPT_OUT0;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->verbose = DFLT_OPT_VERBOSE;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
@@ -134,6 +139,7 @@ uninit_options(struct program_options *options)
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->verbose = DFLT_OPT_VERBOSE;
     options->add_slash = DFLT_OPT_ADDSLASH;
+    options->out_zero = DFLT_OPT_OUT0;
     if(options->out_filename != NULL)
         free(options->out_filename);
     options->arbitrary_values = DFLT_OPT_ARBITRARYVALUES;

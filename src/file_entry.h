@@ -53,7 +53,7 @@ int fpart_hook(const char *cmd, const struct program_options *options,
     const fsize_t *live_partition_size, const fnum_t *live_num_files);
 int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options);
-int live_print_file_entry(char *path, fsize_t size, char *out_template,
+int live_print_file_entry(char *path, fsize_t size,
     struct program_options *options);
 int add_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options);
@@ -61,8 +61,8 @@ int init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     struct program_options *options);
 void uninit_file_entries(struct file_entry *head,
     struct program_options *options);
-int print_file_entries(struct file_entry *head, char *out_template,
-    pnum_t num_parts);
+int print_file_entries(struct file_entry *head, pnum_t num_parts,
+    struct program_options *options);
 void init_file_entry_p(struct file_entry **file_entry_p, fnum_t num_entries,
     struct file_entry *head);
 

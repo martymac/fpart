@@ -7,6 +7,8 @@
       (of course it can also be used on a regular basis instead of the usual
       'file' mode: you will get a perfect mirror without needing any extra
       --delete pass)
+    - fpart: add option -0 to end filenames with a null (\0) character when
+      using option -o
 2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!

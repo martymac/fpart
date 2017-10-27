@@ -36,6 +36,7 @@
 .Op Fl i Ar infile
 .Op Fl a
 .Op Fl o Ar outfile
+.Op Fl 0
 .Op Fl e
 .Op Fl v
 .Op Fl l
@@ -130,6 +131,9 @@ is
 then partitions will be printed to stdout, with partition number used as a
 prefix (so you can grep partitions you are interested in, or do whatever you
 want).
+.It Fl 0
+End filenames with a null (\(cq\&\e0\(cq\&) character when using option
+.Fl o .
 .It Fl e
 When adding directories (see
 .Sx DIRECTORY HANDLING
