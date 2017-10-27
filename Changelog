@@ -9,6 +9,8 @@
       --delete pass)
     - fpart: add option -0 to end filenames with a null (\0) character when
       using option -o
+    - fpsync: use fpart's new option -0 in conjunction with rsync's --from0 option
+      to avoid failing on filenames with special characters
 2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!

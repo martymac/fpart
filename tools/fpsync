@@ -58,7 +58,7 @@ OPT_JOBNAME=""
 # Rsync options (-o)
 OPT_RSYNC="-lptgoD -v --numeric-ids"
 # Fpart options (-O)
-OPT_FPART="-e -x .zfs -x .snapshot* -x .ckpt"
+OPT_FPART="-x .zfs -x .snapshot* -x .ckpt"
 # Sudo mode (-S)
 OPT_SUDO=""
 # Verbose mode (-v)
@@ -605,7 +605,7 @@ fi
 
 # Fpart hooks (black magic is here !)
 FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
-    ${RSYNC_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" \
+    ${RSYNC_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
     \\\"${OPT_SRCDIR}/\\\" \
     \\\"${OPT_DSTURL}/\\\"' \
     1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
@@ -809,7 +809,7 @@ then
         ${SUDO} "${FPART_BIN}" \
         -f "${OPT_FPMAXPARTFILES}" \
         -s "${OPT_FPMAXPARTSIZE}" \
-        -o "${FPART_PARTSTMPL}" ${OPT_FPART} ${FPART_MODEOPTS} -L \
+        -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | \
         tee -a "${FPART_LOGFILE}"
 fi
