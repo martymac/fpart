@@ -187,10 +187,11 @@ the previous example used GNU Parallel to schedule transfers, fpsync provides
 its own -embedded- scheduler. It can execute several rsync processes locally or
 launch rsync transfers on several nodes (workers) through SSH.
 
-Despite its initial "proof of concept" status, fpsync has been successfully
-used to migrate several hundreds of TB of data (initially at $work) and has
-been tested by several organizations (see the 'See also' section at the end of
-this document).
+Despite its initial "proof of concept" status, fpsync has quickly evolved into
+a powerful (yet simple to use) migration tool and has been successfully used
+to boost migration of several hundreds of TB of data (initially at $work).
+It has also been tested by several organizations such as UCI and Intel (see the
+'See also' section at the end of this document).
 
 The following examples show two typical usage :
 
@@ -221,7 +222,8 @@ jobs and keep the -E option to speed up the final pass only.
 
 In addition to being very fast (as transfers starts during FS crawling), fpsync
 is able to resume synchronization jobs (see option -r) and presents an overall
-status of the process.
+progress status. It also has a small memory footprint compared to rsync itself
+when migrating filesystems with a big number of files.
 
 See fpsync(1) to learn more about that tool and get a list of all supported
 options.
