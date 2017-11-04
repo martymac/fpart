@@ -14,7 +14,8 @@ Fpart is a tool that helps you sort file trees and pack them into bags (called
 
 It splits a list of directories and file trees into a certain number of
 partitions, trying to produce partitions with the same size and number of files.
-It can also produce partitions with a given number of files or a limited size.
+It can also produce partitions with a given number of files or of a limited
+size.
 
 Once generated, partitions are either printed as file lists to stdout (default)
 or to files. Those lists can then be used by third party programs.
@@ -22,8 +23,15 @@ or to files. Those lists can then be used by third party programs.
 Fpart also includes a live mode, which allows it to crawl very large filesystems
 and produce partitions in live. Hooks are available to act on those partitions
 (e.g. immediatly start a transfer using rsync(1)) without having to wait for
-the filesystem traversal job to be finished. Used this way, fpart can be seen
-as a powerful data migration tool.
+the filesystem traversal job to be finished. Used that way, fpart can be seen
+as a powerful basis for a data migration tool.
+
+Fpart can also generate lists of directories instead of files. That mode can
+be useful to enable usage of options requiring overall knowledge of directories
+such as rsync's --delete.
+
+As a demonstration of fpart possibilities, a tool called fpsync is provided in
+the tools/ directory (see also below for more details).
 
 Compatibility :
 ***************
@@ -79,7 +87,7 @@ Examples - live mode :
 
 By default, fpart will wait for FS crawling to terminate before generating and
 displaying partitions. If you use the live mode (option -L), fpart will display
-each partition as soon as it is complete. You can combine this option with
+each partition as soon as it is complete. You can combine that option with
 hooks; they will be triggered just before (pre-part hook, option -w) or after
 (post-part hook, option -W) partitions' completion.
 
@@ -110,8 +118,8 @@ echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
 This hook will display the name of current partition's output file name as well
 as display its contents.
 
-Examples - migrating data (take 1) :
-************************************
+Examples - migrating data :
+***************************
 
 Here is a more complex example that will show you how to use fpart, GNU Parallel
 and Rsync to split up a directory and immediately schedule data synchronization
@@ -144,14 +152,14 @@ complete :
     "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
 
 This hook is itself a nested command. It will run GNU Parallel's sem scheduler
-(any other scheduler will do) to run at most 3 rsync in parallel.
+(any other scheduler would do) to run at most 3 rsync jobs in parallel.
 
 The scheduler will finally trigger the following command :
 
 /usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
 
 where ${FPART_PARTFILENAME} will be part of rsync's environment when it runs
-and contain the file name of the partition that has just been generated.
+and contains the file name of the partition that has just been generated.
 
 That's all, folks ! Pretty simple, isn't it ?
 
@@ -160,29 +168,29 @@ machine, but you can use it as the basis of a much sophisticated solution : at
 work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
-Note : several fpart runs can be launched using the above example ; you will
-perform incremental synchronizations. That is, deleted files from the source
-directory will not be removed from destination unless rsync's --delete option is
-used. Unfortunately, this option cannot be used with a list of files (files that
-do not appear in the list are just ignored). To use the --delete option in
-conjunction with fpart, you *have* to provide rsync's --files-from option a list
-of directories (only). Fpart's -d option can do the trick but it will probaby
-not generate partitions having the same size (if you choose to use that method
-anyway, do not forget to use rsync's -r option too). Another - simpler - method
-if you plan to perform several synchronizations is to use a single, last rsync
-to delete extra files from destination using the --delete option. This simple
-rsync pass will not transfer data but only delete files from destination
-directory.
+Note : several successive fpart runs can be launched using the above example;
+you will perform incremental synchronizations. That is, deleted files from the
+source directory will not be removed from destination unless rsync's --delete
+option is used. Unfortunately, this option cannot be used with a list of files
+(files that do not appear in the list are just ignored). To use the --delete
+option in conjunction with fpart, you *have* to provide rsync's --files-from
+option a list of directories (only); that can be performed using fpart's -E
+option.
 
-Examples - migrating data (take 2) :
-************************************
+Fpsync :
+********
 
-A program called 'fpsync' is provided within the tools/ directory. This tool is
-a shell script that wraps fpart and rsync to launch several rsync in parallel as
-presented in the previous section ("take 1"), but while the previous example
-used GNU Parallel to schedule transfers, this wrapper provides its own
--embedded- scheduler. It can execute several rsync processes locally or launch
-rsync transfers on several nodes (workers) through SSH.
+To demonstrate fpart possibilities, a program called 'fpsync' is provided within
+the tools/ directory. This tool is a shell script that wraps fpart and rsync to
+launch several rsync in parallel as presented in the previous section, but while
+the previous example used GNU Parallel to schedule transfers, fpsync provides
+its own -embedded- scheduler. It can execute several rsync processes locally or
+launch rsync transfers on several nodes (workers) through SSH.
+
+Despite its initial "proof of concept" status, fpsync has been successfully
+used to migrate several hundreds of TB of data (initially at $work) and has
+been tested by several organizations (see the 'See also' section at the end of
+this document).
 
 The following examples show two typical usage :
 
@@ -198,13 +206,25 @@ $ fpsync -n 8 -f 1000 -s $((100 * 1024 * 1024)) \
 
 will synchronize /data/src/ to /data/dst/ using the same transfer limits, but
 through 8 concurrent synchronization jobs spread over two machines (machine1 and
-machine2). Those machines can both access /data/src/ and /data/dst/, as well as
-/mnt/nfs/fpsync, which is fpsync's shared working directory.
+machine2). Those machines must both be able to access /data/src/ and /data/dst/,
+as well as /mnt/nfs/fpsync, which is fpsync's shared working directory.
 
-Jobs can be interrupted and resumed using the -r option and the job id presented
-when verbose mode (-v) is on.
+Note that those two examples work with file lists and will perform *incremental*
+synchronizations. As a consequence, they will require a final -manual-
+'rsync --delete' pass to delete extra files from the /data/dst/ directory. If
+you want to avoid that final pass, use fpsync's option -E. That option will make
+fpsync work with a list of *directories* (instead of files) and will enable
+rsync's --delete option with each synchronization job. The counterpart of using
+that mode is that directory lists are coarse-grained and will probably be less
+balanced than file lists. The best option is probably to run several incremental
+jobs and keep the -E option to speed up the final pass only.
 
-See fpsync(1) to get a list of all supported options.
+In addition to being very fast (as transfers starts during FS crawling), fpsync
+is able to resume synchronization jobs (see option -r) and presents an overall
+status of the process.
+
+See fpsync(1) to learn more about that tool and get a list of all supported
+options.
 
 Limits :
 ********
@@ -243,8 +263,8 @@ Finally, install fpart (as root) :
 
 # make install
 
-Configuring fpsync(1) :
-***********************
+Adapting fpsync(1) :
+********************
 
 This step is not needed on FreeBSD and Linux platforms.
 
@@ -281,7 +301,7 @@ Check out his parsync and parsyncfp (using fpart) tools here :
   https://github.com/hjmangalam/parsyncfp
 
 * Finally, Intel has written a white paper about data migration, presenting
-fpart and MCP tools :
+fpart and fpsync :
   http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
 
 Author / Licence :
@@ -297,5 +317,5 @@ Contributions :
 
 FTS code comes from FreeBSD :
     lib/libc/gen/fts.c -> fts.c
-    include/fts.h -> fts.h
+    include/fts.h      -> fts.h
 and is available under the BSD license.
