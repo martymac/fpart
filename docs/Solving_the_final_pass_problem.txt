@@ -1,0 +1,188 @@
+Solving fpsync's last pass problem :
+************************************
+
+Until version 0.9.3, fpsync only worked with file lists. That mode was perfect
+to have balanced partitions with fine-grained specifications: a precise maximum
+number of files and a maximum size. In that mode, fpsync is blazing fast, but
+there is a catch: it is only able to perform *incremental* synchronizations as
+rsync's --delete option is incompatible with a parallel usage when using lists
+of files.
+
+For a one-shot -single- synchronization, that is not a problem, but when you
+have to migrate several hundreds of TB of data accessed by users at the same
+time, that can be tricky. The recommended way was to perform several successive
+synchronizations one live data and later stop the service to finalize the
+migration with a single -manual- rsync --delete pass.
+
+That so-called 'final pass' was needed to delete extra files that could have
+been deleted meanwhile (but already migrated) by users on the source area. The
+main problem with that final pass is that with such a data quantity, a single
+rsync can take weeks just to crawl the filesystem, thus ruining all the benefits
+of fpsync. It can also consume very large chunks of memory to store the file
+list.
+
+As that final pass is done while the service is offline for users, it should be
+fast and reliable.
+
+I've wondered for several months how we could boost that final pass. For memory,
+here are different steps I took to finally implement fpsync's option -E.
+
+Idea #1 :
+*********
+
+Use previous fpsync run's partitions to generate a single -temporary- file
+fulllist.txt containing all files present in /data/src/ and use that with a
+command such as :
+
+$ rsync -av --delete-missing-args --ignore-existing --files-from=fulllist.txt \
+    /data/src/ /data/dst/
+
+That command would remove files not present in fulllist.txt and skip updating
+other files.
+
+Pros:
+- Easy to generate fulllist.txt, no need to rescan
+
+Cons:
+- single rsync
+- fulllist.txt can be huge
+- file list can be outdated, leading to removing a file in /data/dst/ if it is
+  missing from the list
+- not really interesting as rsync will stat() files anyway
+
+Idea #2 :
+*********
+
+Use first pass' file list and last pass' file list to generate a diff and remove
+extra files and directories with a simple recusrive (forced) rm.
+
+Pros :
+- really fast, no need to stat(), blindly erasing can do it
+
+Cons :
+- deletion process single-threaded
+- again, file lists can be huge to handle
+- at least two passes are needed before the final one
+- the most recent file list can be outdated
+
+Idea #3 :
+*********
+
+Use last pass' file list to determine directories (only). For each directory,
+diff the first depth (no recursivity) and spawn a deletion job to remove extra
+files and directories from the destination.
+
+Pros :
+- no need for stat()ing all files: 'ls -1', sort, comm and rm are enough
+- easy to spawn a job immediately after having determining a directory from the
+  list
+- small jobs can be run independently and parallelized
+
+Cons :
+- we must determine directories from file lists, which implies concatenating
+  and sorting them. Again, they can be huge so expect a big memory usage.
+- the most recent file list can be outdated
+
+Idea #4 :
+*********
+
+Instead of determining the directory list from the file lists, add a
+'post-directory' hook capability to fpart and use that hook to spawn a
+'cleaning' job as described in idea #3 once a directory has been visited.
+
+Pros :
+- again, no need for stat()ing all files: 'ls -1', sort, comm and rm are enough
+- cleaning jobs are independant from synchronizing jobs and can be run after
+  or before (provided the destination directory exists) file-synchronizing jobs 
+- so those jobs can be easily sheduled and parallelized
+- no more need for handling huge file lists to determine directories
+
+Cons :
+- lots of small tasks will be scheduled (one per directory), generating a lot
+  of small files
+
+Idea #5 :
+*********
+
+With a feeling that it would be nice if rsync could do the single-depth
+synchronization job for me (instead of having to script something more),
+crawling into the man page, I've finally discovered the great --exclude="/*/*"
+option. It allows what I was looking for: synchronizing a directory on a
+single-depth basis and skip further depths. It is also compatible with the
+needed --delete option. Used with the --relative option, it gives something
+like :
+
+$ cd /data/src/ ; \
+    rsync -av --delete --relative --exclude="/foo/bar/*/*" foo/bar/ /data/dst/
+
+if you want to synchronize the foo/bar/ directory without recursing.
+
+So idea #5 is based on that discovery as well as the will to avoid having to
+add a specific hook to fpart that would only do what a 'find -type d' can.
+
+But it can be improved.
+
+Cons :
+- exclude pattern is variable and must include the source directory
+- with the double-star exclude pattern, rsync stat()s each files and directories
+  under depth+1 (matching the second star), which means we will be stat()ing far
+  too many files
+
+Idea #6 :
+*********
+
+Digging again in rsync's man page, I've discovered an even better option. I had
+always used rsync's -a option, but it includes option -r (recurse) which is,
+after all, *exactly* what I do not want. And luckily, the opposite is available
+and is called option -d.
+
+The following will thus do better than the command line from idea #5 :
+
+$ cd /data/src/ ; \
+    rsync -dlptgoD -v --delete --relative foo/bar/ /data/dst/
+
+as it will no more stat() each files and directories under depth+1.
+
+So why not jus use, for the final pass, a 'find -type d -exec' to spawn a
+single-depth 'rsync --delete' process, over each directory ?
+
+I ended up patching fpsync to test that solution and implement a final pass
+option. But, it was far from optimal and was quite slow as too many cleaning
+jobs were created.
+
+Pros :
+- more efficient FS crawling
+- no more exclude pattern to handle
+
+Cons :
+- too many small jobs spawned, which ruins performances (too much overhead)
+
+Idea #7 :
+*********
+
+It could be nice if we could produce less cleaning jobs by grouping directories
+to avoid that overhead.
+
+Could rsync handle a list of directories in a non-recursive way ?
+
+Yes, it can:
+
+$ cd /data/src/ ; \
+    rsync -dlptgoD -v --files-from=dirlist --delete --relative \
+        /data/src/ /data/dst/
+
+File dirlist contains a directory list such as:
+
+./foo/bar/
+./foo/baz/
+[...]
+
+Great! But how can we generate those directory lists efficiently? Wait... Fpart
+can generate file lists, it could generate directory lists as well!
+
+This was the basis of idea #7, which lead to modifying fpart to make it able to
+generate single-depth directories lists when passing option -E.
+
+Fpsync has then been patched too (see option -E) to use that option and work
+with directory lists instead of file lists. That way, cleaning jobs work on
+groups of directories and can be started in parallel :)
