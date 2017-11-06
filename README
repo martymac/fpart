@@ -189,8 +189,8 @@ launch rsync transfers on several nodes (workers) through SSH.
 
 Despite its initial "proof of concept" status, fpsync has quickly evolved into
 a powerful (yet simple to use) migration tool and has been successfully used
-to boost migration of several hundreds of TB of data (initially at $work).
-It has also been tested by several organizations such as UCI and Intel (see the
+to boost migration of several hundreds of TB of data (initially at $work but it
+has also been tested by several organizations such as UCI and Intel, see the
 'See also' section at the end of this document).
 
 The following examples show two typical usage :
@@ -220,10 +220,13 @@ that mode is that directory lists are coarse-grained and will probably be less
 balanced than file lists. The best option is probably to run several incremental
 jobs and keep the -E option to speed up the final pass only.
 
-In addition to being very fast (as transfers starts during FS crawling), fpsync
-is able to resume synchronization jobs (see option -r) and presents an overall
-progress status. It also has a small memory footprint compared to rsync itself
-when migrating filesystems with a big number of files.
+(you can read the file 'Solving_the_final_pass_challenge.txt' in the docs/
+directory for more details about fpsync's option -E)
+
+In addition to being very fast (as transfers starts during FS crawling and are
+parallelized), fpsync is able to resume synchronization jobs (see option -r)
+and presents an overall progress status. It also has a small memory footprint
+compared to rsync itself when migrating filesystems with a big number of files.
 
 See fpsync(1) to learn more about that tool and get a list of all supported
 options.
