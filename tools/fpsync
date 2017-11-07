@@ -596,7 +596,8 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 if [ -n "${OPT_DIRSONLY}" ]
 then
     # Dirs-only mode, single-depth rsync(1)
-    RSYNC_MODEOPTS="-d --relative --delete"
+    # Postpone deletion to limit impacts of a user interruption
+    RSYNC_MODEOPTS="-d --relative --delete --delete-after"
     FPART_MODEOPTS="-E"
 else
     # File-based mode, recursive rsync(1)

@@ -208,6 +208,15 @@ process will wait for current synchronizations to be finished before exiting.
 If you press CTRL-C again, current synchronizations will be killed and
 .Nm
 will exit immediately.
+When using option
+.Fl E
+to enable directory mode and rsync's
+.Cm --delete
+option, keep in mind that killing rsync processes may lead to a situation where
+certain files have been updated and others not deleted yet (because the deletion
+process is postponed using rsync's
+.Cm --delete-after
+option).
 .sp
 On certain systems, CTRL-T can be pressed to get the status of current and
 remaining parts to be synchronized. This can also be achieved by sending a
