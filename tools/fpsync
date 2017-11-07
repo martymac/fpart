@@ -41,7 +41,7 @@ OPT_JOBS=2
 #OPT_JOBS=$(nproc)              # On Linux
 # Number of sync jobs from resumed run, read from the 'info' file
 OPT_RJOBS=
-# Maximum files per sync job (-f)
+# Maximum files or directories per sync job (-f)
 OPT_FPMAXPARTFILES="2000"
 # Maximum bytes per sync job (-s)
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
@@ -83,7 +83,7 @@ usage () {
     echo "Usage: $0 [OPTIONS...] src_dir/ dst_url/"
     echo "Usage: $0 [-r jobname] [OPTIONS...]"
     echo "  -n x        start <x> concurrent sync jobs"
-    echo "  -f y        transfer at most <y> files per sync job"
+    echo "  -f y        transfer at most <y> files or directories per sync job"
     echo "  -s z        transfer at most <z> bytes per sync job"
     echo "  -E          work on a per-directory basis (enables rsync(1)'s --delete)"
     echo "  -w wrks     space-separated list of SSH workers"
@@ -785,7 +785,7 @@ echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
 # The following options are ignored when resuming
 if [ -z "${OPT_JOBNAME}" ]
 then
-    echo_log "2" "===> Max files per sync job: ${OPT_FPMAXPARTFILES}"
+    echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
     echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
     echo_log "2" "===> Rsync options: \"${OPT_RSYNC}\""
 fi

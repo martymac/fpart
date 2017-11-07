@@ -91,7 +91,7 @@ usage(void)
     fprintf(stderr, "\n");
     fprintf(stderr, "Partition control:\n");
     fprintf(stderr, "  -n\tpack files into <num> partitions\n");
-    fprintf(stderr, "  -f\tlimit partitions to <files> files\n");
+    fprintf(stderr, "  -f\tlimit partitions to <files> files or directories\n");
     fprintf(stderr, "  -s\tlimit partitions to <size> bytes\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Input control:\n");
