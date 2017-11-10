@@ -11,6 +11,7 @@
       using option -o
     - fpsync: use fpart's new option -0 in conjunction with rsync's --from0 option
       to avoid failing on filenames with special characters
+    - fpsync: improve documentation
 2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!

@@ -7,7 +7,7 @@
 
 
 What is fpart ?
-***************
+===============
 
 Fpart is a tool that helps you sort file trees and pack them into bags (called
 "partitions"). It is developed in C and available under the BSD license.
@@ -34,7 +34,7 @@ As a demonstration of fpart possibilities, a tool called fpsync is provided in
 the tools/ directory (see also below for more details).
 
 Compatibility :
-***************
+===============
 
 Fpart is primarily developped on FreeBSD.
 
@@ -52,8 +52,11 @@ and will probably work on other operating systems too (*).
 (*) fpart built as a static binary within a Debian (armel) chroot will give you
 a powerful tool for backing-up your Android (arm) phone ;-)
 
-Examples - common usage :
-*************************
+Examples :
+==========
+
+Common usage :
+--------------
 
 The following will produce 3 partitions, with (approximatively) the same size
 and number of files. Three files : "var-parts.[0-2]", are generated as output :
@@ -84,8 +87,8 @@ and sort them :
 
 $ du * | fpart -n 2 -a
 
-Examples - live mode :
-**********************
+Live mode :
+-----------
 
 By default, fpart will wait for FS crawling to terminate before generating and
 displaying partitions. If you use the live mode (option -L), fpart will display
@@ -120,8 +123,8 @@ echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
 This hook will display the name of current partition's output file name as well
 as display its contents.
 
-Examples - migrating data :
-***************************
+Migrating data :
+----------------
 
 Here is a more complex example that will show you how to use fpart, GNU Parallel
 and Rsync to split up a directory and immediately schedule data synchronization
@@ -167,7 +170,7 @@ That's all, folks ! Pretty simple, isn't it ?
 
 In this example, FS crawling and data transfer are run from the same -local-
 machine, but you can use it as the basis of a much sophisticated solution : at
-work, by using a cluster of machines connected to our filers through NFS and
+$work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
 Note : several successive fpart runs can be launched using the above example;
@@ -180,7 +183,7 @@ option a list of directories (only); that can be performed using fpart's -E
 option.
 
 Fpsync :
-********
+========
 
 To demonstrate fpart possibilities, a program called 'fpsync' is provided within
 the tools/ directory. This tool is a shell script that wraps fpart and rsync to
@@ -262,32 +265,42 @@ directory.
 Directory mode :
 ----------------
 
-If you want to avoid that final pass, use fpsync's option -E. That option will make
-fpsync work with a list of *directories* (instead of files) and will (forcibly)
-enable rsync's --delete option with each synchronization job. The counterpart
-of using that mode is that directory lists are coarse-grained and will probably
-be less balanced than file lists. The best option is probably to run several
-incremental jobs and keep the -E option to speed up the final pass only.
+If you want to avoid that final pass, use fpsync's option -E. That option will
+make fpsync work with a list of *directories* (instead of files) and will
+(forcibly) enable rsync's --delete option with each synchronization job. The
+counterpart of using that mode is that directory lists are coarse-grained and
+will probably be less balanced than file lists. The best option is probably to
+run several incremental jobs and keep the -E option to speed up the final pass
+only.
 
 (you can read the file 'Solving_the_final_pass_challenge.txt' in the docs/
 directory for more details about fpsync's option -E)
 
-Limits :
-********
+Limitations :
+=============
 
-Fpart will *NOT* modify data, it will *NOT* split your files !
+* Fpart will *NOT* modify data, it will *NOT* split your files !
 
-As a consequence, if you have a directory containing several small files and a
-huge one, it will be unable to produce partitions with the same size. Fpart does
-magic, but not that much ;-)
+    As a consequence, if you have a directory containing several small files
+    and a huge one, it will be unable to produce partitions with the same size.
+    Fpart does magic, but not that much ;-)
 
-If you provide several paths to fpart, it will examine all of them. If those
-paths overlap or if the same path is specified more than once, same files will
-appear more than once within generated partitions. This is not a bug, fpart does
-not deduplicate FS crawling results.
+* Fpart will not deduplicate paths !
+
+    If you provide several paths to fpart, it will examine all of them. If those
+    paths overlap or if the same path is specified more than once, same files
+    will appear more than once within generated partitions. This is not a bug,
+    fpart does not deduplicate FS crawling results.
+
+* Fpsync only synchronize directory contents !
+
+    Contrary to rsync, fpsync enforces the final '/' on the source directory. It
+    means that directory *contents* are synchronized, not the source directory
+    itself (i.e. you will *not* get a subdirectory of the name of the source
+    directory in the target directory after synchronization).
 
 Installing :
-************
+============
 
 For FreeBSD users, fpart is already available in ports, see sysutils/fpart.
 Fpart is also available from official repositories on Debian and Ubuntu.
@@ -310,9 +323,9 @@ Finally, install fpart (as root) :
 # make install
 
 Adapting fpsync(1) :
-********************
+====================
 
-This step is not needed on FreeBSD and Linux platforms.
+(this step is not needed on FreeBSD and Linux platforms)
 
 On OpenIndiana, if you need to use fpsync(1), the script will need adjustments :
 
@@ -322,7 +335,7 @@ On OpenIndiana, if you need to use fpsync(1), the script will need adjustments :
   grep(1) doesn't know about -E flag).
 
 See also :
-**********
+==========
 
 * See fpart(1) and fpsync(1) for more details.
 
@@ -351,15 +364,15 @@ fpart and fpsync :
   http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
 
 Author / Licence :
-******************
+==================
 
-Fpart has been written by Ganaël LAPLANCHE <ganael.laplanche@martymac.org>
+Fpart has been written by Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 and is available under the BSD license (see COPYING for details).
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
 Contributions :
-***************
+===============
 
 FTS code comes from FreeBSD :
     lib/libc/gen/fts.c -> fts.c

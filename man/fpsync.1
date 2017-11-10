@@ -253,7 +253,7 @@ is also available on those 3 machines, while the destination directory
 .Pa ( /mnt/dst/ )
 is mounted on SSH workers only (machine1 and machine2).
 .El
-.Sh LIMITS
+.Sh LIMITATIONS
 Parallelizing
 .Xr rsync 1
 makes several options not usable, such as
@@ -281,6 +281,15 @@ generates several jobs per second. On FreeBSD,
 timestamps' precision can be
 tuned using the 'vfs.timestamp_precision' sysctl. See
 .Xr vfs_timestamp 9 .
+.sp
+Contrary to
+.Xr rsync 1 ,
+.Nm
+enforces the final '/' on the source directory. It means that directory
+.Sy contents
+are synchronized, not the source directory itself (i.e. you will not get a
+subdirectory of the name of the source directory in the target directory after
+synchronization).
 .Sh SEE ALSO
 .Xr fpart 1 ,
 .Xr rsync 1 ,

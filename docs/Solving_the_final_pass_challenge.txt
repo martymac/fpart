@@ -1,5 +1,5 @@
 Solving the final pass challenge :
-**********************************
+==================================
 
 Until version 0.9.3, fpsync only worked with file lists. That mode was perfect
 to have balanced partitions with fine-grained specifications: a precise maximum
@@ -41,7 +41,7 @@ crawling the FS again. Here they are.
 [SIGCONT]
 
 Idea #1 :
-*********
+---------
 
 Use last fpsync run's partitions to generate a single -temporary- file
 fulllist.txt containing all files present in /data/src/ and use that with a
@@ -64,7 +64,7 @@ Cons:
 - single rsync
 
 Idea #2 :
-*********
+---------
 
 Use first pass' file list and last pass' file list to generate a diff and remove
 extra files and directories manually with simple (recursive, forced) rm's.
@@ -99,7 +99,7 @@ with directories instead of files.
 [SIGCONT]
 
 Idea #3 :
-*********
+---------
 
 Use last pass' file list to determine *directories* (only). For each directory,
 diff the first depth (no recursivity) and spawn a deletion job to remove extra
@@ -128,7 +128,7 @@ and parallelize them, if possible.
 [SIGCONT]
 
 Idea #4 :
-*********
+---------
 
 Instead of determining the directory list from the file lists, add a
 'post-directory' hook capability to fpart and use that hook to spawn a
@@ -147,7 +147,7 @@ Cons :
 - need to write the cleaning script executed by the hook and reinvent the wheel
 
 Idea #5 :
-*********
+---------
 
 With a feeling that it would be better if rsync could do the single-depth
 synchronization job for me (instead of having to script something more), and
@@ -175,7 +175,7 @@ Cons :
   too many files
 
 Idea #6 :
-*********
+---------
 
 Digging again in rsync's man page, I've discovered an even better option. I had
 always used rsync's -a option, but it includes option -r (recurse) which is,
@@ -214,7 +214,7 @@ to avoid that overhead.
 [SIGCONT]
 
 Idea #7 :
-*********
+---------
 
 Could rsync handle a list of directories in a non-recursive way ?
 
@@ -258,4 +258,4 @@ implement the final pass that way. If you have any questions or remarks, do not
 hesitate to contact me!
 
 --
-Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+Ganael LAPLANCHE <ganael.laplanche@martymac.org>, Nov. 2017
