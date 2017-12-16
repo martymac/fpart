@@ -203,6 +203,9 @@ parallelized), fpsync is able to resume synchronization jobs (see option -r)
 and presents an overall progress status. It also has a small memory footprint
 compared to rsync itself when migrating filesystems with a big number of files.
 
+Last but not least, fpsync is very easy to set up and only requires a few
+(common) software to run: fpart, rsync, a POSIX shell, sudo and ssh.
+
 See fpsync(1) to learn more about that tool and get a list of all supported
 options.
 
