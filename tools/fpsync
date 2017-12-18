@@ -444,18 +444,29 @@ job_queue_loop_sigint_handler () {
 
 # Handle ^T: print info about queue status
 siginfo_handler () {
-    local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l)"
-    local _jobs_done="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l)"
-    local _jobs_percent="??"
+    # Job counters, absolute values (common to several runs of the same job)
+    local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l | awk '{print $1}')"
+    local _jobs_done="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
+    local _jobs_remaining="$(( ${_jobs_total} - ${_jobs_done} ))"
 
+    local _jobs_percent="??"
     [ ${_jobs_total} -ge 1 ] && \
         _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
 
-    # Trim values
-    _jobs_total="$(( ${_jobs_total} + 0))"
-    _jobs_done="$(( ${_jobs_done} + 0))"
+    # Time counters, relative to the current run (resume-aware)
+    local _run_elapsed_time="$(( $(date '+%s') - ${_run_start_time} ))"
+    local _run_jobs_done="$(( ${_jobs_done} - ${_run_start_jobs} ))"
 
-    echo "<=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: $((${_jobs_total} - ${_jobs_done}))"
+    local _run_time_per_job="??"
+    local _run_time_remaining="??"
+    if [ ${_run_jobs_done} -ge 1 ]
+    then
+        _run_time_per_job="$(( ${_run_elapsed_time} / ${_run_jobs_done} ))"
+        _run_time_remaining="$(( (${_run_elapsed_time} * ${_jobs_remaining}) / ${_run_jobs_done} ))"
+    fi
+
+    echo "<===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+    echo "<=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -795,6 +806,10 @@ fi
 
 # Record job information
 job_queue_info_dump
+
+# Record initial status, required by siginfo_handler()
+_run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
+_run_start_time="$(date '+%s')"
 
 # Set SIGINT and SIGINFO traps and start job_queue_loop
 trap 'sigint_handler' 2

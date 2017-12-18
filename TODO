@@ -24,7 +24,6 @@ Fpart:
 - Factorize code (err(3), ...)
 
 Fpsync:
-- Add ETA when displaying status
 - Add an option to enable rsync's option -z ?
 - Add an option to exit after fpart pass (to generate jobs only)
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
