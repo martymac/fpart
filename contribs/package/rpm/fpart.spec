@@ -43,6 +43,9 @@ mkdir -p %{RPM_BUILD_ROOT}%{_docdir}
 %{_bindir}/fpsync
 
 %changelog
+* ??? ??? ?? 201? Ganael Laplanche <ganael.laplanche@martymac.org> - 1.1.0
+- Version 1.1.0
+
 * Fri Nov 10 2017 Ganael Laplanche <ganael.laplanche@martymac.org> - 1.0.0
 - Version 1.0.0
 
