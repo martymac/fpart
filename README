@@ -195,8 +195,8 @@ launch rsync transfers on several nodes (workers) through SSH.
 Despite its initial "proof of concept" status, fpsync has quickly evolved into
 a powerful (yet simple to use) migration tool and has been successfully used
 to boost migration of several hundreds of TB of data (initially at $work but it
-has also been tested by several organizations such as UCI and Intel, see the
-'See also' section at the end of this document).
+has also been tested by several organizations such as UCI, Intel and Amazon ;
+see the 'See also' section at the end of this document).
 
 In addition to being very fast (as transfers starts during FS crawling and are
 parallelized), fpsync is able to resume synchronization jobs (see option -r)
@@ -362,9 +362,17 @@ Check out his parsync and parsyncfp (using fpart) tools here :
   https://github.com/hjmangalam/parsync
   https://github.com/hjmangalam/parsyncfp
 
-* Finally, Intel has written a white paper about data migration, presenting
-fpart and fpsync :
+* Intel has written a white paper about data migration, presenting fpart and fpsync :
   http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
+
+* Amazon uses fpart and fpsync in their EFS-to-EFS backup solution :
+  http://docs.aws.amazon.com/solutions/latest/efs-to-efs-backup/considerations.html
+  See the "Amazon Elastic File System (Amazon EFS) for File Storage" presentation here
+  (AWS Storage Days, New York, September 6-8, 2017) :
+  https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage
+  and the Amazon EFS performance tutorial here :
+  https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance
+  both presenting fpart and fpsync capabilities.
 
 Author / Licence :
 ==================
