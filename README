@@ -279,6 +279,36 @@ only.
 (you can read the file 'Solving_the_final_pass_challenge.txt' in the docs/
 directory for more details about fpsync's option -E)
 
+SSH options :
+-------------
+
+When dealing with SSH options and keys, keep in mind that fpsync uses SSH for
+two kinds of operations :
+
+* data synchronization (when ssh is forked by rsync),
+  can occur locally or on remote workers (if using any)
+* communication with workers (when ssh is forked by fpsync),
+  only occurs locally (on the scheduler)
+
+If you need specific options for the first case, you can pass ssh options by
+using rsync's option '-e' (through fpsync's option '-o') and triple-escaping
+the quote characters :
+
+$ fpsync [...] -o "-lptgoD -v --numeric-ids -e \\\"ssh -i ssh_key\\\"" \
+    /data/src/ login@remote:/data/dst/
+
+The key will have to be present and accessible on all workers.
+
+Fpsync does not offer options to deal with the second case. You will have to
+tune your ssh config file to enable passwordless communication with workers.
+Something like :
+
+$ cat ~/.ssh/config
+Host myworker
+IdentityFile /path/to/the/passwordless/key
+
+should work.
+
 Limitations :
 =============
 
