@@ -325,7 +325,7 @@ Limitations :
     will appear more than once within generated partitions. This is not a bug,
     fpart does not deduplicate FS crawling results.
 
-* Fpsync only synchronize directory contents !
+* Fpsync only synchronizes directory contents !
 
     Contrary to rsync, fpsync enforces the final '/' on the source directory. It
     means that directory *contents* are synchronized, not the source directory
