@@ -304,7 +304,7 @@ tune your ssh config file to enable passwordless communication with workers.
 Something like :
 
 $ cat ~/.ssh/config
-Host myworker
+Host remote
 IdentityFile /path/to/the/passwordless/key
 
 should work.
