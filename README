@@ -15,7 +15,8 @@ Fpart is a tool that helps you sort file trees and pack them into bags (called
 It splits a list of directories and file trees into a certain number of
 partitions, trying to produce partitions with the same size and number of files.
 It can also produce partitions with a given number of files or of a limited
-size.
+size. Fpart uses a bin packing algorithm to optimize space utilization amongst
+partitions.
 
 Once generated, partitions are either printed as file lists to stdout (default)
 or to files. Those lists can then be used by third party programs.
