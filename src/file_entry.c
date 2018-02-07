@@ -634,10 +634,13 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     }
 
     /* current dir state */
-    unsigned char curdir_empty = 1;
-    unsigned char curdir_dirsfound = 0;
-    unsigned char curdir_addme = 0;
-    fsize_t curdir_size = 0;
+    unsigned char file_as_argument = 1; /* by default, we assume file_path
+                                           points to a file, not a dir */
+    unsigned char curdir_empty = 1;     /* current dir is empty */
+    unsigned char curdir_dirsfound = 0; /* other dirs have been found in
+                                           current dir */
+    unsigned char curdir_addme = 0;     /* current dir must be added */
+    fsize_t curdir_size = 0;            /* current dir size */
 
     while((p = fts_read(ftsp)) != NULL) {
         switch (p->fts_info) {
@@ -760,6 +763,7 @@ reset_directory:
 
             case FTS_D:
             {
+                file_as_argument = 0; /* argument was not a file */
                 curdir_empty = 1; /* enter directory, mark it as empty */
                 curdir_dirsfound = 0; /* no dirs found yet */
 
@@ -800,12 +804,15 @@ reset_directory:
                 curdir_empty = 0; /* mark current dir as non empty */
                 curdir_size += curfile_size;
 
-                /* skip file entry when in dirs_only mode or
+                /* skip file entry when in dirs_only mode (option -E) or
                    in leaf_dirs mode (option -D) and no directory has been
                    found in current directory (i.e. we are in a leaf directory).
-                   We must have visited all directories first */
-                if((options->dirs_only == OPT_DIRSONLY) ||
-                    ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound)))
+                   We must have visited all directories first and file entry must
+                   not explicitly point to a file (in such a case, file entry has
+                   been explicitly given as argument so we must add it) */
+                if((!file_as_argument) &&
+                    ((options->dirs_only == OPT_DIRSONLY) ||
+                    ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))))
                     continue;
 
                 /* check for name validity regarding include/exclude options */

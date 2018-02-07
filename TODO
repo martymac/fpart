@@ -2,9 +2,7 @@ TODO (ideas) :
 **************
 
 Fpart:
-- Enable listing of files when only files are provided and option -E is used
-  e.g.: fpart -n 1 -E /some/file
-  (same idea as option -z in standard mode)
+- -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
 - To minimize memory footprint in non-live mode, add a 'checkpoint' capacity
   to sort and flush partitions on a regular basis
 - Align get_size() and init_file_entries() behaviour:
@@ -25,6 +23,8 @@ Fpart:
 
 Fpsync:
 - Add an option to enable rsync's option -z ?
+- Colorized output
+- Modularize external tool used to copy files (rsync, cpio, ...)
 - Add an option to exit after fpart pass (to generate jobs only)
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)

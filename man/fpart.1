@@ -199,18 +199,21 @@ Treat un-readable directories as empty, causing them to be packed anyway.
 After a certain
 .Ar depth ,
 pack directories instead of files (directories themselves will be added to
-partitions, instead of their content).
+partitions, instead of their content). You can force a specific file to be
+packed anyway by listing it on the command line explicitly.
 .It Fl D
 Implies
 .Fl z .
 Pack leaf directories: if a directory contains files only, it will be packed as
-a single entry.
+a single entry. You can force a specific file to be packed anyway by listing it
+on the command line explicitly.
 .It Fl E
 Implies
 .Fl D .
 Pack directories only (work on a per-directory basis): in that mode, no file
 will be packed. Instead, each directory will be packed as a single entry with
-a size being the sum of all top-level files' sizes.
+a size being the sum of all top-level files' sizes. You can force a specific
+file to be packed anyway by listing it on the command line explicitly.
 .El
 .Sh LIVE MODE
 .Bl -tag -width indent

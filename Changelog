@@ -1,5 +1,8 @@
 201?/??/??, 1.1.0 :
+    - fpart: options -D and -E now pack files if they are explicitly passed as
+      arguments
     - fpsync: simplify and fix detection of remote URLs (fixes GH issue #2)
+    - fpsync: implement simple ETA when displaying status
 2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files
