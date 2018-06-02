@@ -24,7 +24,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([bzero fchdir getcwd memmove memset strchr strerror strrchr strtol])
+AC_CHECK_FUNCS([bzero dirfd fchdir getcwd memmove memset strchr strerror strrchr strtol])
 
 # OS detection
 AC_CANONICAL_HOST
