@@ -36,6 +36,7 @@
 #if !defined(__FreeBSD__) && !defined(__linux__)
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
+/* IllumOS provides dirfd() , see /usr/include/dirent.h */
 #if defined(__sun) || defined(__sun__)
 /* Solaris 10 and Earlier */
 #if !defined(HAVE_DIRFD) && !defined(__XOPEN_OR_POSIX)
