@@ -36,11 +36,16 @@
 #if !defined(__FreeBSD__) && !defined(__linux__)
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
-#if defined(__sun) || defined(__sun__)
 /* IllumOS provides dirfd() , see /usr/include/dirent.h */
-#if !(defined(__EXTENSIONS__) || !defined(__XOPEN_OR_POSIX) || \
-        defined(_ATFILE_SOURCE))
-#define dirfd(X) ((X)->d_fd)
+#if defined(__sun) || defined(__sun__)
+/* Solaris 10 and Earlier */
+#if !defined(HAVE_DIRFD) && !defined(__XOPEN_OR_POSIX)
+#define dirfd(X) ((X)->dd_fd) /* traditional SVR4 */
+#else
+/* Solaris 11 and later */
+#if !defined(HAVE_DIRFD) && defined(__XOPEN_OR_POSIX)
+#define dirfd(X) ((X)->d_fd) /* POSIX conformant */
+#endif
 #endif
 #endif
 #endif
