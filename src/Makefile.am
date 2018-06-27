@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = nostdinc
 
 bin_PROGRAMS = fpart
 fpart_SOURCES = types.h utils.c utils.h options.c options.h partition.c partition.h file_entry.c file_entry.h dispatch.c dispatch.h fpart.c fpart.h
-fpart_CFLAGS =
+fpart_CFLAGS = -lfts
 fpart_LDFLAGS =
 
 if DEBUG
