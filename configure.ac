@@ -50,6 +50,19 @@ AC_ARG_ENABLE([embfts],
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-embfts]) ;;
 esac],[embfts=${dflt_embfts}])
 
+# Default value for musl-fts support
+dflt_muslfts=false
+# TODO: Can we detect alpine (and maybe if musl-fts is available) to set default to true?
+
+# System musl-fts for Alpine option
+AC_ARG_ENABLE([muslfts],
+[  --enable-muslfts         enable musl-fts],
+[case "${enableval}" in
+  yes) muslfts=true ;;
+  no)  muslfts=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-muslfts]) ;;
+esac],[muslfts=${dflt_muslfts}])
+
 # Static build option
 AC_ARG_ENABLE([static],
 [  --enable-static         build static binary],
@@ -84,6 +97,7 @@ AC_SYS_LARGEFILE
 # Automake output
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 AM_CONDITIONAL([EMBEDDED_FTS], [test x$embfts = xtrue])
+AM_CONDITIONAL([MUSL_FTS], [test x$muslfts = xtrue])
 AM_CONDITIONAL([SOLARIS], [test x$host_os_solaris = xtrue])
 AM_CONDITIONAL([LINUX], [test x$host_os_linux = xtrue])
 AM_CONDITIONAL([STATIC], [test x$static = xtrue])

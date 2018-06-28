@@ -15,6 +15,10 @@ fpart_SOURCES += fts.c fts.h
 fpart_CFLAGS += -DEMBED_FTS
 endif
 
+if MUSL_FTS
+LIBS += -lfts
+endif
+
 if SOLARIS
 fpart_CFLAGS += -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -xc99
 endif

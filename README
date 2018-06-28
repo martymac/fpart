@@ -348,9 +348,17 @@ $ autoreconf -i
 (autoreconf comes from the GNU autotools), then run :
 
 $ ./configure
+
+If you are installing on a node alpine image, make sure the `fts-dev` package is
+installed and pass the `--enable-muslfts` option.
+
+$ ./configure --enable-muslfts
+
+Then run :
+
 $ make
 
-to configure and build fpart.
+to build fpart.
 
 Finally, install fpart (as root) :
 
