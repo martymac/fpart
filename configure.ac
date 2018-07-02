@@ -30,7 +30,12 @@ AC_CHECK_FUNCS([bzero dirfd fchdir getcwd memmove memset strchr strerror strrchr
 AC_CANONICAL_HOST
 case "${host_os}" in
   solaris*) host_os_solaris=true ;;
-  linux*) host_os_linux=true ;;
+  linux*)
+    # Alpine Linux uses musl-libc which does not include fts(3)
+    case "${host_os}" in
+      linux-musl*) extfts=true ;;
+    esac
+    host_os_linux=true ;;
 esac
 
 # Default value for embedded fts support
@@ -84,6 +89,7 @@ AC_SYS_LARGEFILE
 # Automake output
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 AM_CONDITIONAL([EMBEDDED_FTS], [test x$embfts = xtrue])
+AM_CONDITIONAL([EXTERNAL_FTS], [test x$extfts = xtrue])
 AM_CONDITIONAL([SOLARIS], [test x$host_os_solaris = xtrue])
 AM_CONDITIONAL([LINUX], [test x$host_os_linux = xtrue])
 AM_CONDITIONAL([STATIC], [test x$static = xtrue])

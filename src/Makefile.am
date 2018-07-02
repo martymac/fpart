@@ -13,6 +13,12 @@ endif
 if EMBEDDED_FTS
 fpart_SOURCES += fts.c fts.h
 fpart_CFLAGS += -DEMBED_FTS
+else
+if EXTERNAL_FTS
+# fts(3) provided as an external library
+LIBS += -lfts
+# else (default), provided by libc
+endif
 endif
 
 if SOLARIS

@@ -3,6 +3,8 @@
       arguments
     - fpsync: simplify and fix detection of remote URLs (fixes GH issue #2)
     - fpsync: implement simple ETA when displaying status
+    - fts.h: portability fix for Solaris 10 and earlier (GH PR #4)
+    - fpart: fix build with external fts(3) on Alpine Linux (GH PR #5)
 2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files
