@@ -641,7 +641,7 @@ FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Prepare mode-specific tool and fpart options
-# We do *not* want fpart option -Z in dirs-only mode because un-readable
+# We do *not* want fpart option -zz in dirs-only mode because un-readable
 # directories will be created when sync'ing the parent.
 if [ -n "${OPT_DIRSONLY}" ]
 then
@@ -658,7 +658,7 @@ else
         # Recursive rsync(1)
         TOOL_MODEOPTS="-r"
     fi
-    FPART_MODEOPTS="-Z"
+    FPART_MODEOPTS="-zz"
 fi
 
 # Fpart hooks (black magic is here !)

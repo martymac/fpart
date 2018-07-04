@@ -58,10 +58,9 @@ init_options(struct program_options *options)
            (DFLT_OPT_FOLLOWSYMLINKS == OPT_NOFOLLOWSYMLINKS));
     assert((DFLT_OPT_CROSSFSBOUNDARIES == OPT_NOCROSSFSBOUNDARIES) ||
            (DFLT_OPT_CROSSFSBOUNDARIES == OPT_CROSSFSBOUNDARIES));
-    assert((DFLT_OPT_EMPTYDIRS == OPT_NOEMPTYDIRS) ||
-           (DFLT_OPT_EMPTYDIRS == OPT_EMPTYDIRS));
-    assert((DFLT_OPT_DNREMPTY == OPT_NODNREMPTY) ||
-           (DFLT_OPT_DNREMPTY == OPT_DNREMPTY));
+    assert((DFLT_OPT_DIRSINCLUDE == OPT_NOEMPTYDIRS) ||
+           (DFLT_OPT_DIRSINCLUDE == OPT_EMPTYDIRS) ||
+           (DFLT_OPT_DIRSINCLUDE == OPT_DNREMPTY));
     assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
     assert((DFLT_OPT_LEAFDIRS == OPT_NOLEAFDIRS) ||
            (DFLT_OPT_LEAFDIRS == OPT_LEAFDIRS));
@@ -93,8 +92,7 @@ init_options(struct program_options *options)
     options->nexclude_files = 0;
     options->exclude_files_ci = NULL;
     options->nexclude_files_ci = 0;
-    options->empty_dirs = DFLT_OPT_EMPTYDIRS;
-    options->dnr_empty = DFLT_OPT_DNREMPTY;
+    options->dirs_include = DFLT_OPT_DIRSINCLUDE;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->dirs_only = DFLT_OPT_DIRSONLY;
@@ -121,8 +119,7 @@ uninit_options(struct program_options *options)
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
-    options->dnr_empty = DFLT_OPT_DNREMPTY;
-    options->empty_dirs = DFLT_OPT_EMPTYDIRS;
+    options->dirs_include = DFLT_OPT_DIRSINCLUDE;
     if(options->exclude_files_ci != NULL)
         str_cleanup(&(options->exclude_files_ci),
             &(options->nexclude_files_ci));

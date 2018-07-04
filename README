@@ -139,7 +139,7 @@ $ cd /data/src
 
 Then, run fpart from here :
 
-$ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -Z -o /tmp/part.out -W \
+$ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -zz -o /tmp/part.out -W \
   '/usr/local/bin/sem -j 3
     "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
       /data/src/ /data/dest/"' .
@@ -148,7 +148,7 @@ This command will start fpart in live mode (option -L), making it generate
 partitions during FS crawling. Fpart will produce partitions containing at most
 10000 files each (option -f), will skip files and folders named '.snapshot' or
 '.zfs' (option -x) and will list empty and non-accessible directories (option
--Z; that option is necessary when working with rsync to make sure the whole file
+-zz; that option is necessary when working with rsync to make sure the whole file
 tree will be re-created within the destination directory). Last but not least,
 each partition will be written to /tmp/part.out.<n> (option -o) and used within
 the post-part hook (option -W), run immediately by fpart once the partition is

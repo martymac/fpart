@@ -93,16 +93,12 @@ struct program_options {
 /* exclude files, case insensitive (option -X) */
     char **exclude_files_ci;
     unsigned int nexclude_files_ci;
-/* include empty directories (option -z) */
+/* include certain directories (option -z) */
 #define OPT_NOEMPTYDIRS             0
-#define OPT_EMPTYDIRS               1
-#define DFLT_OPT_EMPTYDIRS          OPT_NOEMPTYDIRS
-    unsigned char empty_dirs;
-/* treat un-readable directories as empty (option -Z) */
-#define OPT_NODNREMPTY              0
-#define OPT_DNREMPTY                1
-#define DFLT_OPT_DNREMPTY           OPT_NODNREMPTY
-    unsigned char dnr_empty;
+#define OPT_EMPTYDIRS               1   /* include empty directories */
+#define OPT_DNREMPTY                2   /* also add un-readable directories */
+#define DFLT_OPT_DIRSINCLUDE        OPT_NOEMPTYDIRS
+    unsigned char dirs_include;
 /* display directories after certain depth (option -d) */
 #define OPT_NODIRDEPTH              -1
 #define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH

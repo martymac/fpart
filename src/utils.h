@@ -56,6 +56,7 @@
     { while((head) && (head)->nextp) { (head) = (head)->nextp; } }
 
 #define min(x, y) (((x) <= (y)) ? (x) : (y))
+#define max(x, y) (((x) >= (y)) ? (x) : (y))
 
 #define if_not_malloc(ptr, size, err_action)                            \
     ptr = malloc(size);                                                 \
