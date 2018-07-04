@@ -25,15 +25,16 @@
 # SUCH DAMAGE.
 
 # This script is a simple wrapper showing how fpart can be used to migrate data.
-# It uses fpart and rsync to spawn multiple rsync instances to migrate data
-# from src_dir/ to dst_url/. Rsync jobs can execute either locally or over SSH.
-# This migration is incremental and will need a final rsync pass
-# (rsync -av -delete src_dir/ dst_url/) to remove extra files from dst_url/.
+# It uses fpart and a copy tool (rsync or cpio) to spawn multiple instances to
+# migrate data from src_dir/ to dst_url/. Jobs can execute either locally or
+# over SSH.
 
 FPSYNC_VERSION="1.1.0"
 
 ########## Default values for options
 
+# External tool used to copy files
+OPT_TOOL_NAME="rsync"
 # Number of sync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
 # Same, but autodetected
@@ -55,8 +56,8 @@ OPT_FPSHDIR=""
 OPT_TMPDIR="/tmp/fpsync"
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
-# Rsync options (-o)
-OPT_RSYNC="-lptgoD -v --numeric-ids"
+# User-settable tool options (-o)
+OPT_TOOL=""
 # Fpart options (-O)
 OPT_FPART="-x .zfs -x .snapshot* -x .ckpt"
 # Sudo mode (-S)
@@ -77,15 +78,16 @@ OPT_DSTURL=""
 
 # Print help
 usage () {
-    echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart and rsync"
+    echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart"
     echo "Copyright (c) 2014-2018 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [OPTIONS...] src_dir/ dst_url/"
     echo "Usage: $0 [-r jobname] [OPTIONS...]"
+    echo "  -m tool     external copy tool to use: 'rsync' (default) or 'cpio'"
     echo "  -n x        start <x> concurrent sync jobs"
     echo "  -f y        transfer at most <y> files or directories per sync job"
     echo "  -s z        transfer at most <z> bytes per sync job"
-    echo "  -E          work on a per-directory basis"
+    echo "  -E          work on a per-directory basis (rsync only)"
     echo "              (WARNING!!! Enables rsync(1)'s --delete option!)"
     echo "  -w wrks     space-separated list of SSH workers"
     echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
@@ -97,9 +99,9 @@ usage () {
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, -o, /src_dir/ and /dst_url/"
     echo "              are ignored when resuming a previous run)"
-    echo "  -o options  override default rsync options with <options>"
+    echo "  -o options  override default copy tool options with <options>"
     echo "              Use this option with care as certain options are"
-    echo "              incompatible with a parallel usage (e.g. --delete)"
+    echo "              incompatible with a parallel usage (e.g. rsync's --delete)"
     echo "  -O options  override default fpart options with <options>"
     echo "  -S          use sudo for filesystem crawling and synchronizations"
     echo "  -v          verbose mode (default: quiet)"
@@ -107,7 +109,7 @@ usage () {
     echo "              increase verbosity level."
     echo "  -h          this help"
     echo "  src_dir/    source directory (absolute path)"
-    echo "  dst_url/    destination URL, as supported by rsync(1)"
+    echo "  dst_url/    destination directory (or URL, when using rsync(1))"
     echo "See fpsync(1) for more details."
 }
 
@@ -151,9 +153,17 @@ is_num () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "n:f:s:Ew:d:t:r:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:r:o:O:Svh" opt
     do
         case "${opt}" in
+        "m")
+            if [ "${OPTARG}" = "rsync" ] || [ "${OPTARG}" = "cpio" ]
+            then
+                OPT_TOOL_NAME=${OPTARG}
+            else
+                end_die "Unsupported tool, please specify 'rsync' or 'cpio'"
+            fi
+            ;;
         "n")
             if is_num "${OPTARG}" && [ ${OPTARG} -ge 1 ]
             then
@@ -216,9 +226,9 @@ parse_opts () {
         "o")
             if [ -n "${OPTARG}" ]
             then
-                OPT_RSYNC="${OPTARG}"
+                OPT_TOOL="${OPTARG}"
             else
-                end_die "Invalid rsync options supplied"
+                end_die "Invalid tool options supplied"
             fi
             ;;
         "O")
@@ -256,7 +266,7 @@ parse_opts () {
     else
         # For remote ones, specifying a shared directory is mandatory
         [ -z "${OPT_FPSHDIR}" ] && \
-                end_die "Please supply a shared dir when specifying workers"
+            end_die "Please supply a shared dir when specifying workers"
     fi
 
     # Check for src_dir and dst_url presence and validity
@@ -270,15 +280,33 @@ parse_opts () {
             usage
             end_die "Please supply an absolute path for src_dir/"
         fi
-        # Check dst_url, must be either an absolute path or a rsync URL
+        # Check dst_url, must be either an absolute path or a URL
         if is_abs_path "$2" || is_remote_path "$2"
         then
+            is_remote_path "$2" && [ "${OPT_TOOL_NAME}" = "cpio" ] && \
+                end_die "URLs are not supported when using cpio"
             OPT_DSTURL="$2"
         else
             usage
+            [ "${OPT_TOOL_NAME}" = "cpio" ] && \
+                end_die "Please supply an absolute path for dst_url/"
             end_die "Please supply either an absolute path or a rsync URL for dst_url/"
         fi
     fi
+
+    # Handle tool-related options
+    case "${OPT_TOOL_NAME}" in
+    "cpio")
+        [ "${OPT_DIRSONLY}" = "yes" ] && \
+            end_die "Option -E is invalid when using cpio"
+        ;;
+    *)
+        # Rsync
+        [ -z "${OPT_TOOL}" ] && \
+            OPT_TOOL="-lptgoD -v --numeric-ids"
+        ;;
+    esac
+
 }
 
 ########## Work-related functions (in-memory, running-jobs handling)
@@ -369,6 +397,7 @@ job_queue_info_dump () {
         end_die "Cannot record job information"
 # Job information used for resuming, do not edit !
 OPT_RJOBS="${OPT_JOBS}"
+OPT_TOOL_NAME="${OPT_TOOL_NAME}"
 OPT_SRCDIR="${OPT_SRCDIR}"
 OPT_DSTURL="${OPT_DSTURL}"
 EOF
@@ -383,11 +412,20 @@ job_queue_info_load () {
     { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
         end_die "Invalid option value loaded from resumed job: OPT_RJOBS"
 
+    [ "${OPT_TOOL_NAME}" != "rsync" ] && [ "${OPT_TOOL_NAME}" != "cpio" ] && \
+        end_die "Invalid option value loaded from resumed job: OPT_TOOL_NAME"
+
     is_abs_path "${OPT_SRCDIR}" || \
         end_die "Invalid options value loaded from resumed job: OPT_SRCDIR"
 
-    is_abs_path "${OPT_DSTURL}" || is_remote_path "${OPT_DSTURL}" || \
-        end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
+    if [ "${OPT_TOOL_NAME}" = "cpio" ]
+    then
+        is_abs_path "${OPT_DSTURL}" || \
+            end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
+    else
+        is_abs_path "${OPT_DSTURL}" || is_remote_path "${OPT_DSTURL}" || \
+            end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
+    fi
 }
 
 # Set the "fp_done" (fpart done) flag within job queue
@@ -584,7 +622,7 @@ SUDO_BIN="$(which sudo)"
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
-RSYNC_BIN="$(which rsync)"
+TOOL_BIN=$(which "${OPT_TOOL_NAME}")
 
 # Do we need sudo ?
 if [ -n "${OPT_SUDO}" ]
@@ -602,28 +640,48 @@ FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
 FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
-# Prepare mode-specific rsync and fpart options
+# Prepare mode-specific tool and fpart options
 # We do *not* want fpart option -Z in dirs-only mode because un-readable
-# directories will be created when rsync(1)'ing the parent.
+# directories will be created when sync'ing the parent.
 if [ -n "${OPT_DIRSONLY}" ]
 then
     # Dirs-only mode, single-depth rsync(1)
     # Postpone deletion to limit impacts of a user interruption
-    RSYNC_MODEOPTS="-d --relative --delete --delete-after"
+    TOOL_MODEOPTS="-d --relative --delete --delete-after"
     FPART_MODEOPTS="-E"
 else
-    # File-based mode, recursive rsync(1)
-    RSYNC_MODEOPTS="-r"
+    # File-based mode
+    if [ "${OPT_TOOL_NAME}" = "cpio" ]
+    then
+        TOOL_MODEOPTS="-pdmu"
+    else
+        # Recursive rsync(1)
+        TOOL_MODEOPTS="-r"
+    fi
     FPART_MODEOPTS="-Z"
 fi
 
 # Fpart hooks (black magic is here !)
-FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
-    ${RSYNC_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
-    \\\"${OPT_SRCDIR}/\\\" \
-    \\\"${OPT_DSTURL}/\\\"' \
-    1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-    2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+if [ "${OPT_TOOL_NAME}" = "cpio" ]
+then
+    # XXX Warning: -0 and --quiet are non-standard
+    # (not supported on Solaris), see:
+    # http://pubs.opengroup.org/onlinepubs/7908799/xcu/cpio.html
+    # XXX Exec whole shell cmd as root, because we need to cwd first
+    FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
+        cat \\\"\${FPART_PARTFILENAME}\\\" | \
+        ${SUDO} ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
+        \\\"${OPT_DSTURL}/\\\"' \
+        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+else
+    FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
+        ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
+        \\\"${OPT_SRCDIR}/\\\" \
+        \\\"${OPT_DSTURL}/\\\"' \
+        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+fi
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
@@ -718,7 +776,7 @@ then
         end_die "Source directory does not exist (or is not a directory): ${OPT_SRCDIR}"
 fi
 
-# When using SSH, validate src_dir/ and dst_url/ remotely and check for rsync
+# When using SSH, validate src_dir/ and dst_url/ remotely and check for tool
 # presence (this also allows checking SSH connectivity to each declared host)
 if [ -n "${OPT_WRKRS}" ]
 then
@@ -759,9 +817,9 @@ then
                 end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTURL}"
         fi
 
-        # Finally, check for rsync presence
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${RSYNC_BIN}\" ]'" || \
-            end_die "Rsync executable not found on target ${_host}"
+        # Finally, check for tool presence
+        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${TOOL_BIN}\" ]'" || \
+            end_die "Tool ${OPT_TOOL_NAME} not found on target ${_host}"
 
         echo_log "2" "<=== ${_host}: OK"
     done
@@ -775,14 +833,14 @@ then
 
     unset _FIRST_HOST
 else
-    # Local usage - create dst_url/ and check for rsync presence
+    # Local usage - create dst_url/ and check for tool presence
     if is_abs_path "${OPT_DSTURL}" && [ ! -d "${OPT_DSTURL}" ]
     then
         mkdir -p "${OPT_DSTURL}" 2>/dev/null || \
             end_die "Cannot create destination directory: ${OPT_DSTURL}"
     fi
-    [ ! -x "${RSYNC_BIN}" ] && \
-        end_die "Rsync is missing locally, check your configuration"
+    [ ! -x "${TOOL_BIN}" ] && \
+        end_die "Tool ${OPT_TOOL_NAME} is missing locally, check your configuration"
 fi
 
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
@@ -796,12 +854,13 @@ echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
 echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
+echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
 # The following options are ignored when resuming
 if [ -z "${OPT_JOBNAME}" ]
 then
+    echo_log "2" "===> Tool options: \"${OPT_TOOL}\""
     echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
     echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
-    echo_log "2" "===> Rsync options: \"${OPT_RSYNC}\""
 fi
 
 # Record job information

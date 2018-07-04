@@ -24,7 +24,6 @@ Fpart:
 Fpsync:
 - Add an option to enable rsync's option -z ?
 - Colorized output
-- Modularize external tool used to copy files (rsync, cpio, ...)
 - Add an option to exit after fpart pass (to generate jobs only)
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)

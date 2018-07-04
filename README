@@ -365,6 +365,8 @@ On OpenIndiana, if you need to use fpsync(1), the script will need adjustments :
   variables, such as /bin/bash.
 * Adapt fpart(1) and grep(1) paths (use ggrep(1) instead of grep(1) as default
   grep(1) doesn't know about -E flag).
+* Remove -0 and --quiet options from cpio call (they are not supported). As a
+  consequence, also remove -0 from fpart options.
 
 On Alpine Linux, you will need the 'fts-dev' package to build fpart(1).
 
