@@ -7,6 +7,7 @@
     - fpart: fix build on Alpine Linux (GH PR #5)
     - fpsync: add support for cpio copy tool (option -m)
     - fpart: option -Z becomes option -zz (incremental -z)
+    - fpart: add option -zzz to add all directories to file lists (as empty)
 2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files

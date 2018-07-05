@@ -127,6 +127,7 @@ usage(void)
     fprintf(stderr, "  -z\tpack empty directories too"
         "(default: pack files only)\n");
     fprintf(stderr, "  -zz\ttreat un-readable directories as empty\n");
+    fprintf(stderr, "  -zzz\tpack all directories (as empty)\n");
     fprintf(stderr, "  -d\tpack directories instead of files after a certain "
         "<depth>\n");
     fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "

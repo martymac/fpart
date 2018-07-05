@@ -97,6 +97,7 @@ struct program_options {
 #define OPT_NOEMPTYDIRS             0
 #define OPT_EMPTYDIRS               1   /* include empty directories */
 #define OPT_DNREMPTY                2   /* also add un-readable directories */
+#define OPT_ALLDIRS                 3   /* include all directories */
 #define DFLT_OPT_DIRSINCLUDE        OPT_NOEMPTYDIRS
     unsigned char dirs_include;
 /* display directories after certain depth (option -d) */

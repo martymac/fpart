@@ -47,6 +47,7 @@
 .Op Fl X Ar pattern
 .Op Fl z
 .Op Fl zz
+.Op Fl zzz
 .Op Fl d Ar depth
 .Op Fl D
 .Op Fl E
@@ -193,6 +194,9 @@ rsync's --files-from option). See the
 option to also pack un-readable directories.
 .It Fl zz
 Treat un-readable directories as empty, causing them to be packed anyway.
+.It Fl zzz
+Pack all directories (as empty). Useful when 3rd party tools need directory
+entries to update them (e.g. cpio).
 .It Ic -d Ar depth
 After a certain
 .Ar depth ,
