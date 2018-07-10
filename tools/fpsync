@@ -121,10 +121,11 @@ end_die () {
 # $1 = level (0 = quiet, 1 = verbose, >=2 more verbose)
 # $2 = message to log
 echo_log () {
+    local _ts=$(date '+%s')
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
-        echo "$2"
+        echo "${_ts} $2"
     [ -n "$2" ] && \
-        echo "$2" >> "${FPART_LOGFILE}"
+        echo "${_ts} $2" >> "${FPART_LOGFILE}"
 }
 
 # Check if $1 is an absolute path
@@ -454,7 +455,8 @@ siginfo_handler () {
         _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
 
     # Time counters, relative to the current run (resume-aware)
-    local _run_elapsed_time="$(( $(date '+%s') - ${_run_start_time} ))"
+    local _ts=$(date '+%s')
+    local _run_elapsed_time="$(( ${_ts} - ${_run_start_time} ))"
     local _run_jobs_done="$(( ${_jobs_done} - ${_run_start_jobs} ))"
 
     local _run_time_per_job="??"
@@ -465,8 +467,8 @@ siginfo_handler () {
         _run_time_remaining="$(( (${_run_elapsed_time} * ${_jobs_remaining}) / ${_run_jobs_done} ))"
     fi
 
-    echo "<===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
-    echo "<=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
+    echo "${_ts} <===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+    echo "${_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -627,7 +629,7 @@ FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${RSYNC_BIN} ${OPT_RSYNC} \
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
-    echo \"=> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
+    echo \"\$(date '+%s') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
 # fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
