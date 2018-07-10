@@ -5,7 +5,7 @@
     - fpsync: implement simple ETA when displaying status
     - fts.h: portability fix for Solaris 10 and earlier (GH PR #4)
     - fpart: fix build on Alpine Linux (GH PR #5)
-    - fpsync: improve logging: add timestamps
+    - fpsync: add timestamps and part numbers to logs
 2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files

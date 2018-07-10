@@ -339,7 +339,7 @@ work_list_refresh () {
             echo_log "2" "<= [QMGR] Job ${_JOB} finished"
             if [ -n "${OPT_WRKRS}" ]
             then
-                WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 2)"
+                WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 3)"
             fi
         fi
     done
@@ -519,14 +519,14 @@ job_queue_loop () {
                 then
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
                     /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
-                    work_list_push "$!:local"
+                    work_list_push "$!:${_NEXT}:local"
                 else
                     local _NEXT_HOST="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
                     "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
                         < "${JOBS_WORKDIR}/${_NEXT}" &
-                    work_list_push "$!:${_NEXT_HOST}"
+                    work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
                 fi
             fi
         fi
@@ -643,7 +643,7 @@ FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
 SIGINT_COUNT="0"    # ^C counter
 
 WORK_NUM=0          # Current number of running processes
-WORK_LIST=""        # Work PID[:WORKER] list
+WORK_LIST=""        # Work PID:PART:WORKER list
 WORK_FREEWORKERS="" # Free workers' list
 
 # Check for essential binaries
