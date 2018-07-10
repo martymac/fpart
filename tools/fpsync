@@ -654,11 +654,12 @@ else
     if [ "${OPT_TOOL_NAME}" = "cpio" ]
     then
         TOOL_MODEOPTS="-pdmu"
+        FPART_MODEOPTS="-zzz"
     else
         # Recursive rsync(1)
         TOOL_MODEOPTS="-r"
+        FPART_MODEOPTS="-zz"
     fi
-    FPART_MODEOPTS="-zz"
 fi
 
 # Fpart hooks (black magic is here !)
