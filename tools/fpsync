@@ -655,7 +655,7 @@ else
     # File-based mode
     if [ "${OPT_TOOL_NAME}" = "cpio" ]
     then
-        TOOL_MODEOPTS="-pdmu"
+        TOOL_MODEOPTS="-pdm"
         FPART_MODEOPTS="-zzz"
     else
         # Recursive rsync(1)
