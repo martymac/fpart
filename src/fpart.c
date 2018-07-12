@@ -124,7 +124,7 @@ usage(void)
 #endif
     fprintf(stderr, "\n");
     fprintf(stderr, "Directory handling:\n");
-    fprintf(stderr, "  -z\tpack empty directories too"
+    fprintf(stderr, "  -z\tpack empty directories too "
         "(default: pack files only)\n");
     fprintf(stderr, "  -zz\ttreat un-readable directories as empty\n");
     fprintf(stderr, "  -zzz\tpack all directories (as empty)\n");
