@@ -2,30 +2,33 @@ TODO (ideas) :
 **************
 
 Fpart:
+- Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
-- To minimize memory footprint in non-live mode, add a 'checkpoint' capacity
+- To minimize memory footprint in non-live mode, add a 'checkpoint' capability
   to sort and flush partitions on a regular basis
 - Align get_size() and init_file_entries() behaviour:
   - add name filters to get_size() ?
   - ignore FS options in get_size() ?
-- Add an option to generate compressed file lists (must be useable on rsync's side)
 - Deduplicate input paths if a directory is another's parent
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
 - Add constraints, e.g. : force hardlinks to belong to the same partition
 - Display/accept size in a human-friendly format
-- Add timestamps before/after hooks
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
   partitions, special partition #0 for option -s, ...)
-- Factorize code (err(3), ...)
+- Rework error code (errx(3), perror(3), ...)
+- Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
+- Use queue(3) ?
 
 Fpsync:
+- Improve portability (egrep vs grep, ...)
 - Add an option to enable rsync's option -z ?
 - Colorized output
 - Modularize external tool used to copy files (rsync, cpio, ...)
 - Add an option to exit after fpart pass (to generate jobs only)
+- Add an option to force resuming of an already-finished jobname
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)
 
