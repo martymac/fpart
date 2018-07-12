@@ -23,9 +23,9 @@ or to files. Those lists can then be used by third party programs.
 
 Fpart also includes a live mode, which allows it to crawl very large filesystems
 and produce partitions in live. Hooks are available to act on those partitions
-(e.g. immediatly start a transfer using rsync(1)) without having to wait for
-the filesystem traversal job to be finished. Used that way, fpart can be seen
-as a powerful basis for a data migration tool.
+(e.g. immediatly start a transfer using rsync(1) or cpio(1)) without having to
+wait for the filesystem traversal job to be finished. Used that way, fpart can
+be seen as a powerful basis for a data migration tool.
 
 Fpart can also generate lists of directories instead of files. That mode can
 be useful to enable usage of options requiring overall knowledge of directories
@@ -60,7 +60,7 @@ Common usage :
 --------------
 
 The following will produce 3 partitions, with (approximatively) the same size
-and number of files. Three files : "var-parts.[0-2]", are generated as output :
+and number of files. Three files: "var-parts.[0-2]", are generated as output :
 
 $ fpart -n 3 -o var-parts /var
 
@@ -170,11 +170,11 @@ and contains the file name of the partition that has just been generated.
 That's all, folks ! Pretty simple, isn't it ?
 
 In this example, FS crawling and data transfer are run from the same -local-
-machine, but you can use it as the basis of a much sophisticated solution : at
+machine, but you can use it as the basis of a much sophisticated solution: at
 $work, by using a cluster of machines connected to our filers through NFS and
 running Open Grid Scheduler, we successully migrated over 400 TB of data.
 
-Note : several successive fpart runs can be launched using the above example;
+Note: several successive fpart runs can be launched using the above example;
 you will perform incremental synchronizations. That is, deleted files from the
 source directory will not be removed from destination unless rsync's --delete
 option is used. Unfortunately, this option cannot be used with a list of files
@@ -187,11 +187,12 @@ Fpsync :
 ========
 
 To demonstrate fpart possibilities, a program called 'fpsync' is provided within
-the tools/ directory. This tool is a shell script that wraps fpart and rsync to
-launch several rsync in parallel as presented in the previous section, but while
-the previous example used GNU Parallel to schedule transfers, fpsync provides
-its own -embedded- scheduler. It can execute several rsync processes locally or
-launch rsync transfers on several nodes (workers) through SSH.
+the tools/ directory. This tool is a shell script that wraps fpart(1) and
+rsync(1) (or cpio(1)) to launch several synchronization jobs in parallel as
+presented in the previous section, but while the previous example used GNU
+Parallel to schedule transfers, fpsync provides its own -embedded- scheduler.
+It can execute several synchronization processes locally or launch them on
+several nodes (workers) through SSH.
 
 Despite its initial "proof of concept" status, fpsync has quickly evolved into
 a powerful (yet simple to use) migration tool and has been successfully used
@@ -199,13 +200,13 @@ to boost migration of several hundreds of TB of data (initially at $work but it
 has also been tested by several organizations such as UCI, Intel and Amazon ;
 see the 'See also' section at the end of this document).
 
-In addition to being very fast (as transfers starts during FS crawling and are
+In addition to being very fast (as transfers start during FS crawling and are
 parallelized), fpsync is able to resume synchronization jobs (see option -r)
 and presents an overall progress status. It also has a small memory footprint
 compared to rsync itself when migrating filesystems with a big number of files.
 
 Last but not least, fpsync is very easy to set up and only requires a few
-(common) software to run: fpart, rsync, a POSIX shell, sudo and ssh.
+(common) software to run: fpart, rsync and/or cpio, a POSIX shell, sudo and ssh.
 
 See fpsync(1) to learn more about that tool and get a list of all supported
 options.
@@ -225,11 +226,11 @@ fpsync [args] /data/src/ /data/dst/
   |
   +-- fpsync scheduler, executes jobs either locally or remotely ----------->
        \    \    \
-        \    \    +___ rsync job #n... -------------------------------------> +
+        \    \    +___ sync job #n... --------------------------------------> +
          \    \                                                               |
-          \    +______ rsync job #1 ---------------------------------->       |
+          \    +______ sync job #1 ---------------------------------->        |
            \                                                                  |
-            +_________ rsync job #0 ----------------------------->            +
+            +_________ sync job #0 ----------------------------->             +
                                                                              /
                                                                             /
               Filesystem tree rebuilt and synchronized! <------------------+
@@ -239,8 +240,12 @@ fpsync [args] /data/src/ /data/dst/
 File mode :
 -----------
 
-In its default mode, fpsync works with file lists performing incremental (only)
-synchronizations. The following examples show two typical usage.
+In its default mode, fpsync uses rsync(1) and works with file lists to perform
+incremental (only) synchronizations. Using the cpio(1) tool (option -m) will
+perform the same kind of synchronizations but using the cpio(1) tool (see
+'Notes about cpio tool' below).
+
+The following examples show two typical usage.
 
 The command :
 
@@ -269,16 +274,50 @@ directory.
 Directory mode :
 ----------------
 
-If you want to avoid that final pass, use fpsync's option -E. That option will
-make fpsync work with a list of *directories* (instead of files) and will
-(forcibly) enable rsync's --delete option with each synchronization job. The
-counterpart of using that mode is that directory lists are coarse-grained and
-will probably be less balanced than file lists. The best option is probably to
-run several incremental jobs and keep the -E option to speed up the final pass
-only.
+If you want to avoid that final pass, use fpsync's option -E (only compatible
+with rsync tool). That option will make fpsync work with a list of *directories*
+(instead of files) and will (forcibly) enable rsync's --delete option with each
+synchronization job. The counterpart of using that mode is that directory lists
+are coarse-grained and will probably be less balanced than file lists. The best
+option is probably to run several incremental jobs and keep the -E option to
+speed up the final pass only.
 
 (you can read the file 'Solving_the_final_pass_challenge.txt' in the docs/
 directory for more details about fpsync's option -E)
+
+Notes about cpio tool :
+-----------------------
+
+Fpsync's option '-m' allows you to use cpio(1) instead of rsync(1) to copy
+files. Cpio(1) is much faster than rsync(1) but there is a catch: when
+re-creating a complex file tree, missing parent directories are created
+on-the-fly. In that case, original directory metadata (e.g. timestamps) is *not*
+copied from source.
+
+To overcome that limitation, fpsync uses fpart's -zzz option to ask fpart to
+also pack every single directory (0-sized) with file lists. Making directories
+appear in file lists will ask cpio to copy their metadata when the directory is
+processed (of course, fpart ensures that a parent directory entry appears after
+files beneath. If the parent directory is missing it is first created on the
+fly, then the directory entry makes cpio update its metadata).
+
+This works fine with a single cpio process (fpsync's option -n 1) but not with 2
+or more parallel processes which can treat partitions out-of-order. Indeed, if
+several workers copy files to the same directory at the same time, it is
+possible that the parent directory's original metadata gets re-applied while
+another worker is still adding files to that directory. That can occur if a
+directory list spreads over more than one partition. In such a situation,
+original metadata (here, mtime) gets overwritten while new files get added to
+the directory.
+
+That race condition is un-avoidable (fpart would have to guarantee the
+directory entry belongs to the *same* partition as its files beneath, that
+would probably lead to un-balanced partitions as well as increased -and useless-
+complexity).
+
+You've been warned. Anyway, maybe you do not care about copying original
+directory mtimes. If this is the case, you can ignore that situation. If you
+care about them, running a second pass of fpsync will fix the timestamps.
 
 SSH options :
 -------------

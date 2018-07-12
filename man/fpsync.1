@@ -27,11 +27,12 @@
 .Os
 .Sh NAME
 .Nm fpsync
-.Nd Synchronize directories in parallel using fpart and rsync.
+.Nd Synchronize directories in parallel using fpart + rsync or cpio.
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
 .Op Fl v
+.Op Fl m Ar tool
 .Op Fl n Ar jobs
 .Op Fl f Ar files
 .Op Fl s Ar size
@@ -40,7 +41,7 @@
 .Op Fl d Ar shdir
 .Op Fl t Ar tmpdir
 .Op Fl r Ar jobname
-.Op Fl o Ar rsyncopts
+.Op Fl o Ar toolopts
 .Op Fl O Ar fpartopts
 .Op Fl S
 .Pa src_dir/
@@ -51,12 +52,12 @@ The
 tool synchronizes directories in parallel using
 .Xr fpart 1
 and
-.Xr rsync 1 .
+.Xr rsync 1
+or
+.Xr cpio 1 .
 It computes subsets of
 .Pa src_dir/
-and spawns
-.Xr rsync 1
-jobs to synchronize them to
+and spawns jobs to synchronize them to
 .Pa dst_url/ .
 .sp
 Synchronization jobs can be executed either locally or remotely (using SSH
@@ -71,6 +72,21 @@ a good tool for migrating large filesystems.
 Print help
 .It Fl v
 Verbose mode. Can be be specified several times to increase verbosity level.
+.It Ic -m Ar tool
+External copy
+.Ar tool
+used to synchronize files. Currently supported tools are:
+.Sy rsync
+and
+.Sy cpio .
+Default:
+.Sy rsync .
+When using
+.Sy cpio
+and more than one worker, directory timestamps may not be replicated. A second
+pass will fix them. See the
+.Sy README
+file for more details.
 .It Ic -n Ar jobs
 Start
 .Ar jobs
@@ -90,7 +106,7 @@ Default:
 .Sy 4294967296
 (4 GB)
 .It Fl E
-Work on a per-directory basis. In that mode,
+Work on a per-directory basis (rsync tool only). In that mode,
 .Nm
 works with lists of directories instead of files. That mode may generate
 coarse-grained lists but enables
@@ -149,16 +165,19 @@ consequence, options
 and
 .Pa dst_url/
 are ignored.
-.It Ic -o Ar rsyncopts
+.It Ic -o Ar toolopts
 Override default
 .Xr rsync 1
+or
+.Xr cpio 1
 options with
-.Ar rsyncopts .
+.Ar toolopts .
 Use this option with care as certain options are incompatible with a parallel
-usage (e.g.
+usage (e.g. rsync's
 .Cm --delete ) .
-Default:
-.Cm -lptgoD -v --numeric-ids
+Default for rsync:
+.Cm -lptgoD -v --numeric-ids .
+Empty for cpio.
 .It Ic -O Ar fpartopts
 Override default
 .Xr fpart 1
@@ -176,7 +195,8 @@ Source directory. It must be absolute and available on all participating hosts
 (including the master one, running
 .Nm ) .
 .It Pa dst_url/
-Destination URL. It may be a local path or a remote URL, as supported by
+Destination directory or URL (rsync tool only). If a remote URL is provided, it
+must be supported by
 .Xr rsync 1 .
 All participating workers must be able to reach that target.
 .El
@@ -256,7 +276,9 @@ is mounted on SSH workers only (machine1 and machine2).
 .Sh LIMITATIONS
 Parallelizing
 .Xr rsync 1
-makes several options not usable, such as
+or
+.Xr cpio 1
+makes several options not usable, such as rsync's
 .Cm --delete .
 If your source directory is live while
 .Nm
@@ -291,6 +313,7 @@ are synchronized, not the source directory itself (i.e. you will not get a
 subdirectory of the name of the source directory in the target directory after
 synchronization).
 .Sh SEE ALSO
+.Xr cpio 1 ,
 .Xr fpart 1 ,
 .Xr rsync 1 ,
 .Xr sudo 8
