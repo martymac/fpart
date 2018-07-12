@@ -319,6 +319,29 @@ You've been warned. Anyway, maybe you do not care about copying original
 directory mtimes. If this is the case, you can ignore that situation. If you
 care about them, running a second pass of fpsync will fix the timestamps.
 
+Notes about GNU cpio (specifically) :
+-------------------------------------
+
+Developments have been made with BSD cpio (FreeBSD version). Fpsync will work
+with GNU cpio too but there are small behaviour differences you must be aware
+of :
+
+- for an unknown reason, GNU cpio will not apply mtime to the main target
+directory (AKA './' when received by cpio).
+
+- when using GNU cpio, you will get the following warnings when performing a
+second pass :
+
+  <file> not created: newer or same age version exists
+
+You can ignore those warnings as that second pass will fix directory timestamps
+anyway.
+
+Warning: if you pass option '-u' to cpio (trough fpsync's option '-o') to get
+rid of those messages, you will possibly re-touch directory mtimes (loosing
+original ones). Also, be aware of what that option implies: re-transferring
+every single file.
+
 SSH options :
 -------------
 
