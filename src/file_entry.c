@@ -656,9 +656,9 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             {
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
-                /* if requested by the -Z option,
+                /* if requested by the -zz option,
                    add directory anyway by simulating FTS_DP */
-                if(options->dnr_empty == OPT_DNREMPTY) {
+                if(options->dirs_include >= OPT_DNREMPTY) {
                     curdir_empty = 1;
                     goto add_directory;
                 }
@@ -685,11 +685,20 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
 add_directory:
                 /* if dirs_only mode activated or
                    leaf_dirs mode activated and current directory is a leaf or
-                   empty_dirs display requested and current dir is empty */
+                   at least empty dirs display requested and current dir is empty */
                 if((options->dirs_only == OPT_DIRSONLY) ||
                     ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound)) ||
-                    ((options->empty_dirs == OPT_EMPTYDIRS) && curdir_empty))
+                    ((options->dirs_include >= OPT_EMPTYDIRS) && curdir_empty))
                     curdir_addme = 1;
+
+                /* if current directory has not been added by previous rules
+                   but we request all directory entries, we fake an empty dir
+                   to avoid a call to get_size() below as we want it with a
+                   size of 0 */
+                if((!curdir_addme) && (options->dirs_include >= OPT_ALLDIRS)) {
+                    curdir_addme = 1;
+                    curdir_empty = 1;
+                }
 
                 /* add directory if necessary */
                 if(curdir_addme) {
