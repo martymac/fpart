@@ -21,6 +21,7 @@ Fpart:
 - Rework error code (errx(3), perror(3), ...)
 - Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
 - Use queue(3) ?
+- Unit testing
 
 Fpsync:
 - Improve portability (egrep vs grep, ...)
