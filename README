@@ -469,6 +469,9 @@ Check out his parsync and parsyncfp (using fpart) tools here :
   https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance
   both presenting fpart and fpsync capabilities.
 
+* Dave Altschuler wrote dsync, a tool using fpart + rsync or rclone that can sync to the cloud :
+  https://github.com/daltschu11/dsync
+
 Author / Licence :
 ==================
 
