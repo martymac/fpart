@@ -23,7 +23,7 @@ or to files. Those lists can then be used by third party programs.
 
 Fpart also includes a live mode, which allows it to crawl very large filesystems
 and produce partitions in live. Hooks are available to act on those partitions
-(e.g. immediatly start a transfer using rsync(1) or cpio(1)) without having to
+(e.g. immediately start a transfer using rsync(1) or cpio(1)) without having to
 wait for the filesystem traversal job to be finished. Used that way, fpart can
 be seen as a powerful basis for a data migration tool.
 
