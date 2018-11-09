@@ -398,8 +398,21 @@ Limitations :
 Installing :
 ============
 
-For FreeBSD users, fpart is already available in ports, see sysutils/fpart.
-Fpart is also available from official repositories on Debian and Ubuntu.
+For FreeBSD users, fpart is already available in ports, see :
+
+https://www.freshports.org/sysutils/fpart
+
+Fpart is also available from official repositories on Debian and Ubuntu :
+
+https://packages.debian.org/sid/fpart
+
+CentOS and Fedora users will find packages on Copr :
+
+https://copr.fedorainfracloud.org/coprs/survient/fpart/
+
+NixOS users will find fpart here :
+
+https://nixos.org/nixos/packages.html
 
 If a pre-compiled package is not available for your favourite operating system,
 installing from sources is simple. First, if there is no 'configure' script in
