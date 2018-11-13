@@ -37,7 +37,7 @@ the tools/ directory (see also below for more details).
 Compatibility :
 ===============
 
-Fpart is primarily developped on FreeBSD.
+Fpart is primarily developed on FreeBSD.
 
 It has been successfully tested on :
 
@@ -452,7 +452,7 @@ and here :
 
 * I am sure you will also be interested in :
   https://github.com/jbd/packo
-which was developped by Jean-Baptiste Denis as the original proof of concept
+which was developed by Jean-Baptiste Denis as the original proof of concept
 See also his newer tool, msrsync :
   https://github.com/jbd/msrsync
 
