@@ -9,6 +9,8 @@
     - fpsync: add support for cpio copy tool (option -m)
     - fpart: option -Z becomes option -zz (incremental -z)
     - fpart: add option -zzz to add all directories to file lists (as empty)
+    - other: lower required autoconf version to 2.63 (GH issue #7)
+    - other: update RPM .spec file for CentOS and Feroda (GH issue #7)
 2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files
