@@ -1,4 +1,4 @@
-201?/??/??, 1.1.0 :
+2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments
     - fpsync: simplify and fix detection of remote URLs (fixes GH issue #2)
