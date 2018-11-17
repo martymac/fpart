@@ -1,15 +1,11 @@
-%global commit 57f49f5c558cefe98c0194c220e8db8b272a1632
-%global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global snapshotdate 20181109
-
 Name:    fpart
-Version: 1.0.0
-Release: 4.%{snapshotdate}git%{shortcommit}%{?dist}
+Version: 1.1.0
+Release: 1%{?dist}
 License: BSD
 Summary: Fpart is a tool that sorts files and packs them into bags.
 URL:     http://contribs.martymac.org
 
-Source0:  https://github.com/martymac/fpart/archive/%{commit}/%{name}-%{version}-%{shortcommit}.tar.gz
+Source0:  https://github.com/martymac/%{name}/archive/%{name}-%{version}.tar.gz
 
 BuildRequires: gcc autoconf automake
 
@@ -23,7 +19,7 @@ files. It can also produce partitions with a given number of files or a limited
 size.
 
 %prep
-%setup -q -n fpart-%{commit}
+%setup -q -n %{name}-%{name}-%{version}
 
 autoreconf --install
 %configure
@@ -43,7 +39,10 @@ make %{?_smp_mflags}
 %{_bindir}/fpsync
 
 %changelog
-* Wed Nov 12 2018 samuel - 1.0.0-4.20181109git57f49f5
+* Fri Nov 16 2018 Ganael Laplanche <ganael.laplanche@martymac.org> - 1.1.0
+- Version 1.1.0
+
+* Mon Nov 12 2018 samuel - 1.0.0-4.20181109git57f49f5
 - pulled down latest snapshot which merged patch
 
 * Wed Oct 31 2018 samuel - 1.0.0-3.20181022git130f8fd
