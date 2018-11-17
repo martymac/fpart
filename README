@@ -401,7 +401,7 @@ Installing :
 Packages are already available for the following operating systems :
 
 FreeBSD :       https://www.freshports.org/sysutils/fpart
-Debian :        https://packages.debian.org/sid/fpart
+Debian :        https://packages.debian.org/fpart
 Ubuntu :        https://packages.ubuntu.com/search?keywords=fpart
 CentOS/Fedora : https://copr.fedorainfracloud.org/coprs/survient/fpart/
 NixOS :         https://nixos.org/nixos/packages.html
