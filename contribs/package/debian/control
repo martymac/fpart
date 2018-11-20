@@ -1,7 +1,7 @@
 Source: fpart
 Section: misc
 Priority: optional
-Maintainer: Carl Chenet <chaica@debian.org>
+Maintainer: Ganael Laplanche <ganael.laplanche@martymac.org>
 Build-Depends: debhelper (>= 9.0), automake (>= 1.13.3), dh-autoreconf (>= 10)
 Standards-Version: 3.9.6.1
 Homepage: http://sourceforge.net/projects/fpart/
@@ -10,7 +10,7 @@ Vcs-Git: git://git.debian.org/collab-maint/fpart.git
 
 Package: fpart
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, rsync (>= 3.1.1), sudo (>= 1.8.12)
+Depends: ${shlibs:Depends}, ${misc:Depends}, rsync (>= 3.1.1), sudo (>= 1.8.12), cpio (>= 2.11)
 Description: sort file trees and pack them into bags 
  Fpart is a tool that helps you sort file trees and pack them into bags (called
  "partitions"). It is developed in C and available under the BSD license.
