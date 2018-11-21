@@ -1,12 +1,15 @@
 Name:    fpart
 Version: 1.1.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: BSD
-Summary: Fpart is a tool that sorts files and packs them into bags.
+Summary: a tool that sorts files and packs them into bags
 URL:     http://contribs.martymac.org
 
 Source0:  https://github.com/martymac/%{name}/archive/%{name}-%{version}.tar.gz
 
+%if 0%{?fedora}
+Suggests: sudo rsync cpio
+%endif
 BuildRequires: gcc autoconf automake
 
 %description
@@ -21,10 +24,9 @@ size.
 %prep
 %setup -q -n %{name}-%{name}-%{version}
 
+%build
 autoreconf --install
 %configure
-
-%build
 make %{?_smp_mflags}
 
 %install
@@ -39,19 +41,28 @@ make %{?_smp_mflags}
 %{_bindir}/fpsync
 
 %changelog
+* Mon Nov 19 2018 Sam P <survient@fedoraproject.org> - 1.1.0-2
+- cleaned up prep and build sections
+- trued up changelog entries
+- corrected desciption
+- added missing weak dependencies
+
+* Fri Nov 16 2018 Sam P <survient@fedoraproject.org> - 1.1.0-1
+- repackaged to stable release version 1.1.0
+
 * Fri Nov 16 2018 Ganael Laplanche <ganael.laplanche@martymac.org> - 1.1.0
 - Version 1.1.0
 
-* Mon Nov 12 2018 samuel - 1.0.0-4.20181109git57f49f5
+* Mon Nov 12 2018 Sam P <survient@fedoraproject.org> - 1.0.0-4.20181109git57f49f5
 - pulled down latest snapshot which merged patch
 
-* Wed Oct 31 2018 samuel - 1.0.0-3.20181022git130f8fd
+* Wed Oct 31 2018 Sam P <survient@fedoraproject.org> - 1.0.0-3.20181022git130f8fd
 - added patch for autoconf version for EL6 compatibility
 
-* Wed Oct 31 2018 samuel - 1.0.0-3.20181022git130f8fd
+* Wed Oct 31 2018 Sam P <survient@fedoraproject.org> - 1.0.0-3.20181022git130f8fd
 - updated to snapshot 130f8fdadf2bbcc3cdaad479a356e8d0e3f6f041
 
-* Thu Apr 19 2018 samuel - 1.0.0-2
+* Thu Apr 19 2018 Sam P <survient@fedoraproject.org> - 1.0.0-2
 - Used %%buildroot macro
 - Correctly marked license
 - Other small packaging corrections
