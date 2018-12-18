@@ -1,6 +1,6 @@
 How to build fpart on Debian (e.g. for fpart version 1.1.0) :
 
-# apt-get install build-essential
+# apt-get install build-essential curl debhelper automake dh-autoreconf
 
 $ cd <repository root>
 $ cp -R contribs/package/debian .
