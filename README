@@ -477,6 +477,9 @@ Check out his parsync and parsyncfp (using fpart) tools here :
 * Dave Altschuler wrote dsync, a tool using fpart + rsync or rclone that can sync to the cloud :
   https://github.com/daltschu11/dsync
 
+* Bioteam uses fpart + fpsync + rsync to migrate 2 PetaBytes:
+  https://www.slideshare.net/chrisdag/practical-petabyte-pushing
+
 Author / Licence :
 ==================
 
