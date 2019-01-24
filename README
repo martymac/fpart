@@ -458,8 +458,7 @@ See also his newer tool, msrsync :
 
 * Harry Mangalam, from UCI, has an excellent article about data transfer here :
   http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
-Check out his parsync and parsyncfp (using fpart) tools here :
-  https://github.com/hjmangalam/parsync
+Check out his parsyncfp tool (using fpart) here :
   https://github.com/hjmangalam/parsyncfp
 
 * Intel has written a white paper about data migration, presenting fpart and fpsync :
