@@ -1,6 +1,6 @@
 fpart (1.1.0-1) unstable; urgency=low
 
-  * New upstream release
+  * New upstream release (Closes: #881806)
   * debian/control
     - add cpio in Depends
 
