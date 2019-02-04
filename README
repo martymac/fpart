@@ -349,6 +349,36 @@ rid of those messages, you will possibly re-touch directory mtimes (loosing
 original ones). Also, be aware of what that option implies: re-transferring
 every single file.
 
+Notes about hard links :
+------------------------
+
+Rsync can detect and replicate hard links with option -H but that will NOT work
+with fpsync because rsync collects hard links' information on a per-run basis.
+
+So, as for directory metadata (see above), being able to propagate hard links
+with fpsync would require from fpart the guarantee that all related links belong
+to the same partition.
+
+Unfortunately, this is not something fpart can do because, in live mode (used by
+fpsync to start synchronization as soon as possible), it crawls the filesystem
+as it comes. As a consequence, there is no mean to know if a hard link connected
+to a file already written to a partition (and probably already synchronized
+through an independent rsync process) will appear later or not. Also, in
+non-live mode, trying to group related hardlinks into the same partitions would
+propably lead to un-balanced partitions as well as complexify code.
+
+If you need to propagate hard links, you have 3 options:
+
+* Re-create hard links on the target, but this is not optimal as you may not
+  want to link 2 files together, even if they are similar
+
+* Pre-copy hard linked files together (using find's '-type f -links +1' options)
+  before running fpsync. That will work but linked files that have changed
+  since your first synchronization will be converted back to regular files when
+  running fpsync
+
+* Use a final -monolithic- rsync pass with option -H that will re-create them
+
 SSH options :
 -------------
 
