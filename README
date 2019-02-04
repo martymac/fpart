@@ -298,8 +298,8 @@ Notes about cpio tool :
 Fpsync's option '-m' allows you to use cpio(1) instead of rsync(1) to copy
 files. Cpio(1) is much faster than rsync(1) but there is a catch: when
 re-creating a complex file tree, missing parent directories are created
-on-the-fly. In that case, original directory metadata (e.g. timestamps) is *not*
-copied from source.
+on-the-fly. In that case, original directory metadata (e.g. timestamps) are
+*not* copied from source.
 
 To overcome that limitation, fpsync uses fpart's -zzz option to ask fpart to
 also pack every single directory (0-sized) with file lists. Making directories
@@ -513,8 +513,11 @@ Check out his parsyncfp tool (using fpart) here :
 * Dave Altschuler wrote dsync, a tool using fpart + rsync or rclone that can sync to the cloud :
   https://github.com/daltschu11/dsync
 
-* Bioteam uses fpart + fpsync + rsync to migrate 2 PetaBytes:
+* Bioteam used fpart + fpsync + rsync to migrate 2 PB of data :
   https://www.slideshare.net/chrisdag/practical-petabyte-pushing
+
+* FAS RC (Harvard University) writes about fpsync to move data on Harvard's Odyssey cluster :
+  https://www.rc.fas.harvard.edu/resources/documentation/transferring-data-on-the-cluster/#fpsync
 
 Author / Licence :
 ==================
