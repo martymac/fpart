@@ -493,6 +493,9 @@ which was developed by Jean-Baptiste Denis as the original proof of concept
 See also his newer tool, msrsync :
   https://github.com/jbd/msrsync
 
+They use Fpart :
+================
+
 * Harry Mangalam, from UCI, has an excellent article about data transfer here :
   http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
 Check out his parsyncfp tool (using fpart) here :
@@ -518,6 +521,12 @@ Check out his parsyncfp tool (using fpart) here :
 
 * FAS RC (Harvard University) writes about fpsync to move data on Harvard's Odyssey cluster :
   https://www.rc.fas.harvard.edu/resources/documentation/transferring-data-on-the-cluster/#fpsync
+
+* Standford University's Sherlock HPC cluster offers fpart as a file management tool :
+  https://www.sherlock.stanford.edu/docs/software/list/
+
+* The QCIF (Queensland Cyber Infrastructure Foundation) offers fpart on QRIScloud :
+  https://www.qriscloud.org.au/support/qriscloud-documentation/94-awoonga-software
 
 Author / Licence :
 ==================
