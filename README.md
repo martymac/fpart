@@ -1,16 +1,18 @@
 
-=====================================================================
+***
 Fpart is looking for package maintainers:
+
 * On Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911246
 * On Redhat: https://bugzilla.redhat.com/show_bug.cgi?id=1650621
-Any help welcome :)
-=====================================================================
 
-    _______ ____   __         _      __
-   / /  ___|  _ \ / /_ _ _ __| |_   / /
-  / /| |_  | |_) / / _` | '__| __| / /
- / / |  _| |  __/ / (_| | |  | |_ / /
-/_/  |_|   |_| /_/ \__,_|_|   \__/_/
+Any help welcome :)
+***
+
+      _______ ____   __         _      __
+     / /  ___|  _ \ / /_ _ _ __| |_   / /
+    / /| |_  | |_) / / _` | '__| __| / /
+   / / |  _| |  __/ / (_| | |  | |_ / /
+  /_/  |_|   |_| /_/ \__,_|_|   \__/_/
 
 
 What is fpart ?
@@ -69,31 +71,31 @@ Common usage :
 The following will produce 3 partitions, with (approximatively) the same size
 and number of files. Three files: "var-parts.[0-2]", are generated as output :
 
-$ fpart -n 3 -o var-parts /var
-
-$ ls var-parts*
-var-parts.0 var-parts.1 var-parts.2
-
-$ head -n 2 var-parts.0
-/var/some/file1
-/var/some/file2
+  $ fpart -n 3 -o var-parts /var
+  
+  $ ls var-parts*
+  var-parts.0 var-parts.1 var-parts.2
+  
+  $ head -n 2 var-parts.0
+  /var/some/file1
+  /var/some/file2
 
 The following will produce partitions of 4.3 GB, containing music files ready
 to be burnt to a DVD (for example). Files "music-parts.[0-n]", are generated
 as output :
 
-$ fpart -s 4617089843 -o music-parts /path/to/my/music
+  $ fpart -s 4617089843 -o music-parts /path/to/my/music
 
 The following will produce partitions containing 10000 files each by examining
 /usr first and then /home and display only partition 0 on stdout :
 
-$ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
+  $ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
 
 The following will produce two partitions by re-using du(1) output. Fpart will
 not examine the filesystem but instead re-use arbitrary values printed by du(1)
 and sort them :
 
-$ du * | fpart -n 2 -a
+  $ du * | fpart -n 2 -a
 
 Live mode :
 -----------
