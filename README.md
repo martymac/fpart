@@ -7,13 +7,11 @@ Fpart is looking for package maintainers:
 
 Any help welcome :)
 ***
-
-      _______ ____   __         _      __
-     / /  ___|  _ \ / /_ _ _ __| |_   / /
-    / /| |_  | |_) / / _` | '__| __| / /
-   / / |  _| |  __/ / (_| | |  | |_ / /
-  /_/  |_|   |_| /_/ \__,_|_|   \__/_/
-
+        _______ ____   __         _      __
+       / /  ___|  _ \ / /_ _ _ __| |_   / /
+      / /| |_  | |_) / / _` | '__| __| / /
+     / / |  _| |  __/ / (_| | |  | |_ / /
+    /_/  |_|   |_| /_/ \__,_|_|   \__/_/
 
 What is fpart ?
 ===============
@@ -71,31 +69,31 @@ Common usage :
 The following will produce 3 partitions, with (approximatively) the same size
 and number of files. Three files: "var-parts.[0-2]", are generated as output :
 
-  $ fpart -n 3 -o var-parts /var
-  
-  $ ls var-parts*
-  var-parts.0 var-parts.1 var-parts.2
-  
-  $ head -n 2 var-parts.0
-  /var/some/file1
-  /var/some/file2
+    $ fpart -n 3 -o var-parts /var
+    
+    $ ls var-parts*
+    var-parts.0 var-parts.1 var-parts.2
+    
+    $ head -n 2 var-parts.0
+    /var/some/file1
+    /var/some/file2
 
 The following will produce partitions of 4.3 GB, containing music files ready
 to be burnt to a DVD (for example). Files "music-parts.[0-n]", are generated
 as output :
 
-  $ fpart -s 4617089843 -o music-parts /path/to/my/music
+    $ fpart -s 4617089843 -o music-parts /path/to/my/music
 
 The following will produce partitions containing 10000 files each by examining
 /usr first and then /home and display only partition 0 on stdout :
 
-  $ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
+    $ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
 
 The following will produce two partitions by re-using du(1) output. Fpart will
 not examine the filesystem but instead re-use arbitrary values printed by du(1)
 and sort them :
 
-  $ du * | fpart -n 2 -a
+    $ du * | fpart -n 2 -a
 
 Live mode :
 -----------
@@ -115,20 +113,20 @@ generation.
 
 See the following example :
 
-$ mkdir foo && touch foo/{bar,baz}
-$ fpart -L -f 1 -o /tmp/part.out -W \
-    'echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}' foo/
-== /tmp/part.out.0 ==
-foo/bar
-== /tmp/part.out.1 ==
-foo/baz
+    $ mkdir foo && touch foo/{bar,baz}
+    $ fpart -L -f 1 -o /tmp/part.out -W \
+        'echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}' foo/
+    == /tmp/part.out.0 ==
+    foo/bar
+    == /tmp/part.out.1 ==
+    foo/baz
 
 This example crawls foo/ in live mode (option -L). For each file (option -f,
 1 file per partition), it generates a partition into /tmp/part.out.<n>
 (option -o; <n> is the partition index and will be automatically added by fpart)
 and executes the following post-part hook (option -W) :
 
-echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
+    echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}
 
 This hook will display the name of current partition's output file name as well
 as display its contents.
@@ -144,14 +142,14 @@ data from /data/src to /data/dest.
 First, go to the source directory (as rsync's --files-from option takes a file
 list relative to its source directory) :
 
-$ cd /data/src
+    $ cd /data/src
 
 Then, run fpart from here :
 
-$ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -zz -o /tmp/part.out -W \
-  '/usr/local/bin/sem -j 3
-    "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
-      /data/src/ /data/dest/"' .
+    $ fpart -L -f 10000 -x '.snapshot' -x '.zfs' -zz -o /tmp/part.out -W \
+      '/usr/local/bin/sem -j 3
+        "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME}
+          /data/src/ /data/dest/"' .
 
 This command will start fpart in live mode (option -L), making it generate
 partitions during FS crawling. Fpart will produce partitions containing at most
@@ -163,15 +161,15 @@ each partition will be written to /tmp/part.out.<n> (option -o) and used within
 the post-part hook (option -W), run immediately by fpart once the partition is
 complete :
 
-/usr/local/bin/sem -j 3
-    "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
+    /usr/local/bin/sem -j 3
+        "/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/"
 
 This hook is itself a nested command. It will run GNU Parallel's sem scheduler
 (any other scheduler would do) to run at most 3 rsync jobs in parallel.
 
 The scheduler will finally trigger the following command :
 
-/usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
+    /usr/local/bin/rsync -av --files-from=${FPART_PARTFILENAME} /data/src/ /data/dest/
 
 where ${FPART_PARTFILENAME} will be part of rsync's environment when it runs
 and contains the file name of the partition that has just been generated.
@@ -223,28 +221,28 @@ options.
 Here is a simple representation of how it works :
 -------------------------------------------------
 
-fpsync [args] /data/src/ /data/dst/
-  |
-  +-- fpart (live mode) crawls /data/src/, generates parts.[1] + sync jobs ->
-  |    \    \    \
-  |     \    \    +___ part. #n + job #n
-  |      \    \
-  |       \    +______ part. #1 + job #1
-  |        \
-  |         +_________ part. #0 + job #0
-  |
-  +-- fpsync scheduler, executes jobs either locally or remotely ----------->
-       \    \    \
-        \    \    +___ sync job #n... --------------------------------------> +
-         \    \                                                               |
-          \    +______ sync job #1 ---------------------------------->        |
-           \                                                                  |
-            +_________ sync job #0 ----------------------------->             +
-                                                                             /
-                                                                            /
-              Filesystem tree rebuilt and synchronized! <------------------+
-
-[1] Either containing file lists (default mode) or directory lists (option -E)
+    fpsync [args] /data/src/ /data/dst/
+      |
+      +-- fpart (live mode) crawls /data/src/, generates parts.[1] + sync jobs ->
+      |    \    \    \
+      |     \    \    +___ part. #n + job #n
+      |      \    \
+      |       \    +______ part. #1 + job #1
+      |        \
+      |         +_________ part. #0 + job #0
+      |
+      +-- fpsync scheduler, executes jobs either locally or remotely ----------->
+           \    \    \
+            \    \    +___ sync job #n... --------------------------------------> +
+             \    \                                                               |
+              \    +______ sync job #1 ---------------------------------->        |
+               \                                                                  |
+                +_________ sync job #0 ----------------------------->             +
+                                                                                 /
+                                                                                /
+                  Filesystem tree rebuilt and synchronized! <------------------+
+    
+    [1] Either containing file lists (default mode) or directory lists (option -E)
 
 File mode :
 -----------
@@ -258,17 +256,17 @@ The following examples show two typical usage.
 
 The command :
 
-$ fpsync -n 4 -f 1000 -s $((100 * 1024 * 1024)) \
-    /data/src/ /data/dst/
+    $ fpsync -n 4 -f 1000 -s $((100 * 1024 * 1024)) \
+        /data/src/ /data/dst/
 
 will synchronize /data/src/ to /data/dst/ using 4 local workers, each one
 transferring at most 1000 files and 100 MB per synchronization job.
 
 The command :
 
-$ fpsync -n 8 -f 1000 -s $((100 * 1024 * 1024)) \
-    -w login@machine1 -w login@machine2 -d /mnt/nfs/fpsync \
-    /data/src/ /data/dst/
+    $ fpsync -n 8 -f 1000 -s $((100 * 1024 * 1024)) \
+        -w login@machine1 -w login@machine2 -d /mnt/nfs/fpsync \
+        /data/src/ /data/dst/
 
 will synchronize /data/src/ to /data/dst/ using the same transfer limits, but
 through 8 concurrent synchronization jobs spread over two machines (machine1 and
@@ -341,7 +339,7 @@ directory (AKA './' when received by cpio).
 - when using GNU cpio, you will get the following warnings when performing a
 second pass :
 
-  <file> not created: newer or same age version exists
+    <file> not created: newer or same age version exists
 
 You can ignore those warnings as that second pass will fix directory timestamps
 anyway.
@@ -396,8 +394,8 @@ If you need specific options for the first case, you can pass ssh options by
 using rsync's option '-e' (through fpsync's option '-o') and triple-escaping
 the quote characters :
 
-$ fpsync [...] -o "-lptgoD -v --numeric-ids -e \\\"ssh -i ssh_key\\\"" \
-    /data/src/ login@remote:/data/dst/
+    $ fpsync [...] -o "-lptgoD -v --numeric-ids -e \\\"ssh -i ssh_key\\\"" \
+        /data/src/ login@remote:/data/dst/
 
 The key will have to be present and accessible on all workers.
 
@@ -405,9 +403,9 @@ Fpsync does not offer options to deal with the second case. You will have to
 tune your ssh config file to enable passwordless communication with workers.
 Something like :
 
-$ cat ~/.ssh/config
-Host remote
-IdentityFile /path/to/the/passwordless/key
+    $ cat ~/.ssh/config
+    Host remote
+    IdentityFile /path/to/the/passwordless/key
 
 should work.
 
@@ -439,28 +437,28 @@ Installing :
 
 Packages are already available for the following operating systems :
 
-FreeBSD :       https://www.freshports.org/sysutils/fpart
-Debian :        https://packages.debian.org/fpart
-Ubuntu :        https://packages.ubuntu.com/search?keywords=fpart
-CentOS/Fedora : https://copr.fedorainfracloud.org/coprs/survient/fpart/
-NixOS :         https://nixos.org/nixos/packages.html
+* FreeBSD :       https://www.freshports.org/sysutils/fpart
+* Debian :        https://packages.debian.org/fpart
+* Ubuntu :        https://packages.ubuntu.com/search?keywords=fpart
+* CentOS/Fedora : https://copr.fedorainfracloud.org/coprs/survient/fpart/
+* NixOS :         https://nixos.org/nixos/packages.html
 
 If a pre-compiled package is not available for your favourite operating system,
 installing from sources is simple. First, if there is no 'configure' script in
 the main directory, run :
 
-$ autoreconf -i
+    $ autoreconf -i
 
 (autoreconf comes from the GNU autotools), then run :
 
-$ ./configure
-$ make
+    $ ./configure
+    $ make
 
 to configure and build fpart.
 
 Finally, install fpart (as root) :
 
-# make install
+    # make install
 
 Portability considerations :
 ============================
@@ -542,6 +540,8 @@ Contributions :
 ===============
 
 FTS code comes from FreeBSD :
+
     lib/libc/gen/fts.c -> fts.c
     include/fts.h      -> fts.h
+
 and is available under the BSD license.
