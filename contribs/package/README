@@ -1,8 +1,23 @@
-How to build fpart on Debian (e.g. for fpart version 1.1.0) :
+How to build Debian packages (e.g. for fpart version 1.1.0) :
+*************************************************************
+
+1) Firt, install required tools:
 
 # apt-get install build-essential curl debhelper automake dh-autoreconf
 
-$ cd <repository root>
+2) Clone (and/or) update fpart repository:
+
+$ git clone 'https://github.com/martymac/fpart.git'
+
+$ cd fpart
+$ git checkout master
+$ git pull
+
 $ cp -R contribs/package/debian .
+$ git checkout fpart-1.1.0
 $ curl 'http://contribs.martymac.org/fpart/fpart-1.1.0.tar.gz' > ../fpart_1.1.0.orig.tar.gz
+
+3) Build source and binary packages:
+
+$ dpkg-source -b .
 $ dpkg-buildpackage -us -us -b
