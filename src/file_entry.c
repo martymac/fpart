@@ -559,7 +559,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 }
 
 /* Compare entries to list directories first
-   - compar() function used by fts_open() when in leaf_dirs mode */
+   - compar() function used by fts_open() when in dirs_only or leaf_dirs mode */
 static int
 #if (defined(__linux__) || defined(__NetBSD__)) && !defined(EMBED_FTS)
 fts_dirsfirst(const FTSENT **a, const FTSENT **b)

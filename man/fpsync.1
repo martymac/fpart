@@ -95,12 +95,17 @@ concurrent sync jobs (either locally or remotely, see below). Default:
 .It Ic -f Ar files
 Transfer at most
 .Ar files
-files or directories per sync job. Default:
+files or directories per sync job.
+.Sy 0
+means unlimited but you must at least specify one file or size limit.
+Default:
 .Sy 2000
 .It Ic -s Ar size
 Transfer at most
 .Ar size
 bytes per sync job.
+.Sy 0
+means unlimited but you must at least specify one file or size limit.
 .br
 Default:
 .Sy 4294967296

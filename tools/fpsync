@@ -174,19 +174,19 @@ parse_opts () {
             fi
             ;;
         "f")
-            if is_num "${OPTARG}" && [ ${OPTARG} -gt 0 ]
+            if is_num "${OPTARG}" && [ ${OPTARG} -ge 0 ]
             then
                 OPT_FPMAXPARTFILES=${OPTARG}
             else
-                end_die "Option -f expects a numeric value > 0"
+                end_die "Option -f expects a numeric value >= 0"
             fi
             ;;
         "s")
-            if is_num "${OPTARG}" && [ ${OPTARG} -gt 0 ]
+            if is_num "${OPTARG}" && [ ${OPTARG} -ge 0 ]
             then
                 OPT_FPMAXPARTSIZE=${OPTARG}
             else
-                end_die "Option -s expects a numeric value > 0"
+                end_die "Option -s expects a numeric value >= 0"
             fi
             ;;
         "E")
@@ -257,6 +257,12 @@ parse_opts () {
         esac
     done
     shift $((${OPTIND} - 1))
+
+    # Validate partitions' constraints
+    if [ ${OPT_FPMAXPARTFILES} -eq 0 ] && [ ${OPT_FPMAXPARTSIZE} -eq 0 ]
+    then
+        end_die "Please specify a least a file (-f) or size (-s) limit for partitions"
+    fi
 
     # Validate OPT_FPSHDIR (shared directory)
     if [ -z "${OPT_WRKRS}" ]
@@ -887,8 +893,8 @@ then
     # ${JOBS_QUEUEDIR}/
     cd "${OPT_SRCDIR}" && \
         ${SUDO} "${FPART_BIN}" \
-        -f "${OPT_FPMAXPARTFILES}" \
-        -s "${OPT_FPMAXPARTSIZE}" \
+        $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && echo -f "${OPT_FPMAXPARTFILES}") \
+        $([ ${OPT_FPMAXPARTSIZE} -gt 0 ] && echo -s "${OPT_FPMAXPARTSIZE}") \
         -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | \
         tee -a "${FPART_LOGFILE}"
