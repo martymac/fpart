@@ -1,11 +1,10 @@
 
 ***
-Fpart is looking for package maintainers:
+Fpart is looking for a Debian package maintainer:
 
-* On Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911246
-* On Redhat: https://bugzilla.redhat.com/show_bug.cgi?id=1650621
+* https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911246
 
-Any help welcome :)
+Any volunteer is welcome :)
 ***
         _______ ____   __         _      __
        / /  ___|  _ \ / /_ _ _ __| |_   / /
