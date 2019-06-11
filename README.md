@@ -492,8 +492,8 @@ which was developed by Jean-Baptiste Denis as the original proof of concept
 See also his newer tool, msrsync :
   https://github.com/jbd/msrsync
 
-They use Fpart :
-================
+They use Fpart or talk about it :
+=================================
 
 * Harry Mangalam, from UCI, has an excellent article about data transfer here :
   http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
@@ -526,6 +526,9 @@ Check out his parsyncfp tool (using fpart) here :
 
 * The QCIF (Queensland Cyber Infrastructure Foundation) offers fpart on QRIScloud :
   https://www.qriscloud.org.au/support/qriscloud-documentation/94-awoonga-software
+
+* Steve French mentioned fpart and fpsync at 2019 Linux Storage, Filesystem, and Memory-Management Summit (LSFMM) :
+  https://lwn.net/Articles/789623/
 
 Author / Licence :
 ==================
