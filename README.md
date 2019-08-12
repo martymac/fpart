@@ -530,6 +530,9 @@ Check out his parsyncfp tool (using fpart) here :
 * Steve French mentioned fpart and fpsync at 2019 Linux Storage, Filesystem, and Memory-Management Summit (LSFMM) :
   https://lwn.net/Articles/789623/
 
+* Microsoft suggests using fpart and fpsync to speed-up file transfers on Azure :
+  https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux
+
 Author / Licence :
 ==================
 
