@@ -257,7 +257,7 @@ Also, note that hooks are executed in a synchronous way while crawling
 filesystem, so 1) avoid executing commands that take a long time to return as it
 slows down filesystem crawling and 2) do not presume cwd (PWD) is the one fpart
 has been started in, as it is regularly changed to speed up crawling (use
-abolute paths within hooks).
+absolute paths within hooks).
 .It Ic -W Ar cmd
 Same as
 .Fl w ,
