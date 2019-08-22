@@ -3,13 +3,22 @@ fpart (1.1.0-1) unstable; urgency=low
   * New upstream release (closes: #881806)
   * New package maintainer (closes: #911246, #924334)
   * debian/control
-    - add cpio in Depends
+    - Update Vcs fields
+    - Bump Standards-Version to 4.4.0 (no changes required)
+    - Use debhelper-compat (= 12)
+    - Add cpio to Depends
+    - Remove unnecessary minimal versions from Depends
+  * debian/copyright
+    - Use machine-readable format
+  * debian/watch
+    - Switch to version 4
+    - Use https in URL
 
- -- Ganael Laplanche <ganael.laplanche@martymac.org>  Mon, 19 Nov 2018 22:34:08 +0200
+ -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Wed, 21 Aug 2019 23:41:38 +0200
 
 fpart (0.9.2-1) unstable; urgency=low
 
-  * New upstream release 
+  * New upstream release
   * debian/control
     - add sudo in Depends
     - add dh-autoreconf in Build-Depends
@@ -18,7 +27,7 @@ fpart (0.9.2-1) unstable; urgency=low
 
 fpart (0.9.1-1) unstable; urgency=low
 
-  * New upstream release 
+  * New upstream release
   * debian/control
     - Bump Standards-Version to 3.9.6.1
   * debian/manpages

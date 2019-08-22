@@ -1,17 +1,22 @@
 Source: fpart
 Section: misc
 Priority: optional
-Maintainer: Ganael Laplanche <ganael.laplanche@martymac.org>
-Build-Depends: debhelper (>= 9.0), automake (>= 1.13.3), dh-autoreconf (>= 10)
-Standards-Version: 3.9.6.1
+Maintainer: Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+Build-Depends: automake,
+               debhelper-compat (=12)
+Standards-Version: 4.4.0
 Homepage: http://sourceforge.net/projects/fpart/
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/fpart.git
-Vcs-Git: git://git.debian.org/collab-maint/fpart.git
+Vcs-Browser: https://salsa.debian.org/debian/fpart/
+Vcs-Git: https://salsa.debian.org/debian/fpart.git
 
 Package: fpart
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, rsync (>= 3.1.1), sudo (>= 1.8.12), cpio (>= 2.11)
-Description: sort file trees and pack them into bags 
+Depends: cpio,
+         rsync,
+         sudo,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: sort file trees and pack them into bags
  Fpart is a tool that helps you sort file trees and pack them into bags (called
  "partitions"). It is developed in C and available under the BSD license.
  .
@@ -22,7 +27,7 @@ Description: sort file trees and pack them into bags
  Once generated, partitions are either printed as file lists to stdout
  (default) or to files. Those lists can then be used by third party programs.
  .
- Fpart also includes a live mode, which allows it to crawl very large 
+ Fpart also includes a live mode, which allows it to crawl very large
  filesystems and produce partitions in live. Hooks are available to act on
  those partitions  (e.g. immediately start a transfer using rsync(1)) without
  having to wait for the filesystem traversal job to be finished. Used this way,
