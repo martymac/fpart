@@ -1,11 +1,3 @@
-
-***
-Fpart is looking for a Debian package maintainer:
-
-* https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911246
-
-Any volunteer is welcome :)
-***
         _______ ____   __         _      __
        / /  ___|  _ \ / /_ _ _ __| |_   / /
       / /| |_  | |_) / / _` | '__| __| / /
