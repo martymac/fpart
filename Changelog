@@ -1,6 +1,13 @@
 2019/??/??, 1.2.0 ('??') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
+    - fpart: exclude files earlier (fixes GH issue #14)
+      Before that change, excluded files would not make a directory empty and
+      still account for its size; excluded files are now considered absent.
+      That change does not apply when a directory size is computed after
+      a certain depth (option -d) has been reached (in that case, once the
+      maximum depth has been reached, every single file accounts for a directory
+      size).
 2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments

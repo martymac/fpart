@@ -154,8 +154,11 @@ Do not cross filesystem boundaries (default: cross).
 Include files or directories matching
 .Ar pattern
 only (and discard all other files). This option may be specified several times.
-It does not apply when computing size of directories to be added as leaf
-entries (the computed size will then include every file within directory).
+It does not apply when computing size of directories to be added once a maximum
+depth (see option
+.Fl d
+) has been reached (in that case, once the maximum depth has been reached, every
+single file accounts for a directory size).
 .It Ic -Y Ar pattern
 Same as
 .Fl y
@@ -169,9 +172,11 @@ This option can be used in conjunction with
 and
 .Fl Y .
 In this case, exclusion is performed after. This option may be specified
-several times. It does not apply when computing size of directories
-to be added as leaf entries (the computed size will then include every file
-within directory).
+several times. It does not apply when computing size of directories to be added
+once a maximum depth (see option
+.Fl d
+) has been reached (in that case, once the maximum depth has been reached, every
+single file accounts for a directory size).
 .It Ic -X Ar pattern
 Same as
 .Fl x

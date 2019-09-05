@@ -731,7 +731,7 @@ add_directory:
                         snprintf(curdir_entry_path, malloc_size, "%s",
                             p->fts_path);
 
-                    /* compute current dir size */
+                    /* adapt curdir_size for special cases */
                     if((p->fts_level > 0) &&
                         (options->cross_fs_boundaries == OPT_NOCROSSFSBOUNDARIES) &&
                         (p->fts_parent->fts_statp->st_dev != p->fts_statp->st_dev))
@@ -739,11 +739,20 @@ add_directory:
                            (non-root) directories */
                         curdir_size = 0;
                     else if(curdir_empty)
+                        /* we know that the current dir is empty (or that we
+                           fake an empty one), ensure curdir_size is 0 */
                         curdir_size = 0;
-                    else if(options->dirs_only == OPT_NODIRSONLY)
+                    else if((options->dirs_only != OPT_DIRSONLY) &&
+                            ((options->leaf_dirs != OPT_LEAFDIRS) || (curdir_dirsfound)))
+                        /* when dirs_only mode activated or
+                           leaf_dirs mode activated and current directory is a
+                           leaf, then we can use curdir_size.
+                           In all other cases (e.g. when dir_depth requested and
+                           reached), we must compute the directory size
+                           recursively. */
                         curdir_size =
                             get_size(p->fts_accpath, p->fts_statp, options);
-                    /* else leave curdir_size untouched */
+                    /* else, trust curdir_size and leave it untouched */
 
                     /* add or display it */
                     if(handle_file_entry
@@ -803,12 +812,20 @@ reset_directory:
             /* XXX default means remaining file types:
                FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
+                fsize_t curfile_size = 0;
+
+                /* check for name validity regarding include/exclude options */
+                if(!valid_filename(p->fts_name, options, 1)) {
+                    if(options->verbose >= OPT_VERBOSE)
+                        fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
+                    continue;
+                }
+
                 /* get current file size and add it to our current directory
                    size. We must have visited all directories first for that
                    total to be right ; this is achieved by using a compar()
                    function with fts_open() */
-                fsize_t curfile_size =
-                    get_size(p->fts_accpath, p->fts_statp, options);
+                curfile_size = get_size(p->fts_accpath, p->fts_statp, options);
 
                 curdir_empty = 0; /* mark current dir as non empty */
                 curdir_size += curfile_size;
@@ -823,13 +840,6 @@ reset_directory:
                     ((options->dirs_only == OPT_DIRSONLY) ||
                     ((options->leaf_dirs == OPT_LEAFDIRS) && (!curdir_dirsfound))))
                     continue;
-
-                /* check for name validity regarding include/exclude options */
-                if(!valid_filename(p->fts_name, options, 1)) {
-                    if(options->verbose >= OPT_VERBOSE)
-                        fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
-                    continue;
-                }
 
                 /* add or display it */
                 if(handle_file_entry
