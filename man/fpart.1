@@ -27,7 +27,7 @@
 .Os
 .Sh NAME
 .Nm fpart
-.Nd Sort and pack files into partitions.
+.Nd Sort and pack files into partitions
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
@@ -76,8 +76,8 @@ Print version
 Create exactly
 .Ar num
 partitions and try to generate partitions with the same size and number of
-files. This option cannot be used in conjunction
-with
+files.
+This option cannot be used in conjunction with
 .Fl f ,
 .Fl s
 or
@@ -85,17 +85,20 @@ or
 .It Ic -f Ar files
 Create partitions containing at most
 .Ar files
-files or directories. This option can be used in conjunction with
+files or directories.
+This option can be used in conjunction with
 .Fl s
 and
 .Fl L .
 .It Ic -s Ar size
 Create partitions with a maximum size of
 .Ar size
-bytes. With this option, partition 0 may be used to handle files that do not
+bytes.
+With this option, partition 0 may be used to handle files that do not
 fit in a regular partition, given the provided
 .Ar size
-limit. This option can be used in conjunction with
+limit.
+This option can be used in conjunction with
 .Fl f
 and
 .Fl L .
@@ -114,18 +117,20 @@ then list is read from stdin.
 Input contains arbitrary values; just sort them (do not crawl filesystem).
 Input must follow the
 .Dq Li "size(blank)path"
-scheme. This option is incompatible with crawling-related options.
+scheme.
+This option is incompatible with crawling-related options.
 .El
 .Sh OUTPUT CONTROL
 .Bl -tag -width indent
 .It Ic -o Ar outfile
 Output partitions' contents to
 .Ar outfile
-template. Multiple files will be
-generated given that template. Each
+template.
+Multiple files will be generated given that template.
+Each
 .Ar outfile
-will get partition number as
-a suffix. If
+will get partition number as a suffix.
+If
 .Ar outfile
 is
 .Dq Li "-" ,
@@ -153,7 +158,8 @@ Do not cross filesystem boundaries (default: cross).
 .It Ic -y Ar pattern
 Include files or directories matching
 .Ar pattern
-only (and discard all other files). This option may be specified several times.
+only (and discard all other files).
+This option may be specified several times.
 It does not apply when computing size of directories to be added once a maximum
 depth (see option
 .Fl d
@@ -162,8 +168,11 @@ single file accounts for a directory size).
 .It Ic -Y Ar pattern
 Same as
 .Fl y
-but case insensitive. This option may not be available on your platform (at
-least FreeBSD and GNU/Linux support it, Solaris does not).
+but case insensitive.
+This option may not be available on your platform (at least
+.Fx
+and
+GNU/Linux support it, Solaris does not).
 .It Ic -x Ar pattern
 Exclude files or directories matching
 .Ar pattern .
@@ -171,66 +180,76 @@ This option can be used in conjunction with
 .Fl y
 and
 .Fl Y .
-In this case, exclusion is performed after. This option may be specified
-several times. It does not apply when computing size of directories to be added
-once a maximum depth (see option
+In this case, exclusion is performed after.
+This option may be specified several times.
+It does not apply when computing size of directories to be added once a maximum
+depth (see option
 .Fl d
 ) has been reached (in that case, once the maximum depth has been reached, every
 single file accounts for a directory size).
 .It Ic -X Ar pattern
 Same as
 .Fl x
-but case insensitive. This option may not be available on your platform (at
-least FreeBSD and GNU/Linux support it, Solaris does not).
+but case insensitive.
+This option may not be available on your platform (at least FreeBSD and
+GNU/Linux support it, Solaris does not).
 .El
 .Sh DIRECTORY HANDLING
 .Bl -tag -width indent
 .It Fl z
-Pack empty directories. By default, fpart will pack files only (except when
-using the
+Pack empty directories.
+By default, fpart will pack files only (except when using the
 .Fl d
 or
 .Fl D
-options). This option can be useful for tools such as
+options).
+This option can be useful for tools such as
 .Xr rsync 1
 to be able to recreate a full file tree when used with fpart (e.g. using
-rsync's --files-from option). See the
+rsync's --files-from option).
+See the
 .Fl zz
 option to also pack un-readable directories.
 .It Fl zz
 Treat un-readable directories as empty, causing them to be packed anyway.
 .It Fl zzz
-Pack all directories (as empty). Useful when 3rd party tools need directory
-entries to update them (e.g. cpio).
+Pack all directories (as empty).
+Useful when 3rd party tools need directory entries to update them (e.g. cpio).
 .It Ic -d Ar depth
 After a certain
 .Ar depth ,
 pack directories instead of files (directories themselves will be added to
-partitions, instead of their content). You can force a specific file to be
-packed anyway by listing it on the command line explicitly.
+partitions, instead of their content).
+You can force a specific file to be packed anyway by listing it on the command
+line explicitly.
 .It Fl D
 Implies
 .Fl z .
 Pack leaf directories: if a directory contains files only, it will be packed as
-a single entry. You can force a specific file to be packed anyway by listing it
-on the command line explicitly.
+a single entry.
+You can force a specific file to be packed anyway by listing it on the command
+line explicitly.
 .It Fl E
 Implies
 .Fl D .
 Pack directories only (work on a per-directory basis): in that mode, no file
-will be packed. Instead, each directory will be packed as a single entry with
-a size being the sum of all top-level files' sizes. You can force a specific
-file to be packed anyway by listing it on the command line explicitly.
+will be packed.
+Instead, each directory will be packed as a single entry with a size being the
+sum of all top-level files' sizes.
+You can force a specific file to be packed anyway by listing it on the command
+line explicitly.
 .El
 .Sh LIVE MODE
 .Bl -tag -width indent
 .It Fl L
-Live mode (default: disabled). When using this mode, partitions will be
-generated while crawling filesystem. This option saves time and memory, but does
-not give partition 0 a special meaning (see option
+Live mode (default: disabled).
+When using this mode, partitions will be generated while crawling filesystem.
+This option saves time and memory, but does not give partition 0 a special
+meaning (see option
 .Fl s
-). As a consequence, it can generate partitions
-larger than the size specified with option
+).
+As a consequence, it can generate partitions larger than the size specified
+with option
 .Fl s .
 This option can be used in conjunction with options
 .Fl f
@@ -256,8 +275,9 @@ state of the program:
 .Ev FPART_PARTNUMFILES
 (number of files in current partition),
 .Ev FPART_PID
-(PID of fpart). Note that variables may or may not be defined, depending of
-requested options and current partition's state when the hook is triggered.
+(PID of fpart).
+Note that variables may or may not be defined, depending of requested options
+and current partition's state when the hook is triggered.
 Also, note that hooks are executed in a synchronous way while crawling
 filesystem, so 1) avoid executing commands that take a long time to return as it
 slows down filesystem crawling and 2) do not presume cwd (PWD) is the one fpart
@@ -283,8 +303,9 @@ bytes.
 .It Ic -r Ar num
 Round each file size up to next
 .Ar num
-bytes multiple. This option can be used in conjunction with overloading, which
-is done *before* rounding.
+bytes multiple.
+This option can be used in conjunction with overloading, which is done *before*
+rounding.
 .El
 .Sh EXAMPLES
 Here are some examples:
@@ -295,16 +316,17 @@ Three files: var-parts.0, var-parts.1 and var-parts.2 are generated as output.
 .It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
 Produce partitions of 4.4 GB, containing music files from /path/to/music as well
 as MP3 files from current directory; with such a partition size, each partition
-content will be ready to be burnt to a DVD. Files
-music-parts.0 to music-parts.n, are generated as output.
+content will be ready to be burnt to a DVD.
+Files music-parts.0 to music-parts.n, are generated as output.
 .It Li "find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'"
 Produce partitions containing 10000 files each by examining /usr first and then
 /home and display only partition 0 on stdout.
 .It Li "du * | fpart -n 2 -a"
 Produce two partitions by using
 .Xr du 1
-output. Fpart will not examine the file
-system but instead use arbitrary values printed by
+output.
+Fpart will not examine the file system but instead use arbitrary values printed
+by
 .Xr du 1
 and sort them.
 .El

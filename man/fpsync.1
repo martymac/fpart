@@ -27,7 +27,7 @@
 .Os
 .Sh NAME
 .Nm fpsync
-.Nd Synchronize directories in parallel using fpart + rsync or cpio.
+.Nd Synchronize directories in parallel using fpart + rsync or cpio
 .Sh SYNOPSIS
 .Nm
 .Op Fl h
@@ -63,7 +63,8 @@ and spawns jobs to synchronize them to
 Synchronization jobs can be executed either locally or remotely (using SSH
 workers, see option
 .Fl w )
-and are executed on-the-fly while filesystem crawling goes on. This makes
+and are executed on-the-fly while filesystem crawling goes on.
+This makes
 .Nm
 a good tool for migrating large filesystems.
 .Sh OPTIONS
@@ -71,11 +72,13 @@ a good tool for migrating large filesystems.
 .It Fl h
 Print help
 .It Fl v
-Verbose mode. Can be be specified several times to increase verbosity level.
+Verbose mode.
+Can be be specified several times to increase verbosity level.
 .It Ic -m Ar tool
 External copy
 .Ar tool
-used to synchronize files. Currently supported tools are:
+used to synchronize files.
+Currently supported tools are:
 .Sy rsync
 and
 .Sy cpio .
@@ -83,14 +86,16 @@ Default:
 .Sy rsync .
 When using
 .Sy cpio
-and more than one worker, directory timestamps may not be replicated. A second
-pass will fix them. See the
+and more than one worker, directory timestamps may not be replicated.
+A second pass will fix them.
+See the
 .Sy README
 file for more details.
 .It Ic -n Ar jobs
 Start
 .Ar jobs
-concurrent sync jobs (either locally or remotely, see below). Default:
+concurrent sync jobs (either locally or remotely, see below).
+Default:
 .Sy 2
 .It Ic -f Ar files
 Transfer at most
@@ -111,25 +116,27 @@ Default:
 .Sy 4294967296
 (4 GB)
 .It Fl E
-Work on a per-directory basis (rsync tool only). In that mode,
+Work on a per-directory basis (rsync tool only).
+In that mode,
 .Nm
-works with lists of directories instead of files. That mode may generate
-coarse-grained lists but enables
+works with lists of directories instead of files.
+That mode may generate coarse-grained lists but enables
 .Xr rsync 1 's
 .Cm --delete
 option by default (
-.Sy WARNING!!!
+.Sy WARNING ! ! !
 ), making it a good candidate for a final (cleaning) pass after several
 incremental passes using standard (file) mode.
 .It Ic -w Ar wrks
 Use remote SSH
 .Ar wrks
-to synchronize files. Synchronization jobs are executed locally when this option
-is not set.
+to synchronize files.
+Synchronization jobs are executed locally when this option is not set.
 .Ar wrks
 is a space-separated list of login@machine connection strings and can be
-specified several times. You must be allowed to connect to those machines
-using a SSH key to avoid user interaction.
+specified several times.
+You must be allowed to connect to those machines using a SSH key to avoid user
+interaction.
 .It Ic -d Ar shdir
 Set
 .Nm
@@ -137,10 +144,11 @@ shared directory to
 .Ar shdir .
 This option is mandatory when using SSH workers and set by default to
 .Ar tmpdir
-when running locally. The specified directory must be an absolute path ; it
-will be used to handle communications with SSH hosts (sharing partitions and
-log files) and, as a consequence, must be made available to all participating
-hosts (e.g. through a r/w NFS mount), including the master one running
+when running locally.
+The specified directory must be an absolute path ; it will be used to handle
+communications with SSH hosts (sharing partitions and log files) and, as a
+consequence, must be made available to all participating hosts (e.g. through a
+r/w NFS mount), including the master one running
 .Nm .
 .It Ic -t Ar tmpdir
 Set
@@ -150,7 +158,8 @@ temporary directory to
 This directory remains local and does not need to be shared amongst SSH workers
 when using the
 .Fl w
-option. Default:
+option.
+Default:
 .Pa /tmp/fpsync
 .It Ic -r Ar jobname
 Resume job
@@ -159,8 +168,8 @@ and restart synchronizing remaining partitions from a previous run.
 .Ar jobname
 can be obtained using verbose mode (see option
 .Fl v ) .
-Note that filesystem crawling is skipped when resuming a previous run. As a
-consequence, options
+Note that filesystem crawling is skipped when resuming a previous run.
+As a consequence, options
 .Fl f ,
 .Fl s ,
 .Fl o ,
@@ -192,16 +201,18 @@ options with
 Default:
 .Cm -x .zfs -x .snapshot* -x .ckpt
 .It Fl S
-Sudo mode. Use
+Sudo mode.
+Use
 .Xr sudo 8
 for filesystem crawling and synchronizations.
 .It Pa src_dir/
-Source directory. It must be absolute and available on all participating hosts
-(including the master one, running
+Source directory.
+It must be absolute and available on all participating hosts (including the
+master one, running
 .Nm ) .
 .It Pa dst_url/
-Destination directory or URL (rsync tool only). If a remote URL is provided, it
-must be supported by
+Destination directory or URL (rsync tool only).
+If a remote URL is provided, it must be supported by
 .Xr rsync 1 .
 All participating workers must be able to reach that target.
 .El
@@ -224,11 +235,11 @@ at the time it stopped.
 This unique feature gives the administrator the ability to stop
 .Nm
 and restart it later, without having to restart the whole filesystem crawling
-and synchronization process. Note that resuming is only possible when
-filesystem crawling step has finished.
+and synchronization process.
+Note that resuming is only possible when filesystem crawling step has finished.
 .sp
-During synchronization, you can press CTRL-C to interrupt the process. The
-first CTRL-C prevents new synchronizations from being submitted and the
+During synchronization, you can press CTRL-C to interrupt the process.
+The first CTRL-C prevents new synchronizations from being submitted and the
 process will wait for current synchronizations to be finished before exiting.
 If you press CTRL-C again, current synchronizations will be killed and
 .Nm
@@ -244,8 +255,8 @@ process is postponed using rsync's
 option).
 .sp
 On certain systems, CTRL-T can be pressed to get the status of current and
-remaining parts to be synchronized. This can also be achieved by sending a
-SIGINFO to the
+remaining parts to be synchronized.
+This can also be achieved by sending a SIGINFO to the
 .Nm
 process.
 .sp
@@ -268,11 +279,13 @@ Synchronizes
 to
 .Pa /mnt/dst/
 using 2 concurrent jobs executed remotely
-on 2 SSH workers (machine1 and machine2). The shared directory is set to
+on 2 SSH workers (machine1 and machine2).
+The shared directory is set to
 .Pa /mnt/fpsync
 and mounted on the machine running
 .Nm ,
-as well as on machine1 and machine2. The source directory
+as well as on machine1 and machine2.
+The source directory
 .Pa ( /mnt/src/ )
 is also available on those 3 machines, while the destination directory
 .Pa ( /mnt/dst/ )
@@ -287,8 +300,8 @@ makes several options not usable, such as rsync's
 .Cm --delete .
 If your source directory is live while
 .Nm
-is running, you will have to delete extra files from destination directory. This
-is traditionally done by using a final -offline-
+is running, you will have to delete extra files from destination directory.
+This is traditionally done by using a final -offline-
 .Xr rsync 1
 pass that will use this option, but you can also use
 .Nm
@@ -299,20 +312,25 @@ to perform the same task using several workers.
 .Nm
 enqueues synchronization jobs on disk, within the
 .Pa tmpdir/queue
-directory. Be careful to host this queue on a filesystem that can handle
-fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
+directory.
+Be careful to host this queue on a filesystem that can handle fine-grained
+mtime timestamps (i.e. with a sub-second precision) if you want
 the queue to be processed in order when
 .Xr fpart 1
-generates several jobs per second. On FreeBSD,
+generates several jobs per second.
+On
+.Fx ,
 .Xr VFS 9
 timestamps' precision can be
-tuned using the 'vfs.timestamp_precision' sysctl. See
+tuned using the 'vfs.timestamp_precision' sysctl.
+See
 .Xr vfs_timestamp 9 .
 .sp
 Contrary to
 .Xr rsync 1 ,
 .Nm
-enforces the final '/' on the source directory. It means that directory
+enforces the final '/' on the source directory.
+It means that directory
 .Sy contents
 are synchronized, not the source directory itself (i.e. you will not get a
 subdirectory of the name of the source directory in the target directory after
