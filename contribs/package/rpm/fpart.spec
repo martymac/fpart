@@ -1,6 +1,6 @@
 Name:    fpart
-Version: 1.1.0
-Release: 2%{?dist}
+Version: 1.2.0
+Release: 1%{?dist}
 License: BSD
 Summary: a tool that sorts files and packs them into bags
 URL:     http://contribs.martymac.org
@@ -22,7 +22,7 @@ files. It can also produce partitions with a given number of files or a limited
 size.
 
 %prep
-%setup -q -n %{name}-%{name}-%{version}
+%setup -q -n %{name}-%{version}
 
 %build
 autoreconf --install
@@ -41,6 +41,11 @@ make %{?_smp_mflags}
 %{_bindir}/fpsync
 
 %changelog
+* Tue Oct 29 2019 Christopher Voltz <christopher.voltz@hpe.com> - 1.2.0-1
+- Version 1.2.0
+- Added instructions for building RPMs
+- Fixed build directory name
+
 * Mon Nov 19 2018 Sam P <survient@fedoraproject.org> - 1.1.0-2
 - cleaned up prep and build sections
 - trued up changelog entries
