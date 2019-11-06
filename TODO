@@ -9,11 +9,10 @@ Fpart:
 - Align get_size() and init_file_entries() behaviour:
   - add name filters to get_size() ?
   - ignore FS options in get_size() ?
-- Deduplicate input paths if a directory is another's parent
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
 - Add constraints, e.g. : force hardlinks to belong to the same partition
-- Display/accept size in a human-friendly format
+- Accept size values in a human-friendly format
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
@@ -31,6 +30,8 @@ Fpsync:
 - Add an option to force resuming of an already-finished jobname
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)
+- Accept size values in a human-friendly format
+- Add options to limit total bandwidth / per-syncer load
 
 Autotools:
 - Use config.h (for program version, data types, header inclusion,
