@@ -34,6 +34,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/* fts(3) */
+#if defined(EMBED_FTS)
+#include "fts.h"
+#else
+#include <fts.h>
+#endif
+
 /* fnmatch(3) and FNM_CASEFOLD
    FNM_CASEFOLD is a GNU extension and may not be available */
 #include <fnmatch.h>
@@ -78,9 +85,9 @@ fsize_t get_size(char *file_path, struct stat *file_stat,
 char *abs_path(const char *path);
 int str_push(char ***array, unsigned int *num, const char * const str);
 void str_cleanup(char ***array, unsigned int *num);
-int str_match(const char * const * const array, const unsigned int num,
-    const char * const str, const unsigned char ignore_case);
-int valid_filename(char *filename, struct program_options *options,
+int file_match(const char * const * const array, const unsigned int num,
+    const FTSENT * const p, const unsigned char ignore_case);
+int valid_file(const FTSENT * const p, struct program_options *options,
     unsigned char is_leaf);
 char ** clone_env(void);
 int push_env(char *str, char ***env);

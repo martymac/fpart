@@ -160,6 +160,14 @@ Include files or directories matching
 .Ar pattern
 only (and discard all other files).
 This option may be specified several times.
+.Ar Pattern
+may be a leaf (file or directory) name or a specific path. Shell pattern
+matching characters
+.Dq ( Li \&[ ,
+.Dq Li \&] ,
+.Dq Li * ,
+.Dq Li \&? )
+may be used.
 It does not apply when computing size of directories to be added once a maximum
 depth (see option
 .Fl d
@@ -182,6 +190,14 @@ and
 .Fl Y .
 In this case, exclusion is performed after.
 This option may be specified several times.
+.Ar Pattern
+may be a leaf (file or directory) name or a specific path. Shell pattern
+matching characters
+.Dq ( Li \&[ ,
+.Dq Li \&] ,
+.Dq Li * ,
+.Dq Li \&? )
+may be used.
 It does not apply when computing size of directories to be added once a maximum
 depth (see option
 .Fl d

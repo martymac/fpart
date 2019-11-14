@@ -8,6 +8,8 @@
       a certain depth (option -d) has been reached (in that case, once the
       maximum depth has been reached, every single file accounts for a directory
       size).
+    - fpart: allow to specify paths with options '-y', '-Y', '-x' and '-X'
+      (fixes GH issue #17)
 2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments

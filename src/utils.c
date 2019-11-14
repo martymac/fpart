@@ -46,7 +46,7 @@
 #include <fts.h>
 #endif
 
-/* strerror(3) */
+/* strerror(3), strlen(3), strchr(3) */
 #include <string.h>
 
 /* errno */
@@ -57,9 +57,6 @@
 
 /* MAXPATHLEN */
 #include <sys/param.h>
-
-/* strlen(3) */
-#include <string.h>
 
 /* assert(3) */
 #include <assert.h>
@@ -253,42 +250,55 @@ str_cleanup(char ***array, unsigned int *num)
     return;
 }
 
-/* Match str against array of str
+/* Match an fts entry against an array of strings
    - return 0 (no match) or 1 (match) */
 int
-str_match(const char * const * const array, const unsigned int num,
-    const char * const str, const unsigned char ignore_case)
+file_match(const char * const * const array, const unsigned int num,
+    const FTSENT * const p, const unsigned char ignore_case)
 {
-    assert(str != NULL);
+    assert(p != NULL);
+    assert(p->fts_name != NULL);
+    assert(p->fts_path != NULL);
 
     if(array == NULL)
         return (0);
 
     unsigned int i = 0;
     while(i < num) {
-        if(fnmatch(array[i], str, ignore_case ? FNM_CASEFOLD : 0) == 0)
-            return(1);
+        if(strchr(array[i], '/') == NULL) {
+	    /* Current string contains a file name */
+            if(fnmatch(array[i], p->fts_name, ignore_case ? FNM_CASEFOLD : 0) == 0)
+                return(1);
+	}
+	else {
+	    /* Current string contains a path */
+            if(fnmatch(array[i], p->fts_path, FNM_PATHNAME | FNM_PERIOD |
+	        (ignore_case ? FNM_CASEFOLD : 0)) == 0)
+                return(1);
+	}
         i++;
     }
     return (0);
 }
 
-/* Validate a file name regarding program options
+/* Validate a file regarding program options
    - do not check inclusion lists for directories (we must be able to crawl
      the entire file hierarchy)
    - return 0 if file is not valid, 1 if it is */
 int
-valid_filename(char *filename, struct program_options *options,
+valid_file(const FTSENT * const p, struct program_options *options,
     unsigned char is_leaf)
 {
-    assert(filename != NULL);
+    assert(p != NULL);
+    assert(p->fts_name != NULL);
+    assert(p->fts_path != NULL);
     assert(options != NULL);
 
     int valid = 1;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): checking name validity for %s: %s\n", __func__,
-        is_leaf ? "leaf" : "directory", filename);
+    fprintf(stderr, "%s(): checking name validity for %s: %s (path: %s)\n", __func__,
+        is_leaf ? "leaf" : "directory", p->fts_name, p->fts_path);
 #endif
 
     /* check for includes (options -y and -Y), for leaves only */
@@ -298,24 +308,24 @@ valid_filename(char *filename, struct program_options *options,
             /* switch to default exclude, unless file found in lists */
             valid = 0;
 
-            if(str_match((const char * const * const)(options->include_files),
-                options->ninclude_files, filename, 0) ||
-                str_match((const char * const * const)(options->include_files_ci),
-                options->ninclude_files_ci, filename, 1))
+            if(file_match((const char * const * const)(options->include_files),
+                options->ninclude_files, p, 0) ||
+                file_match((const char * const * const)(options->include_files_ci),
+                options->ninclude_files_ci, p, 1))
                 valid = 1;
         }
     }
 
     /* check for excludes (options -x and -X) */
-    if(str_match((const char * const * const)(options->exclude_files),
-        options->nexclude_files, filename, 0) ||
-        str_match((const char * const * const)(options->exclude_files_ci),
-        options->nexclude_files_ci, filename, 1))
+    if(file_match((const char * const * const)(options->exclude_files),
+        options->nexclude_files, p, 0) ||
+        file_match((const char * const * const)(options->exclude_files_ci),
+        options->nexclude_files_ci, p, 1))
         valid = 0;
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): %s: %s, validity: %s\n", __func__,
-        is_leaf ? "leaf" : "directory", filename,
+        is_leaf ? "leaf" : "directory", p->fts_name,
         valid ? "valid" : "invalid");
 #endif
 

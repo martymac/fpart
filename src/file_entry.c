@@ -706,7 +706,7 @@ add_directory:
 
                     /* check for name validity regarding include/exclude
                        options */
-                    if(!valid_filename(p->fts_name, options, 1)) {
+                    if(!valid_file(p, options, 1)) {
                         if(options->verbose >= OPT_VERBOSE)
                             fprintf(stderr, "Skipping directory: '%s'\n",
                                 p->fts_path);
@@ -786,7 +786,7 @@ reset_directory:
                 curdir_dirsfound = 0; /* no dirs found yet */
 
                 /* check for name validity regarding exclude options */
-                if(!valid_filename(p->fts_name, options, 0)) {
+                if(!valid_file(p, options, 0)) {
                     if(options->verbose >= OPT_VERBOSE)
                         fprintf(stderr, "Skipping directory: '%s'\n",
                             p->fts_path);
@@ -815,7 +815,7 @@ reset_directory:
                 fsize_t curfile_size = 0;
 
                 /* check for name validity regarding include/exclude options */
-                if(!valid_filename(p->fts_name, options, 1)) {
+                if(!valid_file(p, options, 1)) {
                     if(options->verbose >= OPT_VERBOSE)
                         fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
                     continue;
