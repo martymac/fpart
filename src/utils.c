@@ -266,16 +266,17 @@ file_match(const char * const * const array, const unsigned int num,
     unsigned int i = 0;
     while(i < num) {
         if(strchr(array[i], '/') == NULL) {
-	    /* Current string contains a file name */
-            if(fnmatch(array[i], p->fts_name, ignore_case ? FNM_CASEFOLD : 0) == 0)
+            /* Current string contains a file name */
+            if(fnmatch(array[i], p->fts_name, FNM_PERIOD |
+                (ignore_case ? FNM_CASEFOLD : 0)) == 0)
                 return(1);
-	}
-	else {
-	    /* Current string contains a path */
+        }
+        else {
+            /* Current string contains a path */
             if(fnmatch(array[i], p->fts_path, FNM_PATHNAME | FNM_PERIOD |
-	        (ignore_case ? FNM_CASEFOLD : 0)) == 0)
+                (ignore_case ? FNM_CASEFOLD : 0)) == 0)
                 return(1);
-	}
+        }
         i++;
     }
     return (0);
