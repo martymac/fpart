@@ -35,6 +35,10 @@
 /* NULL, exit(3) */
 #include <stdlib.h>
 
+/* strtoumax(3) */
+#include <limits.h>
+#include <inttypes.h>
+
 /* fprintf(3), fopen(3), fclose(3), fgets(3), foef(3) */
 #include <stdio.h>
 
@@ -177,7 +181,7 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
             return (1);
         )
 
-        if(sscanf(argument, "%lld %[^\n]", &input_size, input_path) == 2) {
+        if(sscanf(argument, "%ju %[^\n]", &input_size, input_path) == 2) {
             if(handle_file_entry(head, input_path, input_size, options) == 0)
                 (*totalfiles)++;
             else {
@@ -292,12 +296,23 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 's':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long long max_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially-converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') || (max_size <= 0))
+                uintmax_t max_size = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
+                if((endptr == optarg) || (*endptr != '\0') || (max_size == 0)) {
+                    fprintf(stderr,
+                        "Option -s requires a value greater than 0.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
                 options->max_size = (fsize_t)max_size;
                 break;
             }
@@ -445,45 +460,69 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'p':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long long preload_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially-converted arguments */
+                uintmax_t preload_size = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
-                    (preload_size <= 0)) {
+                    (preload_size == 0)) {
                     fprintf(stderr,
                         "Option -p requires a value greater than 0.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
                 }
                 options->preload_size = (fsize_t)preload_size;
                 break;
             }
             case 'q':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long long overload_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially-converted arguments */
+                uintmax_t overload_size = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
-                    (overload_size <= 0)) {
+                    (overload_size == 0)) {
                     fprintf(stderr,
                         "Option -q requires a value greater than 0.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
                 }
                 options->overload_size = (fsize_t)overload_size;
                 break;
             }
             case 'r':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long long round_size = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 1 and partially-converted arguments */
+                uintmax_t round_size = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
                     (round_size <= 1)) {
                     fprintf(stderr,
                         "Option -r requires a value greater than 1.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
                 }
                 options->round_size = (fsize_t)round_size;
                 break;

@@ -249,7 +249,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
             retval = 1;
             goto cleanup;
         )
-        snprintf(env_fpart_partsize_string, malloc_size, "%s=%lld",
+        snprintf(env_fpart_partsize_string, malloc_size, "%s=%ju",
             env_fpart_partsize_name, *live_partition_size);
         if(push_env(env_fpart_partsize_string, &envp) != 0) {
             retval = 1;
@@ -440,7 +440,7 @@ live_print_file_entry(char *path, fsize_t size,
 
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
-        fprintf(stdout, "%d (%lld): %s\n", live_status.partition_index, size,
+        fprintf(stdout, "%d (%ju): %s\n", live_status.partition_index, size,
             path);
     }
     else {
@@ -466,7 +466,7 @@ live_print_file_entry(char *path, fsize_t size,
             (live_status.partition_size >= options->max_size))) {
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
-            fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
+            fprintf(stderr, "Filled part #%d: size = %ju, %lld file(s)\n",
                 live_status.partition_index, live_status.partition_size,
                 live_status.partition_num_files);
 
@@ -893,7 +893,7 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* display added partition */
         if((options->verbose >= OPT_VERBOSE) &&
             (live_status.partition_num_files > 0))
-            fprintf(stderr, "Filled part #%d: size = %lld, %lld file(s)\n",
+            fprintf(stderr, "Filled part #%d: size = %ju, %lld file(s)\n",
                 live_status.partition_index, live_status.partition_size,
                 live_status.partition_num_files);
 
@@ -942,7 +942,7 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
     /* no template provided, just print to stdout and return */
     if(out_template == NULL) {
         while(head != NULL) {
-            fprintf(stdout, "%d (%lld): %s\n", head->partition_index,
+            fprintf(stdout, "%d (%ju): %s\n", head->partition_index,
                 head->size, head->path);
             head = head->nextp;
         }

@@ -27,9 +27,11 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include <stdint.h>
+
 /* Handles the size of a file or partition.
-   Must be signed and longer than off_t */
-typedef long long fsize_t;
+   Must be unsigned and longer than off_t */
+typedef uintmax_t fsize_t;
 
 /* Handles the number of files in a partition
    and the number of file entries.
