@@ -36,7 +36,7 @@ typedef uintmax_t fsize_t;
 /* Handles the number of files in a partition
    and the number of file entries.
    Must be unsigned and longer than ino_t */
-typedef unsigned long long fnum_t;
+typedef uintmax_t fnum_t;
 
 /* Handles the number of partitions.
    Must be unsigned and can be smaller than fnum_t */

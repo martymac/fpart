@@ -284,13 +284,24 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'f':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long long max_entries = strtoll(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially-converted arguments */
+                uintmax_t max_entries = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
-                    (max_entries <= 0))
+                    (max_entries == 0)) {
+                    fprintf(stderr,
+                        "Option -f requires a value greater than 0.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
                 options->max_entries = (fnum_t)max_entries;
                 break;
             }
@@ -716,18 +727,18 @@ int main(int argc, char **argv)
     rewind_list(head);
 
     /* no file found or live mode */
-    if((totalfiles <= 0) || (options.live_mode == OPT_LIVEMODE)) {
+    if((totalfiles == 0) || (options.live_mode == OPT_LIVEMODE)) {
         uninit_file_entries(head, &options);
         /* display status */
         if(options.verbose >= OPT_VERBOSE)
-            fprintf(stderr, "%lld file(s) found.\n", totalfiles);
+            fprintf(stderr, "%ju file(s) found.\n", totalfiles);
         uninit_options(&options);
         exit(EXIT_SUCCESS);
     }
 
     /* display status */
     if(options.verbose >= OPT_VERBOSE) {
-        fprintf(stderr, "%lld file(s) found.\n", totalfiles);
+        fprintf(stderr, "%ju file(s) found.\n", totalfiles);
         fprintf(stderr, "Sorting entries...\n");
     }
 

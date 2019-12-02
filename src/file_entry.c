@@ -265,7 +265,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
             retval = 1;
             goto cleanup;
         )
-        snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%llu",
+        snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%ju",
             env_fpart_partnumfiles_name, *live_num_files);
         if(push_env(env_fpart_partnumfiles_string, &envp) != 0) {
             retval = 1;
@@ -466,7 +466,7 @@ live_print_file_entry(char *path, fsize_t size,
             (live_status.partition_size >= options->max_size))) {
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
-            fprintf(stderr, "Filled part #%d: size = %ju, %lld file(s)\n",
+            fprintf(stderr, "Filled part #%d: size = %ju, %ju file(s)\n",
                 live_status.partition_index, live_status.partition_size,
                 live_status.partition_num_files);
 
@@ -893,7 +893,7 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* display added partition */
         if((options->verbose >= OPT_VERBOSE) &&
             (live_status.partition_num_files > 0))
-            fprintf(stderr, "Filled part #%d: size = %ju, %lld file(s)\n",
+            fprintf(stderr, "Filled part #%d: size = %ju, %ju file(s)\n",
                 live_status.partition_index, live_status.partition_size,
                 live_status.partition_num_files);
 
