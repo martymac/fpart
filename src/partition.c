@@ -150,7 +150,7 @@ print_partitions(struct partition *head)
 {
     pnum_t i = 0;
     while(head != NULL) {
-        fprintf(stderr, "Part #%d: size = %ju, %ju file(s)\n", i,
+        fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n", i,
             head->size, head->num_files);
         head = head->nextp;
         i++;

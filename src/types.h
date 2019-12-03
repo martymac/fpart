@@ -40,6 +40,6 @@ typedef uintmax_t fnum_t;
 
 /* Handles the number of partitions.
    Must be unsigned and can be smaller than fnum_t */
-typedef unsigned int pnum_t;
+typedef uintmax_t pnum_t;
 
 #endif /* _TYPES_H */

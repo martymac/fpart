@@ -273,12 +273,24 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 return (FPART_OPTS_VERSION | FPART_OPTS_OK | FPART_OPTS_EXIT);
             case 'n':
             {
+                errno = 0;
                 char *endptr = NULL;
-                long num_parts = strtol(optarg, &endptr, 10);
-                /* refuse values <= 0 and partially-converted arguments */
-                if((endptr == optarg) || (*endptr != '\0') || (num_parts <= 0))
+                uintmax_t num_parts = strtoumax(optarg, &endptr, 10);
+                /* check that something was converted, refuse
+                   partially-converted and invalid arguments */
+                if((endptr == optarg) || (*endptr != '\0') ||
+                    (num_parts == 0)) {
+                    fprintf(stderr,
+                        "Option -n requires a value greater than 0.\n");
                     return (FPART_OPTS_USAGE |
                         FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                /* check for other errors */
+                if(errno != 0) {
+                    fprintf(stderr, "%s(): %s\n", __func__,
+                        strerror(errno));
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
                 options->num_parts = (pnum_t)num_parts;
                 break;
             }
