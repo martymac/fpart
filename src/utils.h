@@ -85,6 +85,7 @@ fsize_t get_size(char *file_path, struct stat *file_stat,
 char *abs_path(const char *path);
 int str_push(char ***array, unsigned int *num, const char * const str);
 void str_cleanup(char ***array, unsigned int *num);
+int str_is_negative(const char * const str);
 int file_match(const char * const * const array, const unsigned int num,
     const FTSENT * const p, const unsigned char ignore_case);
 int valid_file(const FTSENT * const p, struct program_options *options,

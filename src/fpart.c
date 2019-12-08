@@ -273,9 +273,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 return (FPART_OPTS_VERSION | FPART_OPTS_OK | FPART_OPTS_EXIT);
             case 'n':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t num_parts = strtoumax(optarg, &endptr, 10);
+                uintmax_t num_parts = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -n requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                num_parts = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
@@ -296,9 +304,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'f':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t max_entries = strtoumax(optarg, &endptr, 10);
+                uintmax_t max_entries = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -f requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                max_entries = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
@@ -319,9 +335,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 's':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t max_size = strtoumax(optarg, &endptr, 10);
+                uintmax_t max_size = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -s requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                max_size = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') || (max_size == 0)) {
@@ -483,9 +507,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'p':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t preload_size = strtoumax(optarg, &endptr, 10);
+                uintmax_t preload_size = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -p requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                preload_size = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
@@ -506,9 +538,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'q':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t overload_size = strtoumax(optarg, &endptr, 10);
+                uintmax_t overload_size = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -q requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                overload_size = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||
@@ -529,9 +569,17 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'r':
             {
-                errno = 0;
                 char *endptr = NULL;
-                uintmax_t round_size = strtoumax(optarg, &endptr, 10);
+                uintmax_t round_size = 0;
+                /* check if a negative value has been provided */
+                if(str_is_negative(optarg)) {
+                    fprintf(stderr,
+                        "Option -r requires a value greater than 0.\n");
+                    return (FPART_OPTS_USAGE |
+                        FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                }
+                errno = 0;
+                round_size = strtoumax(optarg, &endptr, 10);
                 /* check that something was converted, refuse
                    partially-converted and invalid arguments */
                 if((endptr == optarg) || (*endptr != '\0') ||

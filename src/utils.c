@@ -67,6 +67,9 @@
 /* fnmatch(3) */
 #include <fnmatch.h>
 
+/* isblank(3) */
+#include <ctype.h>
+
 /****************
  Helper functions
  ****************/
@@ -248,6 +251,23 @@ str_cleanup(char ***array, unsigned int *num)
     *array = NULL;
 
     return;
+}
+
+/* Check if a string begins with a '-' sign
+   - return 1 if it is the case, else 0 */
+int
+str_is_negative(const char *str)
+{
+    assert(str != NULL);
+
+    /* skip blanks to test first character */
+    while(isblank(*str))
+        str++;
+
+    if(*str == '-')
+        return (1);
+    else
+        return (0);
 }
 
 /* Match an fts entry against an array of strings
