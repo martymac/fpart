@@ -10,11 +10,11 @@
       size).
     - fpart: allow to specify paths with options '-y', '-Y', '-x' and '-X'
       (fixes GH issue #17)
-    - raise limits for fsize_t, fnum_t and pnum_t representing, respectively :
-      the size of a file or partition, the number of files inside a partition,
-      the number of partitions. That will make fpart(1) ready to handle bigger
-      filesystems.
-    - fpart: enable human-friendly size formats for options -s, -p, -q and -r
+    - fpart: raise limits for different internal types: the size of a file or
+      partition, the number of files inside a partition and the number of
+      partitions. That will make fpart(1) ready to handle bigger filesystems.
+    - fpart: accept human-friendly size formats for options -s, -p, -q and -r
+    - fpsync: accept human-friendly size formats for option -s
 2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments

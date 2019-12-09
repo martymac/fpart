@@ -150,6 +150,13 @@ is_num () {
     echo "$1" | grep -qE '^[0-9]+$'
 }
 
+# Check if $1 is an acceptable size argument
+# - must be greater than 0
+# - may contain 'kKmMgGtTpP' suffix
+is_size () {
+    echo "$1" | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
+}
+
 # Parse user options and initialize OPT_* global variables
 parse_opts () {
     local opt OPTARG OPTIND
@@ -182,7 +189,7 @@ parse_opts () {
             fi
             ;;
         "s")
-            if is_num "${OPTARG}" && [ ${OPTARG} -ge 0 ]
+            if { is_num "${OPTARG}" && [ ${OPTARG} -ge 0 ] ;} || is_size "${OPTARG}"
             then
                 OPT_FPMAXPARTSIZE=${OPTARG}
             else
@@ -259,7 +266,8 @@ parse_opts () {
     shift $((${OPTIND} - 1))
 
     # Validate partitions' constraints
-    if [ ${OPT_FPMAXPARTFILES} -eq 0 ] && [ ${OPT_FPMAXPARTSIZE} -eq 0 ]
+    if is_num "${OPT_FPMAXPARTFILES}" && [ ${OPT_FPMAXPARTFILES} -eq 0 ] && \
+        is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -eq 0 ]
     then
         end_die "Please specify a least a file (-f) or size (-s) limit for partitions"
     fi
@@ -894,7 +902,7 @@ then
     cd "${OPT_SRCDIR}" && \
         ${SUDO} "${FPART_BIN}" \
         $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && echo -f "${OPT_FPMAXPARTFILES}") \
-        $([ ${OPT_FPMAXPARTSIZE} -gt 0 ] && echo -s "${OPT_FPMAXPARTSIZE}") \
+        $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && echo -s "${OPT_FPMAXPARTSIZE}") \
         -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | \
         tee -a "${FPART_LOGFILE}"
