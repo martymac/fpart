@@ -12,7 +12,6 @@ Fpart:
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
 - Add constraints, e.g. : force hardlinks to belong to the same partition
-- Accept size values in a human-friendly format
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many

@@ -70,9 +70,45 @@
 /* isblank(3) */
 #include <ctype.h>
 
+/* strtoumax(3) */
+#include <limits.h>
+#include <inttypes.h>
+
 /****************
  Helper functions
  ****************/
+
+/* Convert a char (K, M, G, ...) to a size multiplier */
+uintmax_t
+char_to_multiplier(const char c)
+{
+    uintmax_t ret = 0;
+
+    switch(c) {
+        case 'k':
+        case 'K':
+            ret = 1 << 10;
+            break;
+        case 'm':
+        case 'M':
+            ret = 1 << 20;
+            break;
+        case 'g':
+        case 'G':
+            ret = 1 << 30;
+            break;
+        case 't':
+        case 'T':
+            ret = (uintmax_t)1 << 40;
+            break;
+        case 'p':
+        case 'P':
+            ret = (uintmax_t)1 << 50;
+            break;
+    }
+
+    return (ret);
+}
 
 /* Return the number of digits necessary to print i */
 unsigned int
@@ -268,6 +304,60 @@ str_is_negative(const char *str)
         return (1);
     else
         return (0);
+}
+
+/* Convert a str to a uintmax > 0
+   - support human-friendly multipliers
+   - only accept values > 0 as input
+   - return 0 if an error occurs */
+uintmax_t
+str_to_uintmax(const char *str, const unsigned char handle_multiplier)
+{
+    assert(str != NULL);
+
+    char *endptr = NULL;
+    uintmax_t val = 0;
+    uintmax_t multiplier = 0;
+
+    /* check if a negative value has been provided */
+    if(str_is_negative(str))
+        return (0);
+
+    errno = 0;
+    val = strtoumax(str, &endptr, 10);
+    /* check that something was converted and refuse invalid values */
+    if((endptr == optarg) || (val == 0))
+        return (0);
+    /* check for other errors */
+    if(errno != 0) {
+        fprintf(stderr, "%s(): %s\n", __func__, strerror(errno));
+        return (0);
+    }
+    /* if characters remain, handle multiplier */
+    if(*endptr != '\0') {
+        /* return an error if we do not want to handle multiplier */
+        if(!handle_multiplier)
+            return (0);
+
+        uintmax_t orig_val = val;
+        /* more than one character remain or invalid multiplier specified */
+        if ((*(endptr + 1) != '\0') ||
+            (multiplier = char_to_multiplier(*endptr)) == 0) {
+            fprintf(stderr, "%s(): %s\n", __func__, "invalid unit provided");
+            return (0);
+        }
+        /* check for overflow */
+        val *= multiplier;
+        if((val / multiplier) != orig_val) {
+            fprintf(stderr, "%s(): %s\n", __func__, strerror(ERANGE));
+            return (0);
+        }
+    }
+#if defined(DEBUG)
+    fprintf(stderr, "%s(): converted string %s to value %ju\n", __func__,
+        optarg, val);
+#endif
+    return (val);
 }
 
 /* Match an fts entry against an array of strings

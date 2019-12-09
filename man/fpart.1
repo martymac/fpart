@@ -102,6 +102,7 @@ This option can be used in conjunction with
 .Fl f
 and
 .Fl L .
+You can use a human-friendly unit suffix here (k, m, g, t, p).
 .El
 .Sh INPUT CONTROL
 .Bl -tag -width indent
@@ -161,8 +162,8 @@ Include files or directories matching
 only (and discard all other files).
 This option may be specified several times.
 .Ar Pattern
-may be a leaf (file or directory) name or a specific path. Shell pattern
-matching characters
+may be a leaf (file or directory) name or a specific path.
+Shell pattern matching characters
 .Dq ( Li \&[ ,
 .Dq Li \&] ,
 .Dq Li * ,
@@ -191,8 +192,8 @@ and
 In this case, exclusion is performed after.
 This option may be specified several times.
 .Ar Pattern
-may be a leaf (file or directory) name or a specific path. Shell pattern
-matching characters
+may be a leaf (file or directory) name or a specific path.
+Shell pattern matching characters
 .Dq ( Li \&[ ,
 .Dq Li \&] ,
 .Dq Li * ,
@@ -312,16 +313,19 @@ when finishing a partition (after having closed last output file, if any).
 Preload each partition with
 .Ar num
 bytes.
+You can use a human-friendly unit suffix here (k, m, g, t, p).
 .It Ic -q Ar num
 Overload each file size with
 .Ar num
 bytes.
+You can use a human-friendly unit suffix here (k, m, g, t, p).
 .It Ic -r Ar num
 Round each file size up to next
 .Ar num
 bytes multiple.
 This option can be used in conjunction with overloading, which is done *before*
 rounding.
+You can use a human-friendly unit suffix here (k, m, g, t, p).
 .El
 .Sh EXAMPLES
 Here are some examples:

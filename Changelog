@@ -14,6 +14,7 @@
       the size of a file or partition, the number of files inside a partition,
       the number of partitions. That will make fpart(1) ready to handle bigger
       filesystems.
+    - fpart: enable human-friendly size formats for options -s, -p, -q and -r
 2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments
