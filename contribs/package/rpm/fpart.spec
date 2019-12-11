@@ -1,6 +1,6 @@
 Name:    fpart
 Version: 1.2.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: BSD
 Summary: a tool that sorts files and packs them into bags
 URL:     http://contribs.martymac.org
@@ -22,7 +22,8 @@ files. It can also produce partitions with a given number of files or a limited
 size.
 
 %prep
-%setup -q -n %{name}-%{version}
+# The name macro is used twice due to the way the upstream project includes the project name in its release tags
+%setup -q -n %{name}-%{name}-%{version}
 
 %build
 autoreconf --install
@@ -41,10 +42,18 @@ make %{?_smp_mflags}
 %{_bindir}/fpsync
 
 %changelog
+* Fri Dec 06 2019 Sam P <survient@fedoraproject.org> - 1.2.0-2
+- Revised rpmbuild instructions
+- Added comment about git release tag naming
+- Added mass Fedora 31 rebuild commit history entry
+
 * Tue Oct 29 2019 Christopher Voltz <christopher.voltz@hpe.com> - 1.2.0-1
 - Version 1.2.0
 - Added instructions for building RPMs
 - Fixed build directory name
+
+* Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.0-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 
 * Mon Nov 19 2018 Sam P <survient@fedoraproject.org> - 1.1.0-2
 - cleaned up prep and build sections
