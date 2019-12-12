@@ -336,14 +336,16 @@ str_to_uintmax(const char *str, const unsigned char handle_multiplier)
     /* if characters remain, handle multiplier */
     if(*endptr != '\0') {
         /* return an error if we do not want to handle multiplier */
-        if(!handle_multiplier)
+        if(!handle_multiplier) {
+            fprintf(stderr, "%s(): %s\n", __func__, "unexpected unit provided");
             return (0);
+        }
 
         uintmax_t orig_val = val;
         /* more than one character remain or invalid multiplier specified */
         if ((*(endptr + 1) != '\0') ||
             (multiplier = char_to_multiplier(*endptr)) == 0) {
-            fprintf(stderr, "%s(): %s\n", __func__, "invalid unit provided");
+            fprintf(stderr, "%s(): %s\n", __func__, "unknown unit provided");
             return (0);
         }
         /* check for overflow */
