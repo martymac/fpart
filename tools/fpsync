@@ -628,17 +628,17 @@ JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
 JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
 
 # Paths to executables that must exist locally
-FPART_BIN="$(which fpart)"
-SSH_BIN="$(which ssh)"
-MAIL_BIN="$(which mail)"
+FPART_BIN="$(command -v fpart)"
+SSH_BIN="$(command -v ssh)"
+MAIL_BIN="$(command -v mail)"
 
 # Paths to executables that must exist both locally and remotely
-SUDO_BIN="$(which sudo)"
+SUDO_BIN="$(command -v sudo)"
 
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
-TOOL_BIN=$(which "${OPT_TOOL_NAME}")
+TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
 
 # Do we need sudo ?
 if [ -n "${OPT_SUDO}" ]
