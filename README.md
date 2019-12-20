@@ -525,6 +525,9 @@ Check out his parsyncfp tool (using fpart) here :
 * Microsoft suggests using fpart and fpsync to speed-up file transfers on Azure :
   https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux
 
+* Alibaba has the same advice :
+  https://www.alibabacloud.com/help/doc-detail/128764.htm
+
 Author / Licence :
 ==================
 
