@@ -1,4 +1,4 @@
-2019/??/??, 1.2.0 ('??') :
+2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
     - fpart: exclude files earlier (fixes GH issue #14)
@@ -15,6 +15,8 @@
       partitions. That will make fpart(1) ready to handle bigger filesystems.
     - fpart: accept human-friendly size formats for options -s, -p, -q and -r
     - fpsync: accept human-friendly size formats for option -s
+    - fpsync: use 'command' instead of 'which' to find binaries
+      (fixes GH issue #20)
 2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments
