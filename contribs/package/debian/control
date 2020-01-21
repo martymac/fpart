@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 Build-Depends: automake,
                debhelper-compat (=12)
-Standards-Version: 4.4.0
+Standards-Version: 4.5.0
 Homepage: http://sourceforge.net/projects/fpart/
 Vcs-Browser: https://salsa.debian.org/debian/fpart/
 Vcs-Git: https://salsa.debian.org/debian/fpart.git

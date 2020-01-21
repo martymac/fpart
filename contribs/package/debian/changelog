@@ -1,3 +1,11 @@
+fpart (1.2.0-1) unstable; urgency=low
+
+  * New upstream release
+  * debian/control
+    - Bump Standards-Version to 4.5.0 (no changes required)
+
+ -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Tue, 21 Jan 2020 22:18:40 +0100
+
 fpart (1.1.0-1) unstable; urgency=low
 
   * New upstream release (closes: #881806)
