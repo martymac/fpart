@@ -1,4 +1,6 @@
 /*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 1990, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -38,15 +40,10 @@
  *
  */
 
-#if 0
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)fts.c	8.6 (Berkeley) 8/14/94";
-#endif /* LIBC_SCCS and not lint */
-#endif
-
 #if defined(__FreeBSD__)
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 318913 2017-05-26 01:14:58Z pfg $");
+__SCCSID("@(#)fts.c    8.6 (Berkeley) 8/14/94");
+__FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 345552 2019-03-26 19:35:41Z emaste $");
 
 #include "/usr/src/lib/libc/include/namespace.h"
 #else
@@ -723,9 +720,9 @@ fts_build(FTS *sp, int type)
 	 */
 #ifdef FTS_WHITEOUT
 	if (ISSET(FTS_WHITEOUT))
-		oflag = DTF_NODUP | DTF_REWIND;
+		oflag = DTF_NODUP;
 	else
-		oflag = DTF_HIDEW | DTF_NODUP | DTF_REWIND;
+		oflag = DTF_HIDEW | DTF_NODUP;
 #else
 #define __opendir2(path, flag) opendir(path)
 #endif
