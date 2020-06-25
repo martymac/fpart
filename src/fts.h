@@ -1,4 +1,6 @@
-/*
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -27,7 +29,7 @@
  * SUCH DAMAGE.
  *
  *	@(#)fts.h	8.3 (Berkeley) 8/14/94
- * $FreeBSD: head/include/fts.h 250887 2013-05-21 21:20:10Z ed $
+ * $FreeBSD: head/include/fts.h 326024 2017-11-20 19:45:28Z pfg $
  */
 
 #ifndef	_FTS_H_
