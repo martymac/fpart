@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([fpart], [1.2.0], [ganael.laplanche@martymac.org])
+AC_INIT([fpart], [1.2.1], [ganael.laplanche@martymac.org])
 AC_CONFIG_SRCDIR([src/fpart.h])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 
