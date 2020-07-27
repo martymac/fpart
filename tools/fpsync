@@ -132,7 +132,7 @@ echo_log () {
 
 # Check if $1 is an absolute path
 is_abs_path() {
-    echo "$1" | grep -qE "^/"
+    echo "$1" | grep -qE '^/'
 }
 
 # Check if $1 is a valid rsync URL
@@ -142,7 +142,7 @@ is_abs_path() {
 #   Rsync: rsync://[USER@]HOST[:PORT]/DEST
 # Simplified as: "anything but slash" followed by at least one ":"
 is_remote_path() {
-    echo "$1" | grep -qE "^[^/]+:"
+    echo "$1" | grep -qE '^[^/]+:'
 }
 
 # Check if $1 is a number
