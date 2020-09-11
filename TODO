@@ -23,6 +23,7 @@ Fpart:
 
 Fpsync:
 - Add check for non-safe rsync options (--delete, ...)
+- Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
 - Improve portability (egrep vs grep, ...)
 - Add an option to enable rsync's option -z ?
 - Colorized output
