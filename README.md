@@ -536,6 +536,15 @@ and is available under the BSD license (see COPYING for details).
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
+Donation :
+==========
+
+If fpart is useful to you or your organization, you can make a donation here:
+
+[![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
+
+That will help me not running out of coffee :)
+
 Contributions :
 ===============
 
