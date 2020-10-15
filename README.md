@@ -428,11 +428,12 @@ Installing :
 
 Packages are already available for the following operating systems :
 
-* FreeBSD :       https://www.freshports.org/sysutils/fpart
-* Debian :        https://packages.debian.org/fpart
-* Ubuntu :        https://packages.ubuntu.com/search?keywords=fpart
-* CentOS/Fedora : https://copr.fedorainfracloud.org/coprs/survient/fpart/
-* NixOS :         https://nixos.org/nixos/packages.html
+* FreeBSD :          https://www.freshports.org/sysutils/fpart
+* Debian :           https://packages.debian.org/fpart
+* Ubuntu :           https://packages.ubuntu.com/search?keywords=fpart
+* CentOS/Fedora :    https://copr.fedorainfracloud.org/coprs/survient/fpart/
+* NixOS :            https://nixos.org/nixos/packages.html
+* MacOS (Homebrew) : https://formulae.brew.sh/formula/fpart
 
 If a pre-compiled package is not available for your favourite operating system,
 installing from sources is simple. First, if there is no 'configure' script in
