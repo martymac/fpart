@@ -22,6 +22,8 @@ Fpart:
 - Unit testing
 
 Fpsync:
+- Fix fpart options handling (-O) when a space is given within arguments
+  (e.g.: -O '-Y "filename with a space"' is buggy, due to field splitting)
 - Add check for non-safe rsync options (--delete, ...)
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
 - Improve portability (egrep vs grep, ...)
