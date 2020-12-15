@@ -122,7 +122,13 @@ get_num_digits(double i)
 }
 
 /* Return the size of a file or directory
-   - a pointer to an existing stat must be provided */
+   - a pointer to an existing stat must be provided
+
+   We assume that when that function is called, then the choice of including or
+   excluding the related file or directory has already been made. Thus,
+   exclusion list is only honored when computing size of a directory and when
+   depth is > 0 (i.e. we always accept the root dir but may skip subdirs).
+*/
 fsize_t
 get_size(char *file_path, struct stat *file_stat,
     struct program_options *options)
@@ -133,8 +139,10 @@ get_size(char *file_path, struct stat *file_stat,
 
     fsize_t file_size = 0;  /* current return value */
 
-    /* if file_path is not a directory,
-       return st_size for regular files (only) */
+    /* if file_path is not a directory, return st_size for regular files (only).
+       We do *not* check for valid_file() here because if the function has been
+       called, then the choice of including the file has already been made
+       before */
     if(!S_ISDIR(file_stat->st_mode)) {
         return (S_ISREG(file_stat->st_mode) ? file_stat->st_size : 0);
     }
@@ -155,23 +163,48 @@ get_size(char *file_path, struct stat *file_stat,
 
     while((p = fts_read(ftsp)) != NULL) {
         switch (p->fts_info) {
-            case FTS_DNR:   /* un-readable directory */
             case FTS_ERR:   /* misc error */
+            case FTS_DNR:   /* un-readable directory */
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
+            case FTS_NSOK: /* no stat(2) available (not requested) */
                 continue;
 
             case FTS_DC:
                 fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
+            case FTS_DOT:  /* ignore "." and ".." */
+            case FTS_DP:
                 continue;
 
-            case FTS_F:
-                file_size += p->fts_statp->st_size;
+            case FTS_D:
+                /* Excluded directories do not account for returned size.
+                   Always accept root dir here because, if the function has been
+                   called, then the choice of including the directory has
+                   already been made before */
+                if((!valid_file(p, options, VF_EXCLUDEONLY)) &&
+                    (p->fts_level > 0)) {
+#if defined(DEBUG)
+                    fprintf(stderr, "%s(): skipping directory: %s\n", __func__,
+                        p->fts_path);
+#endif
+                    fts_set(ftsp, p, FTS_SKIP);
+                }
                 continue;
 
-            /* skip everything else (only count regular files' size) */
             default:
+                /* XXX default means remaining file types:
+                   FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
+
+                /* Excluded files do not account for returned size */
+                if(!valid_file(p, options, VF_EXCLUDEONLY)) {
+#if defined(DEBUG)
+                    fprintf(stderr, "%s(): skipping file: %s\n", __func__,
+                        p->fts_path);
+#endif
+                }
+                else
+                    file_size += p->fts_statp->st_size;
                 continue;
         }
     }
@@ -395,12 +428,15 @@ file_match(const char * const * const array, const unsigned int num,
 }
 
 /* Validate a file regarding program options
-   - do not check inclusion lists for directories (we must be able to crawl
-     the entire file hierarchy)
+   - exclude_only (ignore include lists) is useful to:
+     - be able to crawl the entire file hierarchy (honoring include lists would
+       prevent the caller from entering a non-included directory and break
+       crawling)
+     - compute leaf directory size, when only exclude lists are needed
    - return 0 if file is not valid, 1 if it is */
 int
 valid_file(const FTSENT * const p, struct program_options *options,
-    unsigned char is_leaf)
+    unsigned char exclude_only)
 {
     assert(p != NULL);
     assert(p->fts_name != NULL);
@@ -410,12 +446,12 @@ valid_file(const FTSENT * const p, struct program_options *options,
     int valid = 1;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): checking name validity for %s: %s (path: %s)\n", __func__,
-        is_leaf ? "leaf" : "directory", p->fts_name, p->fts_path);
+    fprintf(stderr, "%s(): checking name validity (%s includes): %s (path: %s)\n",
+        __func__, exclude_only ? "without" : "with", p->fts_name, p->fts_path);
 #endif
 
-    /* check for includes (options -y and -Y), for leaves only */
-    if(is_leaf) {
+    /* check for includes (options -y and -Y), if requested */
+    if(!exclude_only) {
         if((options->include_files != NULL) ||
             (options->include_files_ci != NULL)) {
             /* switch to default exclude, unless file found in lists */
@@ -437,8 +473,7 @@ valid_file(const FTSENT * const p, struct program_options *options,
         valid = 0;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): %s: %s, validity: %s\n", __func__,
-        is_leaf ? "leaf" : "directory", p->fts_name,
+    fprintf(stderr, "%s(): %s, validity: %s\n", __func__, p->fts_name,
         valid ? "valid" : "invalid");
 #endif
 

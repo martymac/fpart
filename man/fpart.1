@@ -169,11 +169,7 @@ Shell pattern matching characters
 .Dq Li * ,
 .Dq Li \&? )
 may be used.
-It does not apply when computing size of directories to be added once a maximum
-depth (see option
-.Fl d
-) has been reached (in that case, once the maximum depth has been reached, every
-single file accounts for a directory size).
+Include patterns are ignored when computing size of directories.
 .It Ic -Y Ar pattern
 Same as
 .Fl y
@@ -199,11 +195,7 @@ Shell pattern matching characters
 .Dq Li * ,
 .Dq Li \&? )
 may be used.
-It does not apply when computing size of directories to be added once a maximum
-depth (see option
-.Fl d
-) has been reached (in that case, once the maximum depth has been reached, every
-single file accounts for a directory size).
+Exclude patterns also apply when computing size of directories.
 .It Ic -X Ar pattern
 Same as
 .Fl x

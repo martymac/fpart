@@ -6,9 +6,6 @@ Fpart:
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
 - To minimize memory footprint in non-live mode, add a 'checkpoint' capability
   to sort and flush partitions on a regular basis
-- Align get_size() and init_file_entries() behaviour:
-  - add name filters to get_size() ?
-  - ignore FS options in get_size() ?
 - Add an option to specify that a directory matching a path or a pattern should
   not be split but treated as a file entry
 - Add constraints, e.g. : force hardlinks to belong to the same partition

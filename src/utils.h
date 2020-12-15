@@ -90,8 +90,10 @@ int str_is_negative(const char * const str);
 uintmax_t str_to_uintmax(const char *str, const unsigned char handle_multiplier);
 int file_match(const char * const * const array, const unsigned int num,
     const FTSENT * const p, const unsigned char ignore_case);
+#define VF_FULLTEST 0
+#define VF_EXCLUDEONLY 1
 int valid_file(const FTSENT * const p, struct program_options *options,
-    unsigned char is_leaf);
+    unsigned char exclude_only);
 char ** clone_env(void);
 int push_env(char *str, char ***env);
 
