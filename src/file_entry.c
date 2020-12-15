@@ -744,15 +744,15 @@ add_directory:
                         curdir_size = 0;
                     else if((options->dirs_only != OPT_DIRSONLY) &&
                             ((options->leaf_dirs != OPT_LEAFDIRS) || (curdir_dirsfound)))
-                        /* when dirs_only mode activated or
-                           leaf_dirs mode activated and current directory is a
-                           leaf, then we can use curdir_size.
+                        /* when dirs_only mode activated (-E) or
+                           leaf_dirs mode activated (-D) and current directory is a leaf,
+                           then we can trust current *single-depth* curdir_size.
                            In all other cases (e.g. when dir_depth requested and
                            reached), we must compute the directory size
-                           recursively. */
+                           *recursively* through get_size(). */
                         curdir_size =
                             get_size(p->fts_accpath, p->fts_statp, options);
-                    /* else, trust curdir_size and leave it untouched */
+                    /* else, trust curdir_size and leave it untouched. */
 
                     /* add or display it */
                     if(handle_file_entry
@@ -782,7 +782,7 @@ reset_directory:
             case FTS_D:
             {
                 file_as_argument = 0; /* argument was not a file */
-                curdir_empty = 1; /* enter directory, mark it as empty */
+                curdir_empty = 1;     /* enter directory, mark it as empty */
                 curdir_dirsfound = 0; /* no dirs found yet */
 
                 /* check for name validity regarding exclude options */
@@ -812,23 +812,48 @@ reset_directory:
             /* XXX default means remaining file types:
                FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
-                fsize_t curfile_size = 0;
+                /* get current file size to add it to our current directory
+                   size. We must have visited all directories first for that
+                   total to be right ; this is achieved by using a compar()
+                   function with fts_open() */
+                fsize_t curfile_size = get_size(p->fts_accpath, p->fts_statp,
+                    options);
 
-                /* check for name validity regarding include/exclude options */
+/* Note about include/exclude options and curdir_size:
+
+Computing the right value of curdir_size is not as easy as it seems because of
+include/exclude options. Basically, exclude options are honoured when both
+computing directory size and selecting entries to be added to the final listing,
+while include options (wich are more restrictive because we then default to a
+default 'deny all' scheme) must be *ignored* when computing directory size and
+only filter entries to be added to the final listing.
+
+A simple way of handling that problem would have been to just get rid of
+curdir_size and add an option to get_size() to enable single-depth
+(non-recursive) computation and add a call in FTS_DP when adding a directory.
+*But* that would imply a second crawl for each directory added and would impact
+performances, that's why we chose to maintain curdir_size anyway, but with a
+two-pass check to handle include and exclude options properly. */
+
+                /* first pass: check for name validity regarding exclude
+                   options only.
+                   Honoring include options here would make most files excluded
+                   (which is not what we want). This is needed to get the right
+                   size of a subdir that would be selected through a -y option.
+                   E.g. : fpart -f 10 -e -y './my/sub/dir' -E ./
+                */
+                if(valid_file(p, options, VF_EXCLUDEONLY)) {
+                    curdir_empty = 0;
+                    curdir_size += curfile_size;
+                }
+
+                /* second pass: re-check for name validity regarding
+                   exclude *and* include options */
                 if(!valid_file(p, options, VF_FULLTEST)) {
                     if(options->verbose >= OPT_VERBOSE)
                         fprintf(stderr, "Skipping file: '%s'\n", p->fts_path);
                     continue;
                 }
-
-                /* get current file size and add it to our current directory
-                   size. We must have visited all directories first for that
-                   total to be right ; this is achieved by using a compar()
-                   function with fts_open() */
-                curfile_size = get_size(p->fts_accpath, p->fts_statp, options);
-
-                curdir_empty = 0; /* mark current dir as non empty */
-                curdir_size += curfile_size;
 
                 /* skip file entry when in dirs_only mode (option -E) or
                    in leaf_dirs mode (option -D) and no directory has been

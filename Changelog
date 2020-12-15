@@ -2,6 +2,9 @@
     - fpsync: mask broken pipe errors when dequeueing jobs (fixes GH issue #22)
     - fpart: align get_size() and init_file_entries() behaviour and take
       exclusions into account when computing a directory size.
+    - fpart: fix directory size computation when using options -y/-Y.
+      Before that change, -D and -E would have returned a size of 0 for a
+      directory included through options -y/-Y.
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
