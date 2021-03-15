@@ -28,7 +28,6 @@ Fpsync:
 - Improve portability (egrep vs grep, ...)
 - Add an option to enable rsync's option -z ?
 - Colorized output
-- Add an option to exit after fpart pass (to generate jobs only)
 - Add an option to force re-sync'ing an already-finished jobname
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)

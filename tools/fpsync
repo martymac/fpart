@@ -54,6 +54,8 @@ OPT_WRKRS=""
 OPT_FPSHDIR=""
 # Temporary dir (local, used for queue management, -t)
 OPT_TMPDIR="/tmp/fpsync"
+# Prepare mode (-p)
+OPT_PREPARE=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
 # User-settable tool options (-o)
@@ -96,6 +98,9 @@ usage () {
     echo "  -d /dir/    set fpsync shared dir to </dir/> (absolute path)"
     echo "              This option is mandatory when using SSH workers."
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
+    echo "  -p          prepare mode: prepare target(s) and create a resumable"
+    echo "              job by crawling filesystem but do not actually start"
+    echo "              synchronization."
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, -o, /src_dir/ and /dst_url/"
     echo "              are ignored when resuming a previous run)"
@@ -161,7 +166,7 @@ is_size () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:r:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:pr:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -223,6 +228,9 @@ parse_opts () {
                 end_die "Please supply an absolute path for temp dir"
             fi
             ;;
+        "p")
+            OPT_PREPARE="yes"
+            ;;
         "r")
             if [ -n "${OPTARG}" ]
             then
@@ -282,6 +290,12 @@ parse_opts () {
         # For remote ones, specifying a shared directory is mandatory
         [ -z "${OPT_FPSHDIR}" ] && \
             end_die "Please supply a shared dir when specifying workers"
+    fi
+
+    # Prepare/resume constraints
+    if [ -n "${OPT_JOBNAME}" ] && [ -n "${OPT_PREPARE}" ]
+    then
+        end_die "Please specify either prepare (-p) or resume (-r) option"
     fi
 
     # Check for src_dir and dst_url presence and validity
@@ -887,11 +901,15 @@ job_queue_info_dump
 _run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
 _run_start_time="$(date '+%s')"
 
-# Set SIGINT and SIGINFO traps and start job_queue_loop
-trap 'sigint_handler' 2
-trap 'siginfo_handler' 29
-echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
-job_queue_loop&
+# When not in prepare mode, start synchronization loop
+if [ -z "${OPT_PREPARE}" ]
+then
+    # Set SIGINT and SIGINFO traps and start job_queue_loop
+    trap 'sigint_handler' 2
+    trap 'siginfo_handler' 29
+    echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
+    job_queue_loop&
+fi
 
 # When not resuming a previous job, start fpart
 if [ -z "${OPT_JOBNAME}" ]
@@ -911,16 +929,24 @@ fi
 # Tell job_queue_loop that crawling has finished
 job_queue_fp_done
 
-# Wait for job_queue_loop to terminate
-# Use an active wait to allow signal processing (^T)
-echo_log "1" "===> Waiting for sync jobs to complete..."
-while [ ! -f "${JOBS_QUEUEDIR}/sl_done" ]
-do
-    sleep 0.2
-done
+# When not in prepare mode, wait for job_queue_loop to terminate
+if [ -z "${OPT_PREPARE}" ]
+then
+    # Use an active wait to allow signal processing (^T)
+    echo_log "1" "===> Waiting for sync jobs to complete..."
+    while [ ! -f "${JOBS_QUEUEDIR}/sl_done" ]
+    do
+        sleep 0.2
+    done
+fi
 
 # Display final status
 [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
+
+if [ -n "${OPT_PREPARE}" ]
+then
+echo_log "0" "<=== Successfully prepared job: ${FPART_JOBNAME}"
+fi
 
 # Examine results and send an e-mail if requested
 RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)

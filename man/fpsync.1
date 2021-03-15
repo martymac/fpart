@@ -40,12 +40,15 @@
 .Op Fl w Ar wrks
 .Op Fl d Ar shdir
 .Op Fl t Ar tmpdir
-.Op Fl r Ar jobname
+.Op Fl p
 .Op Fl o Ar toolopts
 .Op Fl O Ar fpartopts
 .Op Fl S
 .Pa src_dir/
 .Pa dst_url/
+.Nm
+.Op Fl r Ar jobname
+.Cm [options...]
 .Sh DESCRIPTION
 The
 .Nm
@@ -162,6 +165,14 @@ when using the
 option.
 Default:
 .Pa /tmp/fpsync
+.It Fl p
+Prepare mode: prepare, test synchronization environment, start
+.Xr fpart 1
+and create partitions but do
+.Sy not
+actually start transfers.
+That mode can be used to create a job that can then be resumed using option
+.Fl r .
 .It Ic -r Ar jobname
 Resume job
 .Ar jobname
