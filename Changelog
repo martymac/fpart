@@ -6,6 +6,8 @@
       Before that change, -D and -E would have returned a size of 0 for a
       directory included through options -y/-Y.
     - fpsync: add prepare option (-p)
+    - fpsync: fix bug where a job could remain resumable forever under certain
+      conditions.
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)

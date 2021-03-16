@@ -771,9 +771,9 @@ then
 else
     # When resuming a job, check if :
     # - the last fpart pass has completed
-    #   (the 'fp_done' flag is present)
+    #   (the 'fp_done' flag is present in job queue dir)
     # - the last fpsync pass has *not* completed
-    #   (the 'fp_done' flag is *still* present)
+    #   (the 'fp_done' flag is *still* present in job queue dir)
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
     # - the work queue exists
@@ -924,10 +924,10 @@ then
         -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | \
         tee -a "${FPART_LOGFILE}"
-fi
 
-# Tell job_queue_loop that crawling has finished
-job_queue_fp_done
+    # Tell job_queue_loop that crawling has finished
+    job_queue_fp_done
+fi
 
 # When not in prepare mode, wait for job_queue_loop to terminate
 if [ -z "${OPT_PREPARE}" ]
