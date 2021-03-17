@@ -914,6 +914,10 @@ fi
 # When not resuming a previous job, start fpart
 if [ -z "${OPT_JOBNAME}" ]
 then
+    # First, enable pipefail (if supported by current shell)
+    set -o | grep -q '^pipefail' && \
+        set -o pipefail
+
     echo_log "1" "===> Analyzing filesystem..."
     # Start fpart from src_dir/ directory and produce jobs within
     # ${JOBS_QUEUEDIR}/
@@ -924,6 +928,9 @@ then
         -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
         -W "${FPART_POSTHOOK}" . 2>&1 | \
         tee -a "${FPART_LOGFILE}"
+
+    [ $? -ne 0 ] && \
+        end_die "Fpart exited with errors"
 
     # Tell job_queue_loop that crawling has finished
     job_queue_fp_done
