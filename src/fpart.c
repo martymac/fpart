@@ -260,13 +260,12 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "?hVn:f:s:i:ao:0evlby:Y:x:X:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:Y:x:X:zd:DELw:W:p:q:r:"
 #else
-        "?hVn:f:s:i:ao:0evlby:x:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:x:zd:DELw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
-            case '?':
             case 'h':
                 return (FPART_OPTS_USAGE | FPART_OPTS_OK | FPART_OPTS_EXIT);
             case 'V':
@@ -485,6 +484,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 options->round_size = (fsize_t)round_size;
                 break;
             }
+            case '?':
+            default:
+                return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
         }
     }
     *argcp -= optind;
