@@ -47,7 +47,8 @@
 .Pa src_dir/
 .Pa dst_url/
 .Nm
-.Op Fl r Ar jobname
+.Fl r Ar jobname
+.Op Fl R
 .Cm [options...]
 .Sh DESCRIPTION
 The
@@ -191,6 +192,14 @@ As a consequence, options
 and
 .Pa dst_url/
 are ignored.
+.It Fl R
+Full-resume mode: when using option
+.Fl r ,
+force re-synchronizing job's all partitions instead of remaining ones only.
+That mode can be useful to skip filesystem crawling when you have to replay a
+final pass several times and you know directory structure has not changed in
+the meantime (you may miss files if you use that option with a standard,
+file-based, job).
 .It Ic -o Ar toolopts
 Override default
 .Xr rsync 1

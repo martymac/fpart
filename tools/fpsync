@@ -58,6 +58,8 @@ OPT_TMPDIR="/tmp/fpsync"
 OPT_PREPARE=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
+# Full-resume mode (-R)
+OPT_FULLRESUME=""
 # User-settable tool options (-o)
 OPT_TOOL=""
 # Fpart options (-O)
@@ -84,7 +86,7 @@ usage () {
     echo "Copyright (c) 2014-2021 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [OPTIONS...] src_dir/ dst_url/"
-    echo "Usage: $0 [-r jobname] [OPTIONS...]"
+    echo "Usage: $0 -r jobname [-R] [OPTIONS...]"
     echo "  -m tool     external copy tool to use: 'rsync' (default) or 'cpio'"
     echo "  -n x        start <x> concurrent sync jobs"
     echo "  -f y        transfer at most <y> files or directories per sync job"
@@ -104,6 +106,9 @@ usage () {
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -f, -s, -o, /src_dir/ and /dst_url/"
     echo "              are ignored when resuming a previous run)"
+    echo "  -R          full-resume mode (needs option -r): re-synchronize all"
+    echo "              partitions from job <jobname> instead of working on"
+    echo "              remaining ones only."
     echo "  -o options  override default copy tool options with <options>"
     echo "              Use this option with care as certain options are"
     echo "              incompatible with a parallel usage (e.g. rsync's --delete)"
@@ -166,7 +171,7 @@ is_size () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:pr:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:pr:Ro:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -239,6 +244,9 @@ parse_opts () {
                 end_die "Invalid job name supplied"
             fi
             ;;
+        "R")
+            OPT_FULLRESUME="yes"
+            ;;
         "o")
             if [ -n "${OPTARG}" ]
             then
@@ -293,10 +301,10 @@ parse_opts () {
     fi
 
     # Prepare/resume constraints
-    if [ -n "${OPT_JOBNAME}" ] && [ -n "${OPT_PREPARE}" ]
-    then
-        end_die "Please specify either prepare (-p) or resume (-r) option"
-    fi
+    [ -n "${OPT_JOBNAME}" ] && [ -n "${OPT_PREPARE}" ] && \
+        end_die "Please specify either prepare (-p) or resume (-r) option, not both"
+    [ -n "${OPT_FULLRESUME}" ] && [ -z "${OPT_JOBNAME}" ] && \
+        end_die "Full-resume (-R) option can only be used with resume (-r) option"
 
     # Check for src_dir and dst_url presence and validity
     if [ -z "${OPT_JOBNAME}" ]
@@ -770,34 +778,62 @@ then
     job_queue_init
 else
     # When resuming a job, check if :
-    # - the last fpart pass has completed
-    #   (the 'fp_done' flag is present in job queue dir)
-    # - the last fpsync pass has *not* completed
-    #   (the 'fp_done' flag is *still* present in job queue dir)
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
     # - the work queue exists
-    if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ] || [ ! -f "${JOBS_QUEUEDIR}/info" ]
-    then
-        end_die "Specified job is not resumable ('fp_done' or 'info' flag missing)"
-    fi
+    # + For standard resume mode, strictly check if :
+    #   - the last fpart pass has completed
+    #     (the 'fp_done' flag has been created in job queue dir)
+    #   - the last fpsync pass has *not* completed
+    #     (the 'fp_done' flag is *still* present in job queue dir)
+    # + For full resume mode, we accept that :
+    #   - the last fpsync pass has completed
+    #     (the 'fp_done' flag has been moved to the work queue dir)
+    [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
+        end_die "Specified job is not resumable ('info' flag missing)"
     [ ! -d "${JOBS_WORKDIR}" ] && \
         end_die "Specified job is not resumable (work queue missing)"
 
+    # Check for presence of 'fp_done' flag:
+    # - strictly in JOBS_QUEUEDIR for standard resume mode
+    # - optionally in JOBS_WORKDIR for full-resume mode
+    # and throw an error if 'fp_done' not found at all
+    if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ]
+    then
+        if [ -z "${OPT_FULLRESUME}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
+        then
+            end_die "Specified job is not resumable ('fp_done' flag missing)"
+        fi
+    fi
+
     # Job is resumable, try to reload job options and prepare queues
     job_queue_info_load
+
     # Remove the "sl_stop" and "sl_done" flags, if any
     rm -f "${JOBS_QUEUEDIR}/sl_stop" 2>/dev/null
     rm -f "${JOBS_QUEUEDIR}/sl_done" 2>/dev/null
+
     # Move potentially-incomplete jobs to the jobs queue so that they can be
     # executed again. We consider the worst-case scenario and resume OPT_RJOBS
     # last jobs, some of them being partially finished.
     for _file in \
         $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${OPT_RJOBS}")
     do
-        mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null ||
+        mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
             end_die "Cannot resume specified job"
     done
+    # When performing a full-resume:
+    # - reschedule already done jobs to the jobs queue
+    # - move 'fp_done' flag (implicit, with other files) to the jobs queue
+    if [ -n "${OPT_FULLRESUME}" ]
+    then
+        for _file in \
+            $(cd "${JOBS_WORKDIR}" && ls -1)
+        do
+            mv -f "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
+                end_die "Cannot fully resume specified job"
+        done
+    fi
 fi
 
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones
