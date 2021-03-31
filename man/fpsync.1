@@ -30,6 +30,7 @@
 .Nd Synchronize directories in parallel using fpart + rsync or cpio
 .Sh SYNOPSIS
 .Nm
+.Op Fl p
 .Op Fl n Ar jobs
 .Op Fl w Ar wrks
 .Op Fl m Ar tool
@@ -45,14 +46,9 @@
 .Pa src_dir/
 .Pa dst_url/
 .Nm
-.Fl p
-.Cm [OPTIONS...]
-.Pa src_dir/
-.Pa dst_url/
-.Nm
 .Fl l
 .Nm
-.Fl r Ar jobname
+.Fl r Ar runid
 .Op Fl R
 .Cm [OPTIONS...]
 .Sh DESCRIPTION
@@ -200,7 +196,7 @@ All participating workers must be able to reach that target.
 .It Ic -n Ar jobs
 Start
 .Ar jobs
-concurrent sync jobs (either locally or remotely, see below).
+concurrent sync jobs (either locally or remotely, see below) per run.
 Default:
 .Sy 2
 .It Ic -w Ar wrks
@@ -213,23 +209,30 @@ is a space-separated list of login@machine connection strings and can be
 specified several times.
 You must be allowed to connect to those machines using a SSH key to avoid user
 interaction.
+.El
+.Sh RUN HANDLING OPTIONS
+.Bl -tag -width indent
 .It Fl p
 Prepare mode: prepare, test synchronization environment, start
 .Xr fpart 1
 and create partitions but do
 .Sy not
 actually start transfers.
-That mode can be used to create a job that can then be resumed using option
+That mode can be used to create a run that can then be resumed using option
 .Fl r .
 .It Fl l
-List jobs and their status.
-.It Ic -r Ar jobname
-Resume job
-.Ar jobname
+List previous runs and their status.
+.It Ic -r Ar runid
+Resume run
+.Ar runid
 and restart synchronizing remaining partitions from a previous run.
-.Ar jobname
-can be obtained using verbose mode (see option
-.Fl v ) .
+.Ar runid
+is displayed when using verbose mode (see option
+.Fl v )
+or prepare mode (option
+.Fl p )
+and can be retrieved afterwards using option
+.Fl l .
 Note that filesystem crawling is skipped when resuming a previous run.
 As a consequence, options
 .Fl m ,
@@ -246,22 +249,22 @@ are ignored.
 .It Fl R
 Replay mode: when using option
 .Fl r ,
-force re-synchronizing job's all partitions instead of remaining ones only.
+force re-synchronizing run's all partitions instead of remaining ones only.
 That mode can be useful to skip filesystem crawling when you have to replay a
 final pass several times and you know directory structure has not changed in
-the meantime (you may miss files if you use that option with a standard,
-file-based, job).
+the meantime (you may miss files if you use replay mode with a standard,
+file-based, run).
 .El
 .Sh RUNNING FPSYNC
 Each
 .Nm
 run generates a unique
-.Ar jobname ,
+.Ar runid ,
 which is displayed in verbose mode (see option
 .Fl v )
 and within log files.
 You can use that
-.Ar jobname
+.Ar runid
 to resume a previous run (see option
 .Fl r ) .
 .Nm

@@ -199,7 +199,7 @@ has also been tested by several organizations such as UCI, Intel and Amazon ;
 see the 'See also' section at the end of this document).
 
 In addition to being very fast (as transfers start during FS crawling and are
-parallelized), fpsync is able to resume or replay synchronization jobs (see
+parallelized), fpsync is able to resume or replay synchronization "runs" (see
 options -r and -R) and presents an overall progress status. It also has a small
 memory footprint compared to rsync itself when migrating filesystems with a big
 number of files.

@@ -55,13 +55,13 @@ OPT_FPSHDIR=""
 # Temporary dir (local, used for queue management, -t)
 OPT_TMPDIR="/tmp/fpsync"
 # Prepare mode (-p)
-OPT_PREPARE=""
-# List jobs (-l)
-OPT_LISTJOBS=""
-# Job name for resume mode (-r)
-OPT_JOBNAME=""
+OPT_PREPARERUN=""
+# List runs (-l)
+OPT_LISTRUNS=""
+# Run ID for resume mode (-r)
+OPT_RUNID=""
 # Replay mode (-R)
-OPT_REPLAY=""
+OPT_REPLAYRUN=""
 # User-settable tool options (-o)
 OPT_TOOL=""
 # Fpart options (-O)
@@ -89,7 +89,7 @@ usage () {
     echo "WWW: http://contribs.martymac.org"
     echo "Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/"
     echo "       $0 -l"
-    echo "       $0 -r jobname [-R] [OPTIONS...]"
+    echo "       $0 -r runid [-R] [OPTIONS...]"
     echo ""
     echo "COMMON OPTIONS:"
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
@@ -115,20 +115,22 @@ usage () {
     echo "  dst_url/    destination directory (or URL, when using rsync(1))"
     echo ""
     echo "JOB HANDLING AND DISPATCHING OPTIONS:"
-    echo "  -n x        start <x> concurrent sync jobs"
+    echo "  -n x        start <x> concurrent sync jobs per run"
     echo "  -w wrks     space-separated list of SSH workers"
     echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
     echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
     echo "              Jobs are executed locally if not specified (default)."
+    echo ""
+    echo "RUN HANDLING OPTIONS:"
     echo "  -p          prepare mode: prepare target(s) and create a resumable"
-    echo "              job by crawling filesystem but do not actually start"
-    echo "              synchronization."
-    echo "  -l          list jobs and their status."
-    echo "  -r jobname  resume job <jobname>"
+    echo "              run by crawling filesystem but do not actually start"
+    echo "              synchronization jobs."
+    echo "  -l          list previous runs and their status."
+    echo "  -r runid    resume run <runid>"
     echo "              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and"
     echo "              /dst_url/ are ignored when resuming a previous run)"
     echo "  -R          replay mode (needs option -r): re-synchronize all"
-    echo "              partitions from job <jobname> instead of working on"
+    echo "              partitions from run <runid> instead of working on"
     echo "              remaining ones only."
     echo ""
     echo "See fpsync(1) for more details."
@@ -250,21 +252,21 @@ parse_opts () {
             fi
             ;;
         "p")
-            OPT_PREPARE="yes"
+            OPT_PREPARERUN="yes"
             ;;
         "l")
-            OPT_LISTJOBS="yes"
+            OPT_LISTRUNS="yes"
             ;;
         "r")
             if [ -n "${OPTARG}" ]
             then
-                OPT_JOBNAME="${OPTARG}"
+                OPT_RUNID="${OPTARG}"
             else
-                end_die "Invalid job name supplied"
+                end_die "Invalid run ID supplied"
             fi
             ;;
         "R")
-            OPT_REPLAY="yes"
+            OPT_REPLAYRUN="yes"
             ;;
         "o")
             if [ -n "${OPTARG}" ]
@@ -312,14 +314,14 @@ parse_opts () {
             end_die "Please supply a shared dir when specifying workers"
     fi
 
-    # Job handling constraints
-    [ -n "${OPT_PREPARE}" ] && [ -n "${OPT_LISTJOBS}" ] && \
+    # Run handling constraints
+    [ -n "${OPT_PREPARERUN}" ] && [ -n "${OPT_LISTRUNS}" ] && \
         end_die "Please specify either prepare (-p) or list (-l) option, not both"
-    [ -n "${OPT_LISTJOBS}" ] && [ -n "${OPT_JOBNAME}" ] && \
+    [ -n "${OPT_LISTRUNS}" ] && [ -n "${OPT_RUNID}" ] && \
         end_die "Please specify either list (-l) or resume (-r) option, not both"
-    [ -n "${OPT_PREPARE}" ] && [ -n "${OPT_JOBNAME}" ] && \
+    [ -n "${OPT_PREPARERUN}" ] && [ -n "${OPT_RUNID}" ] && \
         end_die "Please specify either prepare (-p) or resume (-r) option, not both"
-    [ -n "${OPT_REPLAY}" ] && [ -z "${OPT_JOBNAME}" ] && \
+    [ -n "${OPT_REPLAYRUN}" ] && [ -z "${OPT_RUNID}" ] && \
         end_die "Replay (-R) option can only be used with resume (-r) option"
 
     # Validate partitions' constraints
@@ -330,7 +332,7 @@ parse_opts () {
     fi
 
     # Check for src_dir and dst_url presence and validity
-    if [ -z "${OPT_JOBNAME}" ] && [ -z "${OPT_LISTJOBS}" ]
+    if [ -z "${OPT_RUNID}" ] && [ -z "${OPT_LISTRUNS}" ]
     then
         # Check src dir, must be an absolute path
         if is_abs_path "$1"
@@ -451,10 +453,10 @@ job_queue_info_dump () {
     touch "${JOBS_QUEUEDIR}/info" 2>/dev/null
     umask "${_TMPMASK}"
 
-    # Dump information necessary for job resuming
+    # Dump necessary information for resuming a run
     cat << EOF > "${JOBS_QUEUEDIR}/info" || \
-        end_die "Cannot record job information"
-# Job information used for resuming, do not edit !
+        end_die "Cannot record run information"
+# Run information used for resuming, do not edit !
 OPT_RJOBS="${OPT_JOBS}"
 OPT_TOOL_NAME="${OPT_TOOL_NAME}"
 OPT_SRCDIR="${OPT_SRCDIR}"
@@ -465,25 +467,25 @@ EOF
 job_queue_info_load () {
     # Source info file and initialize a few variables
     . "${JOBS_QUEUEDIR}/info" || \
-        end_die "Cannot read job information"
+        end_die "Cannot read run information"
 
     # Validate loaded options
     { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
-        end_die "Invalid option value loaded from resumed job: OPT_RJOBS"
+        end_die "Invalid option value loaded from resumed run: OPT_RJOBS"
 
     [ "${OPT_TOOL_NAME}" != "rsync" ] && [ "${OPT_TOOL_NAME}" != "cpio" ] && \
-        end_die "Invalid option value loaded from resumed job: OPT_TOOL_NAME"
+        end_die "Invalid option value loaded from resumed run: OPT_TOOL_NAME"
 
     is_abs_path "${OPT_SRCDIR}" || \
-        end_die "Invalid options value loaded from resumed job: OPT_SRCDIR"
+        end_die "Invalid options value loaded from resumed run: OPT_SRCDIR"
 
     if [ "${OPT_TOOL_NAME}" = "cpio" ]
     then
         is_abs_path "${OPT_DSTURL}" || \
-            end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
+            end_die "Invalid options value loaded from resumed run: OPT_DSTURL"
     else
         is_abs_path "${OPT_DSTURL}" || is_remote_path "${OPT_DSTURL}" || \
-            end_die "Invalid options value loaded from resumed job: OPT_DSTURL"
+            end_die "Invalid options value loaded from resumed run: OPT_DSTURL"
     fi
 }
 
@@ -541,7 +543,7 @@ job_queue_loop_sigint_handler () {
 
 # Handle ^T: print info about queue status
 siginfo_handler () {
-    # Job counters, absolute values (common to several runs of the same job)
+    # Job counters
     local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l | awk '{print $1}')"
     local _jobs_done="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
     local _jobs_remaining="$(( ${_jobs_total} - ${_jobs_done} ))"
@@ -643,9 +645,9 @@ job_queue_loop () {
     job_queue_sl_done
 }
 
-# Print a specific job's status to stdout
-# $1 = jobname
-job_status_print () {
+# Print a specific run's status to stdout
+# $1 = runid
+run_status_print () {
     if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ]
     then
         echo "resumable (synchronization not complete, use -r to resume)"
@@ -654,7 +656,7 @@ job_status_print () {
         then
             echo "replayable (synchronization complete, use -R to replay)"
         else
-            echo "not resumable (fpart run not complete)"
+            echo "not resumable (fpart pass not complete)"
         fi
     fi
 }
@@ -664,42 +666,42 @@ job_status_print () {
 # Parse command-line options
 parse_opts "$@"
 
-## Simple job commands not requiring FPART_JOBNAME
+## Simple run-related commands not requiring FPART_RUNID
 
-# List jobs and exit
-if [ -n "${OPT_LISTJOBS}" ]
+# List runs and exit
+if [ -n "${OPT_LISTRUNS}" ]
 then
-    echo "<=== Listing jobs"
-    for _job in \
+    echo "<=== Listing runs"
+    for _run in \
         $(cd "${OPT_FPSHDIR}/parts" 2>/dev/null && ls -1)
     do
-        echo "===> Job: ${_job}, status: $(job_status_print "${_job}")"
+        echo "===> Run: ID: ${_run}, status: $(run_status_print "${_run}")"
     done
     end_ok
 fi
 
 ## Options' post-processing section
 
-# Job name initialization
-if [ -n "${OPT_JOBNAME}" ]
+# Run ID initialization
+if [ -n "${OPT_RUNID}" ]
 then
-    # Resume mode, check if OPT_JOBNAME exists
-    if [ -d "${OPT_TMPDIR}/queue/${OPT_JOBNAME}" ] && \
-        [ -d "${OPT_TMPDIR}/work/${OPT_JOBNAME}" ]
+    # Resume mode, check if run ID exists
+    if [ -d "${OPT_TMPDIR}/queue/${OPT_RUNID}" ] && \
+        [ -d "${OPT_TMPDIR}/work/${OPT_RUNID}" ]
     then
-        FPART_JOBNAME="${OPT_JOBNAME}"
+        FPART_RUNID="${OPT_RUNID}"
     else
-        end_die "Could not find specified job's queue and work directories"
+        end_die "Could not find specified run's queue and work directories"
     fi
 else
-    # Generate a unique job name. This job name *must* remain
-    # unique from one job to another.
-    FPART_JOBNAME="$(date '+%s')-$$"
+    # Generate a unique run ID. This run ID *must* remain
+    # unique from one run to another.
+    FPART_RUNID="$(date '+%s')-$$"
 fi
 
 # Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_JOBNAME}"   # Queue dir.
-JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_JOBNAME}"     # Current jobs' dir.
+JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_RUNID}" # Sync jobs' queue dir
+JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_RUNID}"   # Currently syncing jobs' dir
 
 # Paths to executables that must exist locally
 FPART_BIN="$(command -v fpart)"
@@ -725,9 +727,9 @@ fi
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
-FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_JOBNAME}"
+FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_RUNID}"
 FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
-FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_JOBNAME}"
+FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_RUNID}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Prepare mode-specific tool and fpart options
@@ -804,9 +806,9 @@ WORK_FREEWORKERS="" # Free workers' list
     end_die "Sudo is missing locally, check your configuration"
 
 # Create / check for fpart shared directories
-if [ -z "${OPT_JOBNAME}" ]
+if [ -z "${OPT_RUNID}" ]
 then
-    # For a new job, create those directories
+    # For a new run, create those directories
     mkdir -p "${FPART_PARTSDIR}" 2>/dev/null || \
         end_die "Cannot create partitions' output directory: ${FPART_PARTSDIR}"
     mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
@@ -815,7 +817,7 @@ else
     # In resume mode, FPART_PARTSDIR and FPART_LOGDIR must already exist
     if [ ! -d "${FPART_PARTSDIR}" ] || [ ! -d "${FPART_LOGDIR}" ]
     then
-        end_die "Could not find specified job's 'parts' and 'log' directories"
+        end_die "Could not find specified run's 'parts' and 'log' directories"
     fi
 fi
 
@@ -823,13 +825,13 @@ fi
 touch "${FPART_LOGFILE}" 2>/dev/null || \
     end_die "Cannot create log file: ${FPART_LOGFILE}"
 
-# Create / check for job and work queues
-if [ -z "${OPT_JOBNAME}" ]
+# Create / check for run's queue and work dirs
+if [ -z "${OPT_RUNID}" ]
 then
-    # For a new job, create those directories
+    # For a new run, create those directories
     job_queue_init
 else
-    # When resuming a job, check if :
+    # When resuming a run, check if :
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
     # - the work queue exists
@@ -842,9 +844,9 @@ else
     #   - the last fpsync pass has completed
     #     (the 'fp_done' flag has been moved to the work queue dir)
     [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
-        end_die "Specified job is not resumable ('info' flag missing)"
+        end_die "Specified run is not resumable ('info' flag missing)"
     [ ! -d "${JOBS_WORKDIR}" ] && \
-        end_die "Specified job is not resumable (work queue missing)"
+        end_die "Specified run is not resumable (work queue missing)"
 
     # Check for presence of 'fp_done' flag:
     # - strictly in JOBS_QUEUEDIR for standard resume mode
@@ -852,13 +854,13 @@ else
     # and throw an error if 'fp_done' not found at all
     if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ]
     then
-        if [ -z "${OPT_REPLAY}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
+        if [ -z "${OPT_REPLAYRUN}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
         then
-            end_die "Specified job is not resumable (try -R to replay ?)"
+            end_die "Specified run is not resumable (try -R to replay ?)"
         fi
     fi
 
-    # Job is resumable, try to reload job options and prepare queues
+    # Run is resumable, try to reload info and prepare queues
     job_queue_info_load
 
     # Remove the "sl_stop" and "sl_done" flags, if any
@@ -872,24 +874,24 @@ else
         $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${OPT_RJOBS}")
     do
         mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
-            end_die "Cannot resume specified job"
+            end_die "Error resuming specified run (could not re-schedule jobs)"
     done
     # When performing a replay:
     # - reschedule already done jobs to the jobs queue
     # - move 'fp_done' flag (implicit, with other files) to the jobs queue
-    if [ -n "${OPT_REPLAY}" ]
+    if [ -n "${OPT_REPLAYRUN}" ]
     then
         for _file in \
             $(cd "${JOBS_WORKDIR}" && ls -1)
         do
             mv -f "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
-                end_die "Cannot replay specified job"
+                end_die "Error replaying specified run (could not re-schedule jobs)"
         done
     fi
 fi
 
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones
-if [ -z "${OPT_JOBNAME}" ] || [ -z "${OPT_WRKRS}" ]
+if [ -z "${OPT_RUNID}" ] || [ -z "${OPT_WRKRS}" ]
 then
     [ ! -d "${OPT_SRCDIR}" ] && \
         end_die "Source directory does not exist (or is not a directory): ${OPT_SRCDIR}"
@@ -914,15 +916,15 @@ then
         # When using a local (or NFS-mounted) dest dir...
         if is_abs_path "${OPT_DSTURL}"
         then
-            # ...blindly try to create dst_url/ as well as a witness file on the first
-            # node. Using a witness file will allow us to check for its
-            # presence/visibility from other nodes, avoiding "split-brain"
-            # situations where dst_url/ exists but is not shared amongst all nodes
-            # (typically a local mount point where the shared storage area *should*
-            # be mounted but isn't, for any reason).
+            # ...blindly try to create dst_url/ as well as a witness file on
+            # the first node. Using a witness file will allow us to check for
+            # its presence/visibility from other nodes, avoiding "split-brain"
+            # situations where dst_url/ exists but is not shared amongst all
+            # nodes (typically a local mount point where the shared storage
+            # area *should* be mounted but isn't, for any reason).
             [ "${_host}" = "${_FIRST_HOST}" ] && \
                 "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTURL}\" && \
-                    ${SUDO} touch \"${OPT_DSTURL}/${FPART_JOBNAME}\"' 2>/dev/null"
+                    ${SUDO} touch \"${OPT_DSTURL}/${FPART_RUNID}\"' 2>/dev/null"
         fi
 
         # Check for src_dir/ presence
@@ -932,7 +934,7 @@ then
         # Check for dst_url/ presence (witness file)
         if is_abs_path "${OPT_DSTURL}"
         then
-            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPART_JOBNAME}\" ]'" || \
+            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPART_RUNID}\" ]'" || \
                 end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTURL}"
         fi
 
@@ -947,7 +949,7 @@ then
     if is_abs_path "${OPT_DSTURL}"
     then
         "${SSH_BIN}" "${_FIRST_HOST}" \
-            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPART_JOBNAME}\"' 2>/dev/null"
+            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPART_RUNID}\"' 2>/dev/null"
     fi
 
     unset _FIRST_HOST
@@ -967,7 +969,7 @@ work_list_free_workers_init
 
 # Let's rock !
 echo_log "2" "=====> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTURL}"
-echo_log "1" "===> Job name: ${FPART_JOBNAME}$([ -n "${OPT_JOBNAME}" ] && echo ' (resumed)')"
+echo_log "1" "===> Run ID: ${FPART_RUNID}$([ -n "${OPT_RUNID}" ] && echo ' (resumed)')"
 echo_log "2" "===> Start time: $(date)"
 echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
@@ -975,14 +977,14 @@ echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
 echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
 # The following options are ignored when resuming
-if [ -z "${OPT_JOBNAME}" ]
+if [ -z "${OPT_RUNID}" ]
 then
     echo_log "2" "===> Tool options: \"${OPT_TOOL}\""
     echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
     echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
 fi
 
-# Record job information
+# Record run information
 job_queue_info_dump
 
 # Record initial status, required by siginfo_handler()
@@ -990,7 +992,7 @@ _run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | 
 _run_start_time="$(date '+%s')"
 
 # When not in prepare mode, start synchronization loop
-if [ -z "${OPT_PREPARE}" ]
+if [ -z "${OPT_PREPARERUN}" ]
 then
     # Set SIGINT and SIGINFO traps and start job_queue_loop
     trap 'sigint_handler' 2
@@ -999,8 +1001,8 @@ then
     job_queue_loop&
 fi
 
-# When not resuming a previous job, start fpart
-if [ -z "${OPT_JOBNAME}" ]
+# When not resuming a previous run, start fpart
+if [ -z "${OPT_RUNID}" ]
 then
     # First, enable pipefail (if supported by current shell)
     set -o | grep -q '^pipefail' && \
@@ -1025,7 +1027,7 @@ then
 fi
 
 # When not in prepare mode, wait for job_queue_loop to terminate
-if [ -z "${OPT_PREPARE}" ]
+if [ -z "${OPT_PREPARERUN}" ]
 then
     # Use an active wait to allow signal processing (^T)
     echo_log "1" "===> Waiting for sync jobs to complete..."
@@ -1038,9 +1040,9 @@ fi
 # Display final status
 [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
 
-if [ -n "${OPT_PREPARE}" ]
+if [ -n "${OPT_PREPARERUN}" ]
 then
-echo_log "0" "<=== Successfully prepared job: ${FPART_JOBNAME}"
+echo_log "0" "<=== Successfully prepared run: ${FPART_RUNID}"
 fi
 
 # Examine results and send an e-mail if requested
@@ -1049,7 +1051,7 @@ MSG=$( { [ -z "${RET}" ] && echo 'Fpsync completed without error.' ;} || \
     { echo "Fpsync completed with errors, see logs:" && echo "${RET}" ;} )
 if [ -n "${OPT_MAIL}" ]
 then
-    echo "${MSG}" | ${MAIL_BIN} -s "Fpsync job ${FPART_JOBNAME}" "${OPT_MAIL}"
+    echo "${MSG}" | ${MAIL_BIN} -s "Fpsync run ${FPART_RUNID}" "${OPT_MAIL}"
 fi
 echo_log "1" "<=== ${MSG}"
 echo_log "2" "<=== End time: $(date)"
