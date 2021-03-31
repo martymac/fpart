@@ -1,0 +1,42 @@
+Below is a diff of file listings between a prepared run :
+
+$ fpsync -p /xxx/ /yyy/
+
+and its finalization through -r:
+
+$ fpsync -r 1616710085-80157
+
+It show file movements within involved directories.
+
+--- /tmp/before.list
++++ /tmp/after.list
+@@ -1,18 +1,25 @@
+ /tmp/fpsync
+ /tmp/fpsync/queue
+ /tmp/fpsync/queue/1616710085-80157
+-/tmp/fpsync/queue/1616710085-80157/fp_done
+ /tmp/fpsync/queue/1616710085-80157/info
+-/tmp/fpsync/queue/1616710085-80157/0
+-/tmp/fpsync/queue/1616710085-80157/2
+-/tmp/fpsync/queue/1616710085-80157/1
++/tmp/fpsync/queue/1616710085-80157/sl_done
+ /tmp/fpsync/work
+ /tmp/fpsync/work/1616710085-80157
++/tmp/fpsync/work/1616710085-80157/0
++/tmp/fpsync/work/1616710085-80157/1
++/tmp/fpsync/work/1616710085-80157/fp_done
++/tmp/fpsync/work/1616710085-80157/2
+ /tmp/fpsync/parts
+ /tmp/fpsync/parts/1616710085-80157
+ /tmp/fpsync/parts/1616710085-80157/part.0
+ /tmp/fpsync/parts/1616710085-80157/part.1
+ /tmp/fpsync/parts/1616710085-80157/part.2
+ /tmp/fpsync/log
+ /tmp/fpsync/log/1616710085-80157
++/tmp/fpsync/log/1616710085-80157/1.stderr
++/tmp/fpsync/log/1616710085-80157/2.stdout
++/tmp/fpsync/log/1616710085-80157/0.stdout
+ /tmp/fpsync/log/1616710085-80157/fpart.log
++/tmp/fpsync/log/1616710085-80157/1.stdout
++/tmp/fpsync/log/1616710085-80157/0.stderr
++/tmp/fpsync/log/1616710085-80157/2.stderr
