@@ -30,20 +30,23 @@
 .Nd Synchronize directories in parallel using fpart + rsync or cpio
 .Sh SYNOPSIS
 .Nm
-.Op Fl h
-.Op Fl v
-.Op Fl m Ar tool
 .Op Fl n Ar jobs
+.Op Fl w Ar wrks
+.Op Fl m Ar tool
 .Op Fl f Ar files
 .Op Fl s Ar size
 .Op Fl E
-.Op Fl w Ar wrks
-.Op Fl d Ar shdir
-.Op Fl t Ar tmpdir
-.Op Fl p
 .Op Fl o Ar toolopts
 .Op Fl O Ar fpartopts
 .Op Fl S
+.Op Fl t Ar tmpdir
+.Op Fl d Ar shdir
+.Op Fl v
+.Pa src_dir/
+.Pa dst_url/
+.Nm
+.Fl p
+.Cm [OPTIONS...]
 .Pa src_dir/
 .Pa dst_url/
 .Nm
@@ -51,7 +54,7 @@
 .Nm
 .Fl r Ar jobname
 .Op Fl R
-.Cm [options...]
+.Cm [OPTIONS...]
 .Sh DESCRIPTION
 The
 .Nm
@@ -73,13 +76,40 @@ and are executed on-the-fly while filesystem crawling goes on.
 This makes
 .Nm
 a good tool for migrating large filesystems.
-.Sh OPTIONS
+.Sh COMMON OPTIONS
 .Bl -tag -width indent
-.It Fl h
-Print help
+.It Ic -t Ar tmpdir
+Set
+.Nm
+temporary directory to
+.Ar tmpdir .
+This directory remains local and does not need to be shared amongst SSH workers
+when using the
+.Fl w
+option.
+Default:
+.Pa /tmp/fpsync
+.It Ic -d Ar shdir
+Set
+.Nm
+shared directory to
+.Ar shdir .
+This option is mandatory when using SSH workers and set by default to
+.Ar tmpdir
+when running locally.
+The specified directory must be an absolute path ; it will be used to handle
+communications with SSH hosts (sharing partitions and log files) and, as a
+consequence, must be made available to all participating hosts (e.g. through a
+r/w NFS mount), including the master one running
+.Nm .
 .It Fl v
 Verbose mode.
 Can be be specified several times to increase verbosity level.
+.It Fl h
+Print help
+.El
+.Sh SYNCHRONIZATION OPTIONS
+.Bl -tag -width indent
 .It Ic -m Ar tool
 External copy
 .Ar tool
@@ -97,12 +127,6 @@ A second pass will fix them.
 See the
 .Sy README
 file for more details.
-.It Ic -n Ar jobs
-Start
-.Ar jobs
-concurrent sync jobs (either locally or remotely, see below).
-Default:
-.Sy 2
 .It Ic -f Ar files
 Transfer at most
 .Ar files
@@ -134,78 +158,6 @@ option by default (
 .Sy WARNING ! ! !
 ), making it a good candidate for a final (cleaning) pass after several
 incremental passes using standard (file) mode.
-.It Ic -w Ar wrks
-Use remote SSH
-.Ar wrks
-to synchronize files.
-Synchronization jobs are executed locally when this option is not set.
-.Ar wrks
-is a space-separated list of login@machine connection strings and can be
-specified several times.
-You must be allowed to connect to those machines using a SSH key to avoid user
-interaction.
-.It Ic -d Ar shdir
-Set
-.Nm
-shared directory to
-.Ar shdir .
-This option is mandatory when using SSH workers and set by default to
-.Ar tmpdir
-when running locally.
-The specified directory must be an absolute path ; it will be used to handle
-communications with SSH hosts (sharing partitions and log files) and, as a
-consequence, must be made available to all participating hosts (e.g. through a
-r/w NFS mount), including the master one running
-.Nm .
-.It Ic -t Ar tmpdir
-Set
-.Nm
-temporary directory to
-.Ar tmpdir .
-This directory remains local and does not need to be shared amongst SSH workers
-when using the
-.Fl w
-option.
-Default:
-.Pa /tmp/fpsync
-.It Fl l
-List jobs and their status.
-.It Fl p
-Prepare mode: prepare, test synchronization environment, start
-.Xr fpart 1
-and create partitions but do
-.Sy not
-actually start transfers.
-That mode can be used to create a job that can then be resumed using option
-.Fl r .
-.It Ic -r Ar jobname
-Resume job
-.Ar jobname
-and restart synchronizing remaining partitions from a previous run.
-.Ar jobname
-can be obtained using verbose mode (see option
-.Fl v ) .
-Note that filesystem crawling is skipped when resuming a previous run.
-As a consequence, options
-.Fl m ,
-.Fl f ,
-.Fl s ,
-.Fl E ,
-.Fl o ,
-.Fl O ,
-.Fl S ,
-.Pa src_dir/ ,
-and
-.Pa dst_url/
-are ignored.
-.It Fl R
-Replay mode: when using option
-.Fl r ,
-force re-synchronizing job's all partitions instead of remaining ones only.
-That mode can be useful to skip filesystem crawling when you have to replay a
-final pass several times and you know directory structure has not changed in
-the meantime (you may miss files if you use that option with a standard,
-file-based, job).
 .It Ic -o Ar toolopts
 Override default
 .Xr rsync 1
@@ -242,6 +194,63 @@ Destination directory or URL (rsync tool only).
 If a remote URL is provided, it must be supported by
 .Xr rsync 1 .
 All participating workers must be able to reach that target.
+.El
+.Sh JOB HANDLING AND DISPATCHING OPTIONS
+.Bl -tag -width indent
+.It Ic -n Ar jobs
+Start
+.Ar jobs
+concurrent sync jobs (either locally or remotely, see below).
+Default:
+.Sy 2
+.It Ic -w Ar wrks
+Use remote SSH
+.Ar wrks
+to synchronize files.
+Synchronization jobs are executed locally when this option is not set.
+.Ar wrks
+is a space-separated list of login@machine connection strings and can be
+specified several times.
+You must be allowed to connect to those machines using a SSH key to avoid user
+interaction.
+.It Fl p
+Prepare mode: prepare, test synchronization environment, start
+.Xr fpart 1
+and create partitions but do
+.Sy not
+actually start transfers.
+That mode can be used to create a job that can then be resumed using option
+.Fl r .
+.It Fl l
+List jobs and their status.
+.It Ic -r Ar jobname
+Resume job
+.Ar jobname
+and restart synchronizing remaining partitions from a previous run.
+.Ar jobname
+can be obtained using verbose mode (see option
+.Fl v ) .
+Note that filesystem crawling is skipped when resuming a previous run.
+As a consequence, options
+.Fl m ,
+.Fl f ,
+.Fl s ,
+.Fl E ,
+.Fl o ,
+.Fl O ,
+.Fl S ,
+.Pa src_dir/ ,
+and
+.Pa dst_url/
+are ignored.
+.It Fl R
+Replay mode: when using option
+.Fl r ,
+force re-synchronizing job's all partitions instead of remaining ones only.
+That mode can be useful to skip filesystem crawling when you have to replay a
+final pass several times and you know directory structure has not changed in
+the meantime (you may miss files if you use that option with a standard,
+file-based, job).
 .El
 .Sh RUNNING FPSYNC
 Each
