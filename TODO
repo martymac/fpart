@@ -19,8 +19,6 @@ Fpart:
 - Unit testing
 
 Fpsync:
-- Add a note about fpart running relatively to './', useful when handling paths
-  with (-x/-X/-y/-Y)
 - Fix fpart options handling (-O) when a space is given within arguments
   (e.g.: -O '-Y "filename with a space"' is buggy, due to field splitting)
 - Add check for non-safe rsync options (--delete, ...)

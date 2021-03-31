@@ -358,6 +358,19 @@ It means that directory
 are synchronized, not the source directory itself (i.e. you will not get a
 subdirectory of the name of the source directory in the target directory after
 synchronization).
+.sp
+Before starting filesystem crawling,
+.Nm
+changes its current working directory to
+.Pa src_dir/
+and generates partitions containing
+.Sy relative
+paths (all starting with './').
+This is important to keep in mind when modifying
+.Ar toolopts
+or
+.Ar fpartopts
+dealing with file or directory paths.
 .Sh SEE ALSO
 .Xr cpio 1 ,
 .Xr fpart 1 ,
