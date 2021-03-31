@@ -56,6 +56,8 @@ OPT_FPSHDIR=""
 OPT_TMPDIR="/tmp/fpsync"
 # Prepare mode (-p)
 OPT_PREPARE=""
+# List jobs (-l)
+OPT_LISTJOBS=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
 # Replay mode (-R)
@@ -85,8 +87,9 @@ usage () {
     echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart"
     echo "Copyright (c) 2014-2021 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
     echo "WWW: http://contribs.martymac.org"
-    echo "Usage: $0 [OPTIONS...] src_dir/ dst_url/"
-    echo "Usage: $0 -r jobname [-R] [OPTIONS...]"
+    echo "Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/"
+    echo "       $0 -l"
+    echo "       $0 -r jobname [-R] [OPTIONS...]"
     echo "  -m tool     external copy tool to use: 'rsync' (default) or 'cpio'"
     echo "  -n x        start <x> concurrent sync jobs"
     echo "  -f y        transfer at most <y> files or directories per sync job"
@@ -103,6 +106,7 @@ usage () {
     echo "  -p          prepare mode: prepare target(s) and create a resumable"
     echo "              job by crawling filesystem but do not actually start"
     echo "              synchronization."
+    echo "  -l          list jobs and their status."
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and"
     echo "              /dst_url/ are ignored when resuming a previous run)"
@@ -176,7 +180,7 @@ is_size () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:pr:Ro:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:plr:Ro:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -241,6 +245,9 @@ parse_opts () {
         "p")
             OPT_PREPARE="yes"
             ;;
+        "l")
+            OPT_LISTJOBS="yes"
+            ;;
         "r")
             if [ -n "${OPTARG}" ]
             then
@@ -286,13 +293,6 @@ parse_opts () {
     done
     shift $((${OPTIND} - 1))
 
-    # Validate partitions' constraints
-    if is_num "${OPT_FPMAXPARTFILES}" && [ ${OPT_FPMAXPARTFILES} -eq 0 ] && \
-        is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -eq 0 ]
-    then
-        end_die "Please specify a least a file (-f) or size (-s) limit for partitions"
-    fi
-
     # Validate OPT_FPSHDIR (shared directory)
     if [ -z "${OPT_WRKRS}" ]
     then
@@ -305,14 +305,25 @@ parse_opts () {
             end_die "Please supply a shared dir when specifying workers"
     fi
 
-    # Prepare/resume constraints
-    [ -n "${OPT_JOBNAME}" ] && [ -n "${OPT_PREPARE}" ] && \
+    # Job handling constraints
+    [ -n "${OPT_PREPARE}" ] && [ -n "${OPT_LISTJOBS}" ] && \
+        end_die "Please specify either prepare (-p) or list (-l) option, not both"
+    [ -n "${OPT_LISTJOBS}" ] && [ -n "${OPT_JOBNAME}" ] && \
+        end_die "Please specify either list (-l) or resume (-r) option, not both"
+    [ -n "${OPT_PREPARE}" ] && [ -n "${OPT_JOBNAME}" ] && \
         end_die "Please specify either prepare (-p) or resume (-r) option, not both"
     [ -n "${OPT_REPLAY}" ] && [ -z "${OPT_JOBNAME}" ] && \
         end_die "Replay (-R) option can only be used with resume (-r) option"
 
+    # Validate partitions' constraints
+    if is_num "${OPT_FPMAXPARTFILES}" && [ ${OPT_FPMAXPARTFILES} -eq 0 ] && \
+        is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -eq 0 ]
+    then
+        end_die "Please specify a least a file (-f) or size (-s) limit for partitions"
+    fi
+
     # Check for src_dir and dst_url presence and validity
-    if [ -z "${OPT_JOBNAME}" ]
+    if [ -z "${OPT_JOBNAME}" ] && [ -z "${OPT_LISTJOBS}" ]
     then
         # Check src dir, must be an absolute path
         if is_abs_path "$1"
@@ -625,10 +636,40 @@ job_queue_loop () {
     job_queue_sl_done
 }
 
+# Print a specific job's status to stdout
+# $1 = jobname
+job_status_print () {
+    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ]
+    then
+        echo "resumable (synchronization not complete, use -r to resume)"
+    else
+        if [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ]
+        then
+            echo "replayable (synchronization complete, use -R to replay)"
+        else
+            echo "not resumable (fpart run not complete)"
+        fi
+    fi
+}
+
 ########## Program start (main() !)
 
 # Parse command-line options
 parse_opts "$@"
+
+## Simple job commands not requiring FPART_JOBNAME
+
+# List jobs and exit
+if [ -n "${OPT_LISTJOBS}" ]
+then
+    echo "<=== Listing jobs"
+    for _job in \
+        $(cd "${OPT_FPSHDIR}/parts" 2>/dev/null && ls -1)
+    do
+        echo "===> Job: ${_job}, status: $(job_status_print "${_job}")"
+    done
+    end_ok
+fi
 
 ## Options' post-processing section
 

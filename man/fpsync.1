@@ -47,6 +47,8 @@
 .Pa src_dir/
 .Pa dst_url/
 .Nm
+.Fl l
+.Nm
 .Fl r Ar jobname
 .Op Fl R
 .Cm [options...]
@@ -166,6 +168,8 @@ when using the
 option.
 Default:
 .Pa /tmp/fpsync
+.It Fl l
+List jobs and their status.
 .It Fl p
 Prepare mode: prepare, test synchronization environment, start
 .Xr fpart 1
