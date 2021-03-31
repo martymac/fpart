@@ -58,8 +58,8 @@ OPT_TMPDIR="/tmp/fpsync"
 OPT_PREPARE=""
 # Job name for resume mode (-r)
 OPT_JOBNAME=""
-# Full-resume mode (-R)
-OPT_FULLRESUME=""
+# Replay mode (-R)
+OPT_REPLAY=""
 # User-settable tool options (-o)
 OPT_TOOL=""
 # Fpart options (-O)
@@ -106,7 +106,7 @@ usage () {
     echo "  -r jobname  resume job <jobname>"
     echo "              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and"
     echo "              /dst_url/ are ignored when resuming a previous run)"
-    echo "  -R          full-resume mode (needs option -r): re-synchronize all"
+    echo "  -R          replay mode (needs option -r): re-synchronize all"
     echo "              partitions from job <jobname> instead of working on"
     echo "              remaining ones only."
     echo "  -o options  override default copy tool options with <options>"
@@ -245,7 +245,7 @@ parse_opts () {
             fi
             ;;
         "R")
-            OPT_FULLRESUME="yes"
+            OPT_REPLAY="yes"
             ;;
         "o")
             if [ -n "${OPTARG}" ]
@@ -303,8 +303,8 @@ parse_opts () {
     # Prepare/resume constraints
     [ -n "${OPT_JOBNAME}" ] && [ -n "${OPT_PREPARE}" ] && \
         end_die "Please specify either prepare (-p) or resume (-r) option, not both"
-    [ -n "${OPT_FULLRESUME}" ] && [ -z "${OPT_JOBNAME}" ] && \
-        end_die "Full-resume (-R) option can only be used with resume (-r) option"
+    [ -n "${OPT_REPLAY}" ] && [ -z "${OPT_JOBNAME}" ] && \
+        end_die "Replay (-R) option can only be used with resume (-r) option"
 
     # Check for src_dir and dst_url presence and validity
     if [ -z "${OPT_JOBNAME}" ]
@@ -343,7 +343,6 @@ parse_opts () {
             OPT_TOOL="-lptgoD -v --numeric-ids"
         ;;
     esac
-
 }
 
 ########## Work-related functions (in-memory, running-jobs handling)
@@ -786,7 +785,7 @@ else
     #     (the 'fp_done' flag has been created in job queue dir)
     #   - the last fpsync pass has *not* completed
     #     (the 'fp_done' flag is *still* present in job queue dir)
-    # + For full resume mode, we accept that :
+    # + For replay mode, we accept that :
     #   - the last fpsync pass has completed
     #     (the 'fp_done' flag has been moved to the work queue dir)
     [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
@@ -796,13 +795,13 @@ else
 
     # Check for presence of 'fp_done' flag:
     # - strictly in JOBS_QUEUEDIR for standard resume mode
-    # - optionally in JOBS_WORKDIR for full-resume mode
+    # - optionally in JOBS_WORKDIR for replay mode
     # and throw an error if 'fp_done' not found at all
     if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ]
     then
-        if [ -z "${OPT_FULLRESUME}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
+        if [ -z "${OPT_REPLAY}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
         then
-            end_die "Specified job is not resumable ('fp_done' flag missing)"
+            end_die "Specified job is not resumable (try -R to replay ?)"
         fi
     fi
 
@@ -822,16 +821,16 @@ else
         mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
             end_die "Cannot resume specified job"
     done
-    # When performing a full-resume:
+    # When performing a replay:
     # - reschedule already done jobs to the jobs queue
     # - move 'fp_done' flag (implicit, with other files) to the jobs queue
-    if [ -n "${OPT_FULLRESUME}" ]
+    if [ -n "${OPT_REPLAY}" ]
     then
         for _file in \
             $(cd "${JOBS_WORKDIR}" && ls -1)
         do
             mv -f "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
-                end_die "Cannot fully resume specified job"
+                end_die "Cannot replay specified job"
         done
     fi
 fi

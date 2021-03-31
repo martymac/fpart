@@ -10,7 +10,7 @@
       conditions.
     - fpsync: fix detection of fpart exiting with errors
     - fpsync: add prepare option (-p)
-    - fpsync: add full-resume option (-R)
+    - fpsync: add replay option (-R)
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)

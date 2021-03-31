@@ -199,9 +199,10 @@ has also been tested by several organizations such as UCI, Intel and Amazon ;
 see the 'See also' section at the end of this document).
 
 In addition to being very fast (as transfers start during FS crawling and are
-parallelized), fpsync is able to resume synchronization jobs (see option -r)
-and presents an overall progress status. It also has a small memory footprint
-compared to rsync itself when migrating filesystems with a big number of files.
+parallelized), fpsync is able to resume or replay synchronization jobs (see
+options -r and -R) and presents an overall progress status. It also has a small
+memory footprint compared to rsync itself when migrating filesystems with a big
+number of files.
 
 Last but not least, fpsync is very easy to set up and only requires a few
 (common) software to run: fpart, rsync and/or cpio, a POSIX shell, sudo and ssh.
