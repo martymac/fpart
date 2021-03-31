@@ -1,6 +1,12 @@
 TODO (ideas) :
 **************
 
+That file shares several ideas I've had for the project. Feel free to contribute !
+
+Global :
+- A good website for fpart.org (yes, really ! And this is not my cup of tea...)
+- Provide ready-to-use docker nodes ?
+
 Fpart:
 - Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
@@ -19,6 +25,7 @@ Fpart:
 - Unit testing
 
 Fpsync:
+- Add an option to delete runs
 - Fix fpart options handling (-O) when a space is given within arguments
   (e.g.: -O '-Y "filename with a space"' is buggy, due to field splitting)
 - Add check for non-safe rsync options (--delete, ...)
