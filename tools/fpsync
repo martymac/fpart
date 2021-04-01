@@ -62,6 +62,8 @@ OPT_LISTRUNS=""
 OPT_RUNID=""
 # Replay mode (-R)
 OPT_REPLAYRUN=""
+# Delete run (-D)
+OPT_DELETERUN=""
 # User-settable tool options (-o)
 OPT_TOOL=""
 # Fpart options (-O)
@@ -132,12 +134,14 @@ usage () {
     echo "  -R          replay mode (needs option -r): re-synchronize all"
     echo "              partitions from run <runid> instead of working on"
     echo "              remaining ones only."
+    echo "  -D runid    delete run <runid>"
     echo ""
     echo "See fpsync(1) for more details."
 }
 
-# Normal exit code
+# Print a message to stdout and exit with normal exit code
 end_ok () {
+    [ -n "$1" ] && echo "$1"
     exit 0
 }
 
@@ -185,11 +189,16 @@ is_size () {
     echo "$1" | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
 }
 
+# Check if $1 is a valid run ID
+is_runid () {
+    echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
+}
+
 # Parse user options and initialize OPT_* global variables
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:plr:Ro:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:plr:RD:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -258,7 +267,7 @@ parse_opts () {
             OPT_LISTRUNS="yes"
             ;;
         "r")
-            if [ -n "${OPTARG}" ]
+            if [ -n "${OPTARG}" ] && is_runid "${OPTARG}"
             then
                 OPT_RUNID="${OPTARG}"
             else
@@ -267,6 +276,14 @@ parse_opts () {
             ;;
         "R")
             OPT_REPLAYRUN="yes"
+            ;;
+        "D")
+            if [ -n "${OPTARG}" ] && is_runid "${OPTARG}"
+            then
+                OPT_DELETERUN="${OPTARG}"
+            else
+                end_die "Invalid run ID supplied"
+            fi
             ;;
         "o")
             if [ -n "${OPTARG}" ]
@@ -315,12 +332,18 @@ parse_opts () {
     fi
 
     # Run handling constraints
-    [ -n "${OPT_PREPARERUN}" ] && [ -n "${OPT_LISTRUNS}" ] && \
-        end_die "Please specify either prepare (-p) or list (-l) option, not both"
-    [ -n "${OPT_LISTRUNS}" ] && [ -n "${OPT_RUNID}" ] && \
-        end_die "Please specify either list (-l) or resume (-r) option, not both"
-    [ -n "${OPT_PREPARERUN}" ] && [ -n "${OPT_RUNID}" ] && \
-        end_die "Please specify either prepare (-p) or resume (-r) option, not both"
+    _err_msg="Please specify only a single option from: -p, -l -r or -D"
+    [ -n "${OPT_PREPARERUN}" ] && \
+        { [ -n "${OPT_LISTRUNS}" ] || [ -n "${OPT_RUNID}" ] || [ -n "${OPT_DELETERUN}" ] ;} && \
+        end_die "${_err_msg}"
+    [ -n "${OPT_LISTRUNS}" ] && \
+        { [ -n "${OPT_RUNID}" ] || [ -n "${OPT_DELETERUN}" ] ;} && \
+        end_die "${_err_msg}"
+    [ -n "${OPT_RUNID}" ] && \
+        [ -n "${OPT_DELETERUN}" ] && \
+        end_die "${_err_msg}"
+    _err_msg=
+
     [ -n "${OPT_REPLAYRUN}" ] && [ -z "${OPT_RUNID}" ] && \
         end_die "Replay (-R) option can only be used with resume (-r) option"
 
@@ -332,7 +355,7 @@ parse_opts () {
     fi
 
     # Check for src_dir and dst_url presence and validity
-    if [ -z "${OPT_RUNID}" ] && [ -z "${OPT_LISTRUNS}" ]
+    if [ -z "${OPT_RUNID}" ] && [ -z "${OPT_LISTRUNS}" ] && [ -z "${OPT_DELETERUN}" ]
     then
         # Check src dir, must be an absolute path
         if is_abs_path "$1"
@@ -678,6 +701,18 @@ then
         echo "===> Run: ID: ${_run}, status: $(run_status_print "${_run}")"
     done
     end_ok
+fi
+
+# Delete run and exit
+if [ -n "${OPT_DELETERUN}" ]
+then
+    { [ -d "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" ] && \
+        rm -rf "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" && \
+        rm -rf "${OPT_FPSHDIR}/log/${FPART_RUNID}" && \
+        rm -rf "${OPT_TMPDIR}/queue/${OPT_DELETERUN}" && \
+        rm -rf "${OPT_TMPDIR}/work/${OPT_DELETERUN}" && \
+        end_ok "Successfully deleted run ${OPT_DELETERUN}" ;} || \
+            end_die "Error deleting run ${OPT_DELETERUN}"
 fi
 
 ## Options' post-processing section

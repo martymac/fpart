@@ -9,9 +9,10 @@
     - fpsync: fix bug where a job could remain resumable forever under certain
       conditions.
     - fpsync: fix detection of fpart exiting with errors
-    - fpsync: add prepare option (-p)
-    - fpsync: add replay option (-R)
-    - fpsync: add list jobs options (-l)
+    - fpsync: add prepare run option (-p)
+    - fpsync: add replay run option (-R)
+    - fpsync: add list runs options (-l)
+    - fpsync: add delete run option (-D)
     - fpsync: rework help and man page for clarification
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size

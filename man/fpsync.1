@@ -254,6 +254,10 @@ That mode can be useful to skip filesystem crawling when you have to replay a
 final pass several times and you know directory structure has not changed in
 the meantime (you may miss files if you use replay mode with a standard,
 file-based, run).
+.It Ic -D Ar runid
+Delete run
+.Ar runid
+(including partition files, logs, queue and work directories).
 .El
 .Sh RUNNING FPSYNC
 Each
