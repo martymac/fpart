@@ -716,7 +716,7 @@ if [ -n "${OPT_DELETERUN}" ]
 then
     { [ -d "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" ] && \
         rm -rf "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_FPSHDIR}/log/${FPART_RUNID}" && \
+        rm -rf "${OPT_FPSHDIR}/log/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/queue/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/work/${OPT_DELETERUN}" && \
         end_ok "Successfully deleted run ${OPT_DELETERUN}" ;} || \
