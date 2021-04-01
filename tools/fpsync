@@ -194,6 +194,11 @@ is_runid () {
     echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
 }
 
+# Check if $1 contains invalid rsync options
+contains_forbidden_rsync_option () {
+    echo "$1" | grep -q -- '--delete'
+}
+
 # Parse user options and initialize OPT_* global variables
 parse_opts () {
     local opt OPTARG OPTIND
@@ -387,6 +392,9 @@ parse_opts () {
         ;;
     *)
         # Rsync
+        contains_forbidden_rsync_option "${OPT_TOOL}" && \
+            end_die "Incompatible option(s) detected within toolopts (option -o)"
+
         [ -z "${OPT_TOOL}" ] && \
             OPT_TOOL="-lptgoD -v --numeric-ids"
         ;;

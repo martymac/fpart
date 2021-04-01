@@ -1,4 +1,4 @@
-2021/??/??, 1.2.1 ('Cleaning room') :
+2021/??/??, 1.3.0 ('Cleaning room') :
     - fpart: align get_size() and init_file_entries() behaviour and take
       exclusions into account when computing a directory size.
     - fpart: fix directory size computation when using options -y/-Y.
@@ -14,6 +14,7 @@
     - fpsync: add list runs options (-l)
     - fpsync: add delete run option (-D)
     - fpsync: rework help and man page for clarification
+    - fpsync: add check for incompatible rsync option (--delete)
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
