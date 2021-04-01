@@ -25,14 +25,14 @@ Fpart:
 - Unit testing
 
 Fpsync:
-- Add an option to delete runs
+- Add an option to archive runs
+- Add an option to enable final mail sending (currently commented out)
+- Add check for non-safe rsync options (--delete, ...)
 - Fix fpart options handling (-O) when a space is given within arguments
   (e.g.: -O '-Y "filename with a space"' is buggy, due to field splitting)
-- Add check for non-safe rsync options (--delete, ...)
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
 - Improve portability (egrep vs grep, ...)
-- Add an option to enable rsync's option -z ?
-- Colorized output
+- Colorized / Improved output / Progressbar
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)
 - Add options to limit total bandwidth / per-syncer load
