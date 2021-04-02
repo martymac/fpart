@@ -62,6 +62,8 @@ OPT_LISTRUNS=""
 OPT_RUNID=""
 # Replay mode (-R)
 OPT_REPLAYRUN=""
+# Archive run (-a)
+OPT_ARCHIVERUN=""
 # Delete run (-D)
 OPT_DELETERUN=""
 # User-settable tool options (-o)
@@ -92,6 +94,8 @@ usage () {
     echo "Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/"
     echo "       $0 -l"
     echo "       $0 -r runid [-R] [OPTIONS...]"
+    echo "       $0 -a runid"
+    echo "       $0 -D runid"
     echo ""
     echo "COMMON OPTIONS:"
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
@@ -134,6 +138,7 @@ usage () {
     echo "  -R          replay mode (needs option -r): re-synchronize all"
     echo "              partitions from run <runid> instead of working on"
     echo "              remaining ones only."
+    echo "  -a runid    archive run <runid> to temp dir"
     echo "  -D runid    delete run <runid>"
     echo ""
     echo "See fpsync(1) for more details."
@@ -203,7 +208,7 @@ contains_forbidden_rsync_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:plr:RD:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:plr:Ra:D:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -282,6 +287,14 @@ parse_opts () {
         "R")
             OPT_REPLAYRUN="yes"
             ;;
+        "a")
+            if [ -n "${OPTARG}" ] && is_runid "${OPTARG}"
+            then
+                OPT_ARCHIVERUN="${OPTARG}"
+            else
+                end_die "Invalid run ID supplied"
+            fi
+            ;;
         "D")
             if [ -n "${OPTARG}" ] && is_runid "${OPTARG}"
             then
@@ -337,14 +350,23 @@ parse_opts () {
     fi
 
     # Run handling constraints
-    _err_msg="Please specify only a single option from: -p, -l -r or -D"
+    _err_msg="Please specify only a single option from: -p, -l -r, -a or -D"
     [ -n "${OPT_PREPARERUN}" ] && \
-        { [ -n "${OPT_LISTRUNS}" ] || [ -n "${OPT_RUNID}" ] || [ -n "${OPT_DELETERUN}" ] ;} && \
-        end_die "${_err_msg}"
+        { [ -n "${OPT_LISTRUNS}" ] || \
+          [ -n "${OPT_RUNID}" ] || \
+          [ -n "${OPT_ARCHIVERUN}" ] || \
+          [ -n "${OPT_DELETERUN}" ] ;} && \
+            end_die "${_err_msg}"
     [ -n "${OPT_LISTRUNS}" ] && \
-        { [ -n "${OPT_RUNID}" ] || [ -n "${OPT_DELETERUN}" ] ;} && \
-        end_die "${_err_msg}"
+        { [ -n "${OPT_RUNID}" ] || \
+          [ -n "${OPT_ARCHIVERUN}" ] || \
+          [ -n "${OPT_DELETERUN}" ] ;} && \
+            end_die "${_err_msg}"
     [ -n "${OPT_RUNID}" ] && \
+        { [ -n "${OPT_ARCHIVERUN}" ] || \
+          [ -n "${OPT_DELETERUN}" ] ;} && \
+            end_die "${_err_msg}"
+    [ -n "${OPT_ARCHIVERUN}" ] && \
         [ -n "${OPT_DELETERUN}" ] && \
         end_die "${_err_msg}"
     _err_msg=
@@ -360,7 +382,8 @@ parse_opts () {
     fi
 
     # Check for src_dir and dst_url presence and validity
-    if [ -z "${OPT_RUNID}" ] && [ -z "${OPT_LISTRUNS}" ] && [ -z "${OPT_DELETERUN}" ]
+    if [ -z "${OPT_RUNID}" ] && [ -z "${OPT_LISTRUNS}" ] && \
+        [ -z "${OPT_ARCHIVERUN}" ] && [ -z "${OPT_DELETERUN}" ]
     then
         # Check src dir, must be an absolute path
         if is_abs_path "$1"
@@ -697,7 +720,26 @@ run_status_print () {
 # Parse command-line options
 parse_opts "$@"
 
-## Simple run-related commands not requiring FPART_RUNID
+## Paths to 3rd party binaries
+
+# Paths to executables that must exist locally
+FPART_BIN="$(command -v fpart)"
+SSH_BIN="$(command -v ssh)"
+MAIL_BIN="$(command -v mail)"
+TAR_BIN="$(command -v tar)"
+
+# Paths to executables that must exist both locally and remotely
+SUDO_BIN="$(command -v sudo)"
+SUDO=""
+[ -n "${OPT_SUDO}" ] && \
+    SUDO="${SUDO_BIN}"
+
+# Paths to executables that must exist either locally or remotely (depending
+# on if you use SSH or not). When using SSH, the following binaries must be
+# present at those paths on each worker.
+TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+
+## Simple run-related -independent- actions, not requiring FPART_RUNID
 
 # List runs and exit
 if [ -n "${OPT_LISTRUNS}" ]
@@ -723,7 +765,24 @@ then
             end_die "Error deleting run ${OPT_DELETERUN}"
 fi
 
-## Options' post-processing section
+# Archive run and exit
+if [ -n "${OPT_ARCHIVERUN}" ]
+then
+    [ ! -x "${TAR_BIN}" ] && \
+        end_die "Tar is missing locally, check your configuration"
+
+    { [ -d "${OPT_FPSHDIR}/parts/${OPT_ARCHIVERUN}" ] && \
+        ( cd "${OPT_TMPDIR}" 2>/dev/null && \
+            "${TAR_BIN}" czf fpsync-run-${OPT_ARCHIVERUN}.tgz \
+                "${OPT_FPSHDIR}/parts/${OPT_ARCHIVERUN}" \
+                "${OPT_FPSHDIR}/log/${OPT_ARCHIVERUN}" \
+                "${OPT_TMPDIR}/queue/${OPT_ARCHIVERUN}" \
+                "${OPT_TMPDIR}/work/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
+            end_ok "Successfully created ${OPT_TMPDIR}/fpsync-run-${OPT_ARCHIVERUN}.tgz" ;} || \
+                end_die "Error archiving run ${OPT_ARCHIVERUN}"
+fi
+
+## Options' post-processing section, advanced variables' initialization
 
 # Run ID initialization
 if [ -n "${OPT_RUNID}" ]
@@ -745,27 +804,6 @@ fi
 # Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_RUNID}" # Sync jobs' queue dir
 JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_RUNID}"   # Currently syncing jobs' dir
-
-# Paths to executables that must exist locally
-FPART_BIN="$(command -v fpart)"
-SSH_BIN="$(command -v ssh)"
-MAIL_BIN="$(command -v mail)"
-
-# Paths to executables that must exist both locally and remotely
-SUDO_BIN="$(command -v sudo)"
-
-# Paths to executables that must exist either locally or remotely (depending
-# on if you use SSH or not). When using SSH, the following binaries must be
-# present at those paths on each worker.
-TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
-
-# Do we need sudo ?
-if [ -n "${OPT_SUDO}" ]
-then
-    SUDO="${SUDO_BIN}"
-else
-    SUDO=""
-fi
 
 # Fpart paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
@@ -838,7 +876,7 @@ WORK_NUM=0          # Current number of running processes
 WORK_LIST=""        # Work PID:PART:WORKER list
 WORK_FREEWORKERS="" # Free workers' list
 
-# Check for essential binaries
+# Check for local binaries' presence
 [ ! -x "${FPART_BIN}" ] && \
     end_die "Fpart is missing locally, check your configuration"
 [ -n "${OPT_WRKRS}" ] && [ ! -x "${SSH_BIN}" ] && \

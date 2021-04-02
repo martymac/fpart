@@ -10,8 +10,9 @@
       conditions.
     - fpsync: fix detection of fpart exiting with errors
     - fpsync: add prepare run option (-p)
-    - fpsync: add replay run option (-R)
     - fpsync: add list runs options (-l)
+    - fpsync: add replay run option (-R)
+    - fpsync: add archive run option (-a)
     - fpsync: add delete run option (-D)
     - fpsync: rework help and man page for clarification
     - fpsync: add check for incompatible rsync option (--delete)
