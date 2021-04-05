@@ -489,25 +489,22 @@ See also his newer tool, msrsync :
 They use Fpart or talk about it :
 =================================
 
+Related projects :
+------------------
+
 * Harry Mangalam, from UCI, has an excellent article about data transfer here :
   http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html
 Check out his parsyncfp tool (using fpart) here :
   https://github.com/hjmangalam/parsyncfp
 
-* Intel has written a white paper about data migration, presenting fpart and fpsync :
-  http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
-
-* Amazon uses fpart and fpsync in their EFS-to-EFS backup solution :
-  http://docs.aws.amazon.com/solutions/latest/efs-to-efs-backup/considerations.html
-  See the "Amazon Elastic File System (Amazon EFS) for File Storage" presentation here
-  (AWS Storage Days, New York, September 6-8, 2017) :
-  https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage
-  and the Amazon EFS performance tutorial here :
-  https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance
-  both presenting fpart and fpsync capabilities.
-
 * Dave Altschuler wrote dsync, a tool using fpart + rsync or rclone that can sync to the cloud :
   https://github.com/daltschu11/dsync
+
+* K-rsync uses fpart and the kubernetes Job scheduler to transfer files between PVCs:
+  https://doughgle.github.io/k-rsync/
+
+Research / Education :
+----------------------
 
 * Bioteam used fpart + fpsync + rsync to migrate 2 PB of data :
   https://www.slideshare.net/chrisdag/practical-petabyte-pushing
@@ -524,10 +521,25 @@ Check out his parsyncfp tool (using fpart) here :
 * Steve French mentioned fpart and fpsync at 2019 Linux Storage, Filesystem, and Memory-Management Summit (LSFMM) :
   https://lwn.net/Articles/789623/
 
+Cloud providers :
+-----------------
+
+* Intel has written a white paper about data migration, presenting fpart and fpsync :
+  http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf
+
+* Amazon uses fpart and fpsync in their EFS-to-EFS backup solution :
+  http://docs.aws.amazon.com/solutions/latest/efs-to-efs-backup/considerations.html
+  See the "Amazon Elastic File System (Amazon EFS) for File Storage" presentation here
+  (AWS Storage Days, New York, September 6-8, 2017) :
+  https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage
+  and the Amazon EFS performance tutorial here :
+  https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance
+  both presenting fpart and fpsync capabilities.
+
 * Microsoft suggests using fpart and fpsync to speed-up file transfers on Azure :
   https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux
 
-* Alibaba has the same advice :
+* Alibaba (Aliyun) has the same advice :
   https://www.alibabacloud.com/help/doc-detail/128764.htm
 
 Author / Licence :
