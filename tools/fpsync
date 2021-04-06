@@ -54,6 +54,8 @@ OPT_WRKRS=""
 OPT_FPSHDIR=""
 # Temporary dir (local, used for queue management, -t)
 OPT_TMPDIR="/tmp/fpsync"
+# E-mail report option (-M)
+OPT_MAIL=""
 # Prepare mode (-p)
 OPT_PREPARERUN=""
 # List runs (-l)
@@ -79,11 +81,6 @@ OPT_SRCDIR=""
 # Destination directory
 OPT_DSTURL=""
 
-# Mail - Uncomment to receive a mail when the whole run has finished.
-# The master machine (the one running this script) must be able to send mail
-# using the 'mail' command. No CLI option is provided to change it.
-#OPT_MAIL="address@mydomain.tld"
-
 ########## Various functions
 
 # Print help
@@ -101,6 +98,8 @@ usage () {
     echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
     echo "  -d /dir/    set fpsync shared dir to </dir/> (absolute path)"
     echo "              This option is mandatory when using SSH workers."
+    echo "  -M mailaddr send an e-mail to mailaddr after a run. Multiple"
+    echo "              -space-separated- addresses can be specified."
     echo "  -v          verbose mode (default: quiet)"
     echo "              This option can be be specified several times to"
     echo "              increase verbosity level."
@@ -194,6 +193,11 @@ is_size () {
     echo "$1" | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
 }
 
+# Check if $1 contains (at least) a valid e-mail address
+is_mailaddr () {
+    echo "$1" | grep -qE '[[:alnum:]]+@[[:alnum:]]+\.[[:alnum:]]+'
+}
+
 # Check if $1 is a valid run ID
 is_runid () {
     echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
@@ -208,7 +212,7 @@ contains_forbidden_rsync_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:plr:Ra:D:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -268,6 +272,14 @@ parse_opts () {
                 OPT_TMPDIR="${OPTARG}"
             else
                 end_die "Please supply an absolute path for temp dir"
+            fi
+            ;;
+        "M")
+            if [ -n "${OPTARG}" ] && is_mailaddr "${OPTARG}"
+            then
+                OPT_MAIL="${OPTARG}"
+            else
+                end_die "Please supply a valid e-mail address"
             fi
             ;;
         "p")
@@ -1121,21 +1133,21 @@ fi
 # Display final status
 [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
 
+# Examine results and print/send report
 if [ -n "${OPT_PREPARERUN}" ]
 then
-echo_log "0" "<=== Successfully prepared run: ${FPART_RUNID}"
+    echo_log "0" "<=== Successfully prepared run: ${FPART_RUNID}"
+    _report_subj="Fpsync run ${FPART_RUNID} (prepared)"
+else
+    _report_subj="Fpsync run ${FPART_RUNID}"
 fi
-
-# Examine results and send an e-mail if requested
-RET=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
-MSG=$( { [ -z "${RET}" ] && echo 'Fpsync completed without error.' ;} || \
-    { echo "Fpsync completed with errors, see logs:" && echo "${RET}" ;} )
-if [ -n "${OPT_MAIL}" ]
-then
-    echo "${MSG}" | ${MAIL_BIN} -s "Fpsync run ${FPART_RUNID}" "${OPT_MAIL}"
-fi
-echo_log "1" "<=== ${MSG}"
+_report_logs=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
+_report_body=$( { [ -z "${_report_logs}" ] && echo 'Fpsync completed without error.' ;} || \
+    { echo "Fpsync completed with errors, see logs:" && echo "${_report_logs}" ;} )
+echo_log "1" "<=== ${_report_body}"
 echo_log "2" "<=== End time: $(date)"
+[ -n "${OPT_MAIL}" ] && \
+    echo "${_report_body}" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
 
-[ -n "${RET}" ] && end_die
+[ -n "${_report_logs}" ] && end_die
 end_ok

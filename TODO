@@ -26,7 +26,6 @@ Fpart:
 - Unit testing
 
 Fpsync:
-- Add an option to enable final mail sending (currently commented out)
 - Fix fpart options handling (-O) when a space is given within arguments
   (e.g.: -O '-Y "filename with a space"' is buggy, due to field splitting)
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)

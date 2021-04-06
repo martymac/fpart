@@ -42,6 +42,7 @@
 .Op Fl S
 .Op Fl t Ar tmpdir
 .Op Fl d Ar shdir
+.Op Fl M Ar mailaddr
 .Op Fl v
 .Pa src_dir/
 .Pa dst_url/
@@ -101,6 +102,15 @@ The specified directory must be an absolute path ; it will be used to handle
 communications with SSH hosts (sharing partitions and log files) and, as a
 consequence, must be made available to all participating hosts (e.g. through a
 r/w NFS mount), including the master one running
+.Nm .
+.It Ic -M Ar mailaddr
+Send an e-mail to
+.Ar mailaddr
+after a run.
+Multiple -space-separated- addresses can be specified.
+That option requires the
+.Xr mail 1
+client to be installed and configured on the master host running
 .Nm .
 .It Fl v
 Verbose mode.
@@ -407,6 +417,7 @@ dealing with file or directory paths.
 .Sh SEE ALSO
 .Xr cpio 1 ,
 .Xr fpart 1 ,
+.Xr mail 1 ,
 .Xr rsync 1 ,
 .Xr sudo 8 ,
 .Xr tar 1

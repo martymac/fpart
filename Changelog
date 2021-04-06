@@ -17,6 +17,8 @@
     - fpsync: add delete run option (-D)
     - fpsync: rework help and man page for clarification
     - fpsync: add check for incompatible rsync option (--delete)
+    - fpsync: add send mail option (-M)
+      Note for packagers: adds a new dependency to mail(1)
 2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
