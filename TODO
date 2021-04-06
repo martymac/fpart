@@ -6,6 +6,7 @@ That file shares several ideas I've had for the project. Feel free to contribute
 Global :
 - A good website for fpart.org (yes, really ! And this is not my cup of tea...)
 - Provide ready-to-use docker nodes ?
+- Provide a FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
 - Implement option -zzzz to list directories only (0-sized) ?
