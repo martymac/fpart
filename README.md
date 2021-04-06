@@ -521,6 +521,15 @@ Research / Education :
 * Steve French mentioned fpart and fpsync at 2019 Linux Storage, Filesystem, and Memory-Management Summit (LSFMM) :
   https://lwn.net/Articles/789623/
 
+* Nantes University's BiRD cluster provides a fpart module :
+  https://bird2cluster.univ-nantes.fr/news/rappel_transfert_02/
+
+* Sweden's NSC (National Supercomputer Centre)'s Centre Storage suggests using fpsync :
+  https://www.nsc.liu.se/support/storage/snic-centrestorage/moving-data/
+
+* National Energy Research Scientific Computing Center (NERSC) writes about fpsync :
+  https://www.spectrumscaleug.org/wp-content/uploads/2019/10/HPCXXL19-NERSC-Site-update.pdf
+
 Cloud providers :
 -----------------
 
