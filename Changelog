@@ -13,6 +13,7 @@
     - fpsync: add list runs options (-l)
     - fpsync: add replay run option (-R)
     - fpsync: add archive run option (-a)
+      Note for packagers: adds a new dependency to tar(1)
     - fpsync: add delete run option (-D)
     - fpsync: rework help and man page for clarification
     - fpsync: add check for incompatible rsync option (--delete)

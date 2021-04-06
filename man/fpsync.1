@@ -263,6 +263,10 @@ Archive run
 .Ar runid
 (including partition files, logs, queue and work directories) to
 .Ar tmpdir .
+That option requires the
+.Xr tar 1
+client to be installed on the master host running
+.Nm .
 .It Ic -D Ar runid
 Delete run
 .Ar runid
@@ -404,7 +408,8 @@ dealing with file or directory paths.
 .Xr cpio 1 ,
 .Xr fpart 1 ,
 .Xr rsync 1 ,
-.Xr sudo 8
+.Xr sudo 8 ,
+.Xr tar 1
 .Sh AUTHOR, AVAILABILITY
 Fpsync has been written by
 .An Gana\(:el LAPLANCHE
