@@ -447,7 +447,8 @@ valid_file(const FTSENT * const p, struct program_options *options,
 
 #if defined(DEBUG)
     fprintf(stderr, "%s(): checking name validity (%s includes): %s (path: %s)\n",
-        __func__, exclude_only ? "without" : "with", p->fts_name, p->fts_path);
+        __func__, exclude_only ? "without" : "with",
+        (p->fts_namelen > 0) ? p->fts_name : "<empty>", p->fts_path);
 #endif
 
     /* check for includes (options -y and -Y), if requested */
@@ -473,7 +474,8 @@ valid_file(const FTSENT * const p, struct program_options *options,
         valid = 0;
 
 #if defined(DEBUG)
-    fprintf(stderr, "%s(): %s, validity: %s\n", __func__, p->fts_name,
+    fprintf(stderr, "%s(): %s, validity: %s\n", __func__,
+        (p->fts_namelen > 0) ? p->fts_name : "<empty>",
         valid ? "valid" : "invalid");
 #endif
 
