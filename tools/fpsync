@@ -29,7 +29,7 @@
 # migrate data from src_dir/ to dst_url/. Jobs can execute either locally or
 # over SSH.
 
-FPSYNC_VERSION="1.2.1"
+FPSYNC_VERSION="1.3.0"
 
 ########## Default values for options
 
