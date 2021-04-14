@@ -1,0 +1,10 @@
+site_name: Fpart.org
+site_url: http://www.fpart.org
+repo_url: https://github.com/martymac/fpart
+edit_uri: edit/master/docs/www.fpart.org/docs
+nav:
+    - Home: index.md
+    - Fpart: fpart.md
+    - Fpsync: fpsync.md
+    - Links: links.md
+theme: readthedocs
