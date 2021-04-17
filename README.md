@@ -55,3 +55,9 @@ If fpart is useful to you or your organization, you can make a donation here:
 [![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
 
 That will help me not running out of tea :)
+
+# Contributions
+
+Member of Apple's Open Source Developer Program (thanks to Apple for their support to OpenSource software !)
+
+<img src="https://uploads-ssl.webflow.com/5ac3c046c82724970fc60918/5c019d917bba312af7553b49_MacStadium-developerlogo.png" alt="MacStadium" width="180"/>
