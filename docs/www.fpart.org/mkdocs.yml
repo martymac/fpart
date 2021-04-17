@@ -7,4 +7,5 @@ nav:
     - Fpart: fpart.md
     - Fpsync: fpsync.md
     - Links: links.md
-theme: readthedocs
+# See: https://mkdocs.github.io/mkdocs-bootswatch/#litera
+theme: litera
