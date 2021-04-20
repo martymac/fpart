@@ -1,16 +1,29 @@
----
-        _______ ____   __         _      __
-       / /  ___|  _ \ / /_ _ _ __| |_   / /
-      / /| |_  | |_) / / _` | '__| __| / /
-     / / |  _| |  __/ / (_| | |  | |_ / /
-    /_/  |_|   |_| /_/ \__,_|_|   \__/_/
 
----
+![Fpart](img/Fpart.png)
 
 # About
 
-Fpart is a tool that helps you sort file trees and pack them into bags (called
-"partitions"). It is developed in C and available under the BSD license.
+Fpart is a **F**ilesystem **part**itioner. It helps you sort file trees and
+pack them into bags (called "partitions"). It is developed in C and available
+under the BSD license.
+
+# Features
+
+## Fpart
+
+* Blazing fast crawling!
+* Generates partitions on a number/file number/size basis
+* Provides a live mode with hooks to act immediately on generated file lists
+* Supports generating partitions from arbitrary input (i.e. du's output)
+
+## Fpsync
+
+* Parallelizes rsync(1) or cpio(1) jobs
+* Supports using a SSH cluster for effective data migrations
+* Starts transfers while FS crawling still goes on
+* Parallelizes your final rsync(1) pass too!
+* Provides transfer runs' status/resume/replay
+* Nearly no dependencies (mostly shell and common tools)
 
 # Compatibility
 

@@ -1,3 +1,6 @@
+
+![Fpart](img/Fpart.png)
+
 # What is fpart ?
 
 Fpart is a UNIX CLI tool that splits a list of directories and file trees into

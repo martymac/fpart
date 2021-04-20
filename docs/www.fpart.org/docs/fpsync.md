@@ -1,3 +1,6 @@
+
+![Fpsync](img/Fpsync.png)
+
 # What is Fpsync ?
 
 To demonstrate fpart possibilities, a program called 'fpsync' is provided within
