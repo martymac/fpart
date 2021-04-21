@@ -17,7 +17,7 @@ Fpsync, a powerful file-migration tool is also provided.
 
 See the [documentation](http://www.fpart.org) for more details and examples.
 
-# Features
+# Key features
 
 ## Fpart
 
@@ -29,8 +29,9 @@ See the [documentation](http://www.fpart.org) for more details and examples.
 ## Fpsync
 
 * Parallelizes rsync(1) or cpio(1) jobs
-* Supports using a SSH cluster for effective data migrations
+* Supports using a SSH cluster for efficient data migrations
 * Starts transfers while FS crawling still goes on
+* Supports remote target URLs when using rsync(1)
 * Parallelizes your final rsync(1) pass too!
 * Provides transfer runs' status/resume/replay
 * Nearly no dependencies (mostly shell and common tools)

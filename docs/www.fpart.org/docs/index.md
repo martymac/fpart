@@ -7,7 +7,7 @@ Fpart is a **F**ilesystem **part**itioner. It helps you sort file trees and
 pack them into bags (called "partitions"). It is developed in C and available
 under the BSD license.
 
-# Features
+# Key features
 
 ## Fpart
 
@@ -19,8 +19,9 @@ under the BSD license.
 ## Fpsync
 
 * Parallelizes rsync(1) or cpio(1) jobs
-* Supports using a SSH cluster for effective data migrations
+* Supports using a SSH cluster for efficient data migrations
 * Starts transfers while FS crawling still goes on
+* Supports remote target URLs when using rsync(1)
 * Parallelizes your final rsync(1) pass too!
 * Provides transfer runs' status/resume/replay
 * Nearly no dependencies (mostly shell and common tools)
@@ -106,3 +107,6 @@ FTS code comes from FreeBSD :
     include/fts.h      -> fts.h
 
 and is available under the BSD license.
+
+Also, big thanks to my beloved wife and daughters for their invaluable support
+and more particularly for the discussion we had about Fpart logo :)
