@@ -5,6 +5,7 @@
       Before that change, -D and -E would have returned a size of 0 for a
       directory included through options -y/-Y.
     - fpart: fix detection of unknown option
+    - fpart: various fixes on Darwin
     - fpsync: mask broken pipe errors when dequeueing jobs (fixes GH issue #22)
     - fpsync: fix bug where a job could remain resumable forever under certain
       conditions.
