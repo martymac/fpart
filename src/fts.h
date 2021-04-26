@@ -35,8 +35,9 @@
 #ifndef	_FTS_H_
 #define	_FTS_H_
 
-#if !defined(__FreeBSD__) && !defined(__linux__)
+#if !defined(MAX)
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
+#endif
 
 /* IllumOS provides dirfd() , see /usr/include/dirent.h */
 #if defined(__sun) || defined(__sun__)
@@ -47,7 +48,6 @@
 /* Solaris 11 and later */
 #if !defined(HAVE_DIRFD) && defined(__XOPEN_OR_POSIX)
 #define dirfd(X) ((X)->d_fd) /* POSIX conformant */
-#endif
 #endif
 #endif
 #endif
