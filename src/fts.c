@@ -51,7 +51,8 @@ __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 345552 2019-03-26 19:35:41Z emaste $
 #define _close close
 #define _fstat fstat
 #define _dirfd dirfd
-#endif
+#endif /* defined(__FreeBSD__) */
+
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
@@ -64,8 +65,19 @@ __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 345552 2019-03-26 19:35:41Z emaste $
 #if defined(__linux__)
 #include <sys/vfs.h>
 #include <sys/types.h>
+#endif /* defined(__linux__) */
+#endif /* defined(__sun) || defined(__sun__) */
+
+#include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
-#endif
+#include "fts.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#if defined(__FreeBSD__)
+#include "/usr/src/lib/libc/include/un-namespace.h"
+#include "/usr/src/lib/libc/gen/gen-private.h"
 #endif
 
 #if defined(O_CLOEXEC)
@@ -84,18 +96,6 @@ __FBSDID("$FreeBSD: head/lib/libc/gen/fts.c 345552 2019-03-26 19:35:41Z emaste $
 #if defined(DEBUG)
 #warning O_DIRECTORY not supported by open(2)
 #endif
-#endif
-
-#include <dirent.h>
-#include <errno.h>
-#include <fcntl.h>
-#include "fts.h"
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#if defined(__FreeBSD__)
-#include "/usr/src/lib/libc/include/un-namespace.h"
-#include "/usr/src/lib/libc/gen/gen-private.h"
 #endif
 
 #if defined(__sun) || defined(__sun__) || defined(__linux__)
