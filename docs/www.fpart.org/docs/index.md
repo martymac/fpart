@@ -37,7 +37,7 @@ It has been successfully tested on :
 * Solaris 9, 10 (Sparc, i386)
 * OpenIndiana (i386)
 * NetBSD (amd64, alpha)
-* Mac OS X (10.6, 10.8)
+* Mac OS X 10.6, 10.8, 11.2 (x86_64, arm64)
 
 and will probably work on other operating systems too !
 
