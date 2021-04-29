@@ -59,13 +59,14 @@
 #include <glob.h>
 #include <features.h>
 #endif /* defined(__linux__) */
-#if !defined(__GLIBC__)
+#endif /* defined(__FreeBSD__) */
+
+#if !defined(__FreeBSD__) && !defined(__GLIBC__)
 typedef dev_t __dev_t;
 typedef size_t __size_t;
 typedef ino_t __ino_t;
 typedef nlink_t __nlink_t;
-#endif /* !defined(__GLIBC__) */
-#endif /* defined(__FreeBSD__) */
+#endif /* !defined(__FreeBSD__) && !defined(__GLIBC__) */
 
 typedef struct {
 	struct _ftsent *fts_cur;	/* current node */
