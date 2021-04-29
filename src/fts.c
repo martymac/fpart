@@ -1216,11 +1216,20 @@ fts_safe_changedir(FTS *sp, FTSENT *p, int fd, char *path)
 		ret = -1;
 		goto bail;
 	}
+/*
+ * On Darwin, this check causes problems with automounts and firmlinks
+ * so we just disable it.
+ * See: /usr/share/firmlinks for a list of problematic directories
+ * and https://opensource.apple.com/source/Libc/Libc-1439.40.11/gen/fts.c.auto.html
+ * (function fts_safe_changedir()) for more details.
+ */
+#if !defined(__APPLE__)
 	if (p->fts_dev != sb.st_dev || p->fts_ino != sb.st_ino) {
 		errno = ENOENT;		/* disinformation */
 		ret = -1;
 		goto bail;
 	}
+#endif /* !defined(__APPLE__) */
 	ret = fchdir(newfd);
 bail:
 	oerrno = errno;
