@@ -61,4 +61,6 @@ That will help me not running out of tea :)
 
 Member of MacStadium's Open Source Developer Program (thanks to them for their support to OpenSource software !)
 
+<a href="https://www.macstadium.com/opensource-members">
 <img src="https://uploads-ssl.webflow.com/5ac3c046c82724970fc60918/5c019d917bba312af7553b49_MacStadium-developerlogo.png" alt="MacStadium" width="180"/>
+</a>
