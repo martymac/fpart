@@ -14,7 +14,7 @@ under the BSD license.
 * Blazing fast crawling!
 * Generates partitions on a number/file number/size basis
 * Provides a live mode with hooks to act immediately on generated file lists
-* Supports generating partitions from arbitrary input (i.e. du's output)
+* Supports generating partitions from arbitrary input (e.g. du's output)
 
 ## Fpsync
 

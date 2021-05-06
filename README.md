@@ -24,7 +24,7 @@ See the [documentation](http://www.fpart.org) for more details and examples.
 * Blazing fast crawling!
 * Generates partitions on a number/file number/size basis
 * Provides a live mode with hooks to act immediately on generated file lists
-* Supports generating partitions from arbitrary input (i.e. du's output)
+* Supports generating partitions from arbitrary input (e.g. du's output)
 
 ## Fpsync
 
