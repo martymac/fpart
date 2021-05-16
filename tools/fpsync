@@ -83,6 +83,10 @@ OPT_DSTURL=""
 
 ########## Various functions
 
+#set -o errexit
+#set -o nounset
+LC_ALL=C
+
 # Print help
 usage () {
     echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart"
@@ -195,7 +199,7 @@ is_size () {
 
 # Check if $1 contains (at least) a valid e-mail address
 is_mailaddr () {
-    echo "$1" | LC_ALL=C grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
+    echo "$1" | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
 }
 
 # Check if $1 is a valid run ID
