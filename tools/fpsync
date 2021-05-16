@@ -89,62 +89,64 @@ LC_ALL=C
 
 # Print help
 usage () {
-    echo "fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart"
-    echo "Copyright (c) 2014-2021 Ganael LAPLANCHE <ganael.laplanche@martymac.org>"
-    echo "WWW: http://contribs.martymac.org"
-    echo "Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/"
-    echo "       $0 -l"
-    echo "       $0 -r runid [-R] [OPTIONS...]"
-    echo "       $0 -a runid"
-    echo "       $0 -D runid"
-    echo ""
-    echo "COMMON OPTIONS:"
-    echo "  -t /dir/    set fpsync temp dir to </dir/> (absolute path)"
-    echo "  -d /dir/    set fpsync shared dir to </dir/> (absolute path)"
-    echo "              This option is mandatory when using SSH workers."
-    echo "  -M mailaddr send an e-mail to mailaddr after a run. Multiple"
-    echo "              -space-separated- addresses can be specified."
-    echo "  -v          verbose mode (default: quiet)"
-    echo "              This option can be be specified several times to"
-    echo "              increase verbosity level."
-    echo "  -h          this help"
-    echo ""
-    echo "SYNCHRONIZATION OPTIONS:"
-    echo "  -m tool     external copy tool to use: 'rsync' (default) or 'cpio'"
-    echo "  -f y        transfer at most <y> files or directories per sync job"
-    echo "  -s z        transfer at most <z> bytes per sync job"
-    echo "  -E          work on a per-directory basis (rsync only)"
-    echo "              (WARNING!!! Enables rsync(1)'s --delete option!)"
-    echo "  -o options  override default copy tool options with <options>"
-    echo "              Use this option with care as certain options are"
-    echo "              incompatible with a parallel usage (e.g. rsync's --delete)"
-    echo "  -O options  override default fpart options with <options>"
-    echo "  -S          use sudo for filesystem crawling and synchronizations"
-    echo "  src_dir/    source directory (absolute path)"
-    echo "  dst_url/    destination directory (or URL, when using rsync(1))"
-    echo ""
-    echo "JOB HANDLING AND DISPATCHING OPTIONS:"
-    echo "  -n x        start <x> concurrent sync jobs per run"
-    echo "  -w wrks     space-separated list of SSH workers"
-    echo "              e.g.: -w 'login@host1 login@host2 login@host3'"
-    echo "              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'"
-    echo "              Jobs are executed locally if not specified (default)."
-    echo ""
-    echo "RUN HANDLING OPTIONS:"
-    echo "  -p          prepare mode: prepare target(s) and create a resumable"
-    echo "              run by crawling filesystem but do not actually start"
-    echo "              synchronization jobs."
-    echo "  -l          list previous runs and their status."
-    echo "  -r runid    resume run <runid>"
-    echo "              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and"
-    echo "              /dst_url/ are ignored when resuming a previous run)"
-    echo "  -R          replay mode (needs option -r): re-synchronize all"
-    echo "              partitions from run <runid> instead of working on"
-    echo "              remaining ones only."
-    echo "  -a runid    archive run <runid> to temp dir"
-    echo "  -D runid    delete run <runid>"
-    echo ""
-    echo "See fpsync(1) for more details."
+    cat << EOF
+fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart
+Copyright (c) 2014-2021 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+WWW: http://contribs.martymac.org
+Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/
+       $0 -l
+       $0 -r runid [-R] [OPTIONS...]
+       $0 -a runid
+       $0 -D runid
+
+COMMON OPTIONS:
+  -t /dir/    set fpsync temp dir to </dir/> (absolute path)
+  -d /dir/    set fpsync shared dir to </dir/> (absolute path)
+              This option is mandatory when using SSH workers.
+  -M mailaddr send an e-mail to mailaddr after a run. Multiple
+              -space-separated- addresses can be specified.
+  -v          verbose mode (default: quiet)
+              This option can be be specified several times to
+              increase verbosity level.
+  -h          this help
+
+SYNCHRONIZATION OPTIONS:
+  -m tool     external copy tool to use: 'rsync' (default) or 'cpio'
+  -f y        transfer at most <y> files or directories per sync job
+  -s z        transfer at most <z> bytes per sync job
+  -E          work on a per-directory basis (rsync only)
+              (WARNING!!! Enables rsync(1)'s --delete option!)
+  -o options  override default copy tool options with <options>
+              Use this option with care as certain options are
+              incompatible with a parallel usage (e.g. rsync's --delete)
+  -O options  override default fpart options with <options>
+  -S          use sudo for filesystem crawling and synchronizations
+  src_dir/    source directory (absolute path)
+  dst_url/    destination directory (or URL, when using rsync(1))
+
+JOB HANDLING AND DISPATCHING OPTIONS:
+  -n x        start <x> concurrent sync jobs per run
+  -w wrks     space-separated list of SSH workers
+              e.g.: -w 'login@host1 login@host2 login@host3'
+              or:   -w 'login@host1' -w 'login@host2' -w 'login@host3'
+              Jobs are executed locally if not specified (default).
+
+RUN HANDLING OPTIONS:
+  -p          prepare mode: prepare target(s) and create a resumable
+              run by crawling filesystem but do not actually start
+              synchronization jobs.
+  -l          list previous runs and their status.
+  -r runid    resume run <runid>
+              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and
+              /dst_url/ are ignored when resuming a previous run)
+  -R          replay mode (needs option -r): re-synchronize all
+              partitions from run <runid> instead of working on
+              remaining ones only.
+  -a runid    archive run <runid> to temp dir
+  -D runid    delete run <runid>
+
+See fpsync(1) for more details.
+EOF
 }
 
 # Print a message to stdout and exit with normal exit code
