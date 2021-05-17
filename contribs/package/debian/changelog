@@ -4,6 +4,9 @@ fpart (1.3.0-1) unstable; urgency=low
   * debian/control
     - Bump Standards-Version to 4.5.1 (no changes required)
     - Add mailx to Depends
+  * debian/copyright
+    - Fpart is BSD-2-Clause, not BSD-3-Clause
+    - Add missing copyright for src/fts.{h,c}
 
  -- Ganael LAPLANCHE <martymac@box.martymac.org>  Mon, 10 May 2021 22:48:25 +0200
 
