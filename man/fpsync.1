@@ -179,16 +179,17 @@ Use this option with care as certain options are incompatible with a parallel
 usage (e.g. rsync's
 .Cm --delete ) .
 Default for rsync:
-.Cm -lptgoD -v --numeric-ids .
+.Dq -lptgoD -v --numeric-ids .
 Empty for cpio.
 .It Ic -O Ar fpartopts
 Override default
 .Xr fpart 1
 options with
 .Ar fpartopts .
+Options and values must be separated by a pipe character.
 .br
 Default:
-.Cm -x .zfs -x .snapshot* -x .ckpt
+.Dq -x|.zfs|-x|.snapshot*|-x|.ckpt .
 .It Fl S
 Sudo mode.
 Use

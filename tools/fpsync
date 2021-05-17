@@ -71,7 +71,7 @@ OPT_DELETERUN=""
 # User-settable tool options (-o)
 OPT_TOOL=""
 # Fpart options (-O)
-OPT_FPART="-x .zfs -x .snapshot* -x .ckpt"
+OPT_FPART="-x|.zfs|-x|.snapshot*|-x|.ckpt"
 # Sudo mode (-S)
 OPT_SUDO=""
 # Verbose mode (-v)
@@ -117,9 +117,9 @@ SYNCHRONIZATION OPTIONS:
   -E          work on a per-directory basis (rsync only)
               (WARNING!!! Enables rsync(1)'s --delete option!)
   -o options  override default copy tool options with <options>
-              Use this option with care as certain options are
-              incompatible with a parallel usage (e.g. rsync's --delete)
-  -O options  override default fpart options with <options>
+              See fpsync(1) for more details.
+  -O options  override default fpart options with pipe-separated <options>
+              See fpsync(1) for more details.
   -S          use sudo for filesystem crawling and synchronizations
   src_dir/    source directory (absolute path)
   dst_url/    destination directory (or URL, when using rsync(1))
@@ -1079,6 +1079,7 @@ echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
 if [ -z "${OPT_RUNID}" ]
 then
     echo_log "2" "===> Tool options: \"${OPT_TOOL}\""
+    echo_log "2" "===> Fpart options: \"${OPT_FPART}\""
     echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
     echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
 fi
@@ -1103,20 +1104,29 @@ fi
 # When not resuming a previous run, start fpart
 if [ -z "${OPT_RUNID}" ]
 then
-    # First, enable pipefail (if supported by current shell)
-    set -o | grep -q '^pipefail' && \
-        set -o pipefail
+    # Fork sub-shell to restrict set and IFS scope
+    (
+        # Enable pipefail if supported by current shell
+        # (needed because of tee sink)
+        set -o | grep -q '^pipefail' && \
+            set -o pipefail
+        # Allow passing special characters within fpart sub-options
+        # (OPT_FPART, FPART_MODEOPTS)
+        set -o noglob
+        # Allow spaces within fpart sub-options
+        IFS="|"
 
-    echo_log "1" "===> Analyzing filesystem..."
-    # Start fpart from src_dir/ directory and produce jobs within
-    # ${JOBS_QUEUEDIR}/
-    cd "${OPT_SRCDIR}" && \
-        ${SUDO} "${FPART_BIN}" \
-        $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && echo -f "${OPT_FPMAXPARTFILES}") \
-        $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && echo -s "${OPT_FPMAXPARTSIZE}") \
-        -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
-        -W "${FPART_POSTHOOK}" . 2>&1 | \
-        tee -a "${FPART_LOGFILE}"
+        echo_log "1" "===> Analyzing filesystem..."
+        # Start fpart from src_dir/ directory and produce jobs within
+        # ${JOBS_QUEUEDIR}/
+        cd "${OPT_SRCDIR}" && \
+            ${SUDO} "${FPART_BIN}" \
+            $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && echo -f "${OPT_FPMAXPARTFILES}") \
+            $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && echo -s "${OPT_FPMAXPARTSIZE}") \
+            -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
+            -W "${FPART_POSTHOOK}" . 2>&1 | \
+            tee -a "${FPART_LOGFILE}"
+    )
 
     [ $? -ne 0 ] && \
         end_die "Fpart exited with errors"
