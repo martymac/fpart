@@ -4,14 +4,15 @@ Priority: optional
 Maintainer: Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 Build-Depends: automake,
                debhelper-compat (=12)
-Standards-Version: 4.5.0
+Standards-Version: 4.5.1
 Homepage: http://sourceforge.net/projects/fpart/
 Vcs-Browser: https://salsa.debian.org/debian/fpart/
 Vcs-Git: https://salsa.debian.org/debian/fpart.git
 
 Package: fpart
 Architecture: any
-Depends: cpio,
+Depends: bsd-mailx | mailx,
+         cpio,
          rsync,
          sudo,
          ${misc:Depends},
