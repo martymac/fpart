@@ -101,12 +101,13 @@ That will help me not running out of tea :)
 
 # Contributions
 
-FTS code comes from FreeBSD :
+FTS code originally comes from FreeBSD :
 
-    lib/libc/gen/fts.c -> fts.c
-    include/fts.h      -> fts.h
+    lib/libc/gen/fts.c -> src/fts.c
+    include/fts.h      -> src/fts.h
 
-and is available under the BSD license.
+It has been slightly modified for portability and is available under the BSD
+license.
 
 Also, big thanks to my beloved wife and daughters for their invaluable support
 and more particularly for the discussion we had about Fpart logo :)
