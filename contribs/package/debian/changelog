@@ -1,6 +1,7 @@
 fpart (1.3.0-1) unstable; urgency=low
 
   * New upstream release
+  * Include README.md instead of symlink (closes #988871)
   * debian/control
     - Bump Standards-Version to 4.5.1 (no changes required)
     - Add mailx to Depends
