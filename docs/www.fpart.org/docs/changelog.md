@@ -1,8 +1,13 @@
-2021/??/??, 1.3.1 ('???') :
+# Next: 1.3.1
+```nohighlight
+    2021/??/??, 1.3.1 ('???') :
     - fpsync: allow special characters and white spaces within fpart options
       Allows something like: fpsync ... -O "-y|foo bar|-y|*.txt" /src/ /dst/
       (fixes GH issue #33)
-2021/05/08, 1.3.0 ('Cleaning room') :
+```
+# Current: 1.3.0
+```nohighlight
+    2021/05/08, 1.3.0 ('Cleaning room') :
     - fpart: align get_size() and init_file_entries() behaviour and take
       exclusions into account when computing a directory size.
     - fpart: fix directory size computation when using options -y/-Y.
@@ -24,7 +29,10 @@
     - fpsync: add check for incompatible rsync option (--delete)
     - fpsync: add send mail option (-M)
       Note for packagers: adds a new dependency to mail(1)
-2020/01/10, 1.2.0 ('Joking') :
+```
+# 1.2.0
+```nohighlight
+    2020/01/10, 1.2.0 ('Joking') :
     - fpsync: ability to set an unlimited number of files or an unlimited size
       per sync job (fixes GH issue #9)
     - fpart: exclude files earlier (fixes GH issue #14)
@@ -43,7 +51,10 @@
     - fpsync: accept human-friendly size formats for option -s
     - fpsync: use 'command' instead of 'which' to find binaries
       (fixes GH issue #20)
-2018/11/15, 1.1.0 ('Reading') :
+```
+# 1.1.0
+```nohighlight
+    2018/11/15, 1.1.0 ('Reading') :
     - fpart: options -D and -E now pack files if they are explicitly passed as
       arguments
     - fpsync: simplify and fix detection of remote URLs (fixes GH issue #2)
@@ -56,7 +67,10 @@
     - fpart: add option -zzz to add all directories to file lists (as empty)
     - other: lower required autoconf version to 2.63 (GH issue #7)
     - other: update RPM .spec file for CentOS and Feroda (GH issue #7)
-2017/11/10, 1.0.0 ('Dancing'):
+```
+# 1.0.0
+```nohighlight
+    2017/11/10, 1.0.0 ('Dancing'):
     - fpart: update embedded fts(3) using FreeBSD 12-CURRENT's version
     - fpart: add option -E to pack directories instead of files
     - fpsync: add option -E to work with directories (enables rsync(1)'s --delete)
@@ -70,48 +84,78 @@
     - fpsync: use fpart's new option -0 in conjunction with rsync's --from0 option
       to avoid failing on filenames with special characters
     - fpsync: improve documentation
-2017/04/27, 0.9.3 ('Funny words'):
+```
+# 0.9.3
+```nohighlight
+    2017/04/27, 0.9.3 ('Funny words'):
     - fpsync: add support for rsync URL as target
       Suggested and tested by Harry Mangalam. Thanks, Harry!
-2015/02/19, 0.9.2 ('What's that?'):
+```
+# 0.9.2
+```nohighlight
+    2015/02/19, 0.9.2 ('What's that?'):
     - fpsync: add option '-S' to use sudo(1) for filesystem crawling and synchronizations
     - fpsync: add option '-O' to override default fpart(1) options
     - add RPM .spec file (see the contribs/package/rpm directory)
-2015/02/06, 0.9.1 ('Let's play together'):
+```
+# 0.9.1
+```nohighlight
+    2015/02/06, 0.9.1 ('Let's play together'):
     - add tools/fpsync: a tool to sync directories in parallel using fpart and
       rsync. See fpsync(1) for more details.
     - fpart: print the number of files found in verbose mode only
-2013/11/13, 0.9-1:
+```
+# 0.9-1
+```nohighlight
+    2013/11/13, 0.9-1:
     (this minor change only impacts tarball users, fpart code itself has not
     changed)
     - Backport the following patch to config.guess:
       http://git.savannah.gnu.org/gitweb/?p=config.git;a=commitdiff;h=29900d3bff1ce445087ece5cb2cac425df1c2f74
       it adds support for ppcle and ppc64le architectures.
     Submitted by: Madhu Pavan <kmp@linux.vnet.ibm.com>
-2013/09/10, 0.9 ('I bite!'):
+```
+# 0.9
+```nohighlight
+    2013/09/10, 0.9 ('I bite!'):
     - Code cleanup
     - Fix Debian bug #719338 (fix build on 32bit architectures)
-2013/06/25, 0.8 ('Moving around'):
+```
+# 0.8
+```nohighlight
+    2013/06/25, 0.8 ('Moving around'):
     - Keep environ(7) when forking hooks
     - Add sections about live mode and data migration in README
     - Use autotools and get rid of manual Makefiles
-2013/02/18, 0.7 ('Can I take it ?'):
+```
+# 0.7
+```nohighlight
+    2013/02/18, 0.7 ('Can I take it ?'):
     - Added option -D to group leaf directories as single file entries
     - Big options and doc update/cleanup
     - Sync'd fts(3) code with current FreeBSD version (svn rev 245505)
     - Embedded fts(3) can now be used on GNU/Linux
     - Renamed option '-x' to '-b'
     - Added options '-y', '-Y', '-x' and '-X' to include or exclude files
-2013/01/21, 0.6 ('Very funny'):
+```
+# 0.6
+```nohighlight
+    2013/01/21, 0.6 ('Very funny'):
     - Options handling cleanup and various bugfixes
     - Added FPART_PID and FPART_HOOKTYPE hook variables
     - Added -z and -Z options to display empty directories
-2013/01/09, 0.5 ('Cassounette'):
+```
+# 0.5
+```nohighlight
+    2013/01/09, 0.5 ('Cassounette'):
     - Added option '-L' (live mode)
     - Added options '-w' and '-W' (hooks to be used with live mode)
     - Fixed build on Solaris 9
     - Removed option '-m' and associated code
-2012/06/12, 0.4:
+```
+# 0.4
+```nohighlight
+    2012/06/12, 0.4:
     - Now builds on Solaris (using FreeBSD's fts(3))
     - Fix stack overflow when allocating file entry pointers' array
     - Added preloading/rounding options -p, -q and -r. See fpart(1)
@@ -122,13 +166,19 @@
     - Added option '-m' (disabled by default), that tries to lower physical
       memory usage (at least during FS crawling) by using temporary file(s)
       and mmap(2) facility
-2011/12/06, 0.3:
+```
+# 0.3
+```nohighlight
+    2011/12/06, 0.3:
     - Switch to fts(3)
     - Replaced getline(3) calls with fgets(3) for compatibility
     - New "handle arbitrary values" (-a) option
     - Strings handling cleanup (stop using FILENAME_MAX)
     - Various smaller changes
-2011/11/24, 0.2:
+```
+# 0.2
+```nohighlight
+    2011/11/24, 0.2:
     - New "follow symbolic links" (-l) option
     - Ending slash (if present in input path) is now left to allow following an
       initial symbolic link (without using option -l)
@@ -136,5 +186,9 @@
     - Fpart now reads on stdin by default if no path is given
     - File size are now written to stdout when displaying partition contents
     - Various smaller changes
-2011/11/18, 0.1:
+```
+# 0.1
+```nohighlight
+    2011/11/18, 0.1:
     - Initial version
+```
