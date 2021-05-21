@@ -47,6 +47,10 @@ Source code is hosted on :
 * [Github](https://github.com/martymac/fpart)
 * [Sourceforge](http://www.sourceforge.net/projects/fpart)
 
+Documentation is available on :
+
+* [Fpart.org](http://www.fpart.org)
+
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
 # Donation
