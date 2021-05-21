@@ -62,7 +62,7 @@
   [Amazon Elastic File System (Amazon EFS) for File Storage](https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage) presentation
   (AWS Storage Days, New York, September 6-8, 2017) and the
   [Amazon EFS performance tutorial](https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance),
-  both presenting fpart and fpsync capabilities.
+  both presenting fpart and fpsync capabilities
 
 * [Microsoft](https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux)
   suggests using fpart and fpsync to speed-up file transfers on Azure
