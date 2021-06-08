@@ -26,6 +26,7 @@ Fpart:
 - Unit testing
 
 Fpsync:
+- Add a 'tar' tool
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
 - Improve portability (egrep vs grep, ...)
 - Colorized / Improved output / Progressbar
