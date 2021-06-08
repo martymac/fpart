@@ -209,10 +209,141 @@ is_runid () {
     echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
 }
 
-# Check if $1 contains invalid rsync options
-contains_forbidden_rsync_option () {
-    echo "$1" | grep -q -- '--delete'
+########## Tool handling
+
+# Chek if a tool is supported
+# $1 = tool name
+tool_is_supported () {
+    echo "$1" | grep -qE '^(rsync|cpio)$'
 }
+
+# Check if a tool supports a URL as sync target
+# $1 = tool name
+tool_supports_urls () {
+    [ "$1" = "rsync" ] && \
+        return 0
+    return 1
+}
+
+# Check if a tool supports directory-only mode
+# (requires the ability to sync a single-level directory tree)
+# $1 = tool name
+tool_supports_dirsonly () {
+    [ "$1" = "rsync" ] && \
+        return 0
+    return 1
+}
+
+# Get default tool-related options
+# $1 = tool name
+tool_get_base_opts () {
+    [ "$1" = "rsync" ] &&
+        echo "-lptgoD -v --numeric-ids"
+}
+
+# Get mode-specific complementary tool-related options
+# $1 = tool name
+# $2 = dirs only mode (if string not empty)
+tool_get_tool_mode_opts () {
+    if [ -z "$2" ]
+    then
+        # File-based mode
+        case "$1" in
+        "rsync")
+	    # Recursive rsync(1)
+	    echo "-r"
+            ;;
+        "cpio")
+	    echo "-pdm"
+            ;;
+        *)
+            ;;
+        esac
+    else
+        # Dirs-only mode
+        case "$1" in
+        "rsync")
+	    # Single-depth rsync(1)
+	    # Postpone deletion to limit impacts of a user interruption
+	    echo "-d --relative --delete --delete-after"
+            ;;
+        *)
+            ;;
+        esac
+    fi
+}
+
+# Get mode-specific fpart options
+# $1 = tool name
+# $2 = dirs only mode (if string not empty)
+tool_get_fpart_mode_opts () {
+    if [ -z "$2" ]
+    then
+        # File-based mode
+        case "$1" in
+        "rsync")
+	    echo "-zz"
+            ;;
+        "cpio")
+	    echo "-zzz"
+            ;;
+        *)
+            ;;
+        esac
+    else
+        # Dirs-only mode
+        case "$1" in
+        "rsync")
+	    # We do *not* want fpart option -zz in dirs-only mode because
+	    # un-readable directories will be created when sync'ing the parent.
+	    echo "-E"
+            ;;
+        *)
+            ;;
+        esac
+    fi
+}
+
+# Init tool-specific fpart hooks (black magic is here !)
+# $1 = tool name
+# XXX That function works on global variable to avoid too many escape characters
+# when returning values through stdout
+tool_init_fpart_job_command () {
+    case "$1" in
+    "rsync")
+        FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
+            ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
+            \\\"${OPT_SRCDIR}/\\\" \
+            \\\"${OPT_DSTURL}/\\\"' \
+            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        ;;
+    "cpio")
+        # XXX Warning: -0 and --quiet are non-standard
+        # (not supported on Solaris), see:
+        # http://pubs.opengroup.org/onlinepubs/7908799/xcu/cpio.html
+        # XXX Exec whole shell cmd as root, because we need to cwd first
+        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
+            cat \\\"\${FPART_PARTFILENAME}\\\" | \
+            ${SUDO} ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
+            \\\"${OPT_DSTURL}/\\\"' \
+            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        ;;
+    *)
+        ;;
+    esac
+}
+
+# Check if $2 contains invalid options regarding tool $1
+# $1 = tool name
+# $2 = tool options
+tool_uses_forbidden_option () {
+    [ "$1" = "rsync" ] && \
+        echo "$2" | grep -q -- '--delete'
+}
+
+########## Options handling
 
 # Parse user options and initialize OPT_* global variables
 parse_opts () {
@@ -222,7 +353,7 @@ parse_opts () {
     do
         case "${opt}" in
         "m")
-            if [ "${OPTARG}" = "rsync" ] || [ "${OPTARG}" = "cpio" ]
+            if tool_is_supported "${OPTARG}"
             then
                 OPT_TOOL_NAME=${OPTARG}
             else
@@ -414,32 +545,34 @@ parse_opts () {
         # Check dst_url, must be either an absolute path or a URL
         if is_abs_path "$2" || is_remote_path "$2"
         then
-            is_remote_path "$2" && [ "${OPT_TOOL_NAME}" = "cpio" ] && \
-                end_die "URLs are not supported when using cpio"
+            is_remote_path "$2" && ! tool_supports_urls "${OPT_TOOL_NAME}" && \
+                end_die "URLs are not supported when using ${OPT_TOOL_NAME}"
             OPT_DSTURL="$2"
         else
             usage
-            [ "${OPT_TOOL_NAME}" = "cpio" ] && \
+            if tool_supports_urls "${OPT_TOOL_NAME}"
+            then
+                end_die "Please supply either an absolute path or a rsync URL for dst_url/"
+            else
                 end_die "Please supply an absolute path for dst_url/"
-            end_die "Please supply either an absolute path or a rsync URL for dst_url/"
+            fi
         fi
     fi
 
     # Handle tool-related options
-    case "${OPT_TOOL_NAME}" in
-    "cpio")
-        [ "${OPT_DIRSONLY}" = "yes" ] && \
-            end_die "Option -E is invalid when using cpio"
-        ;;
-    *)
-        # Rsync
-        contains_forbidden_rsync_option "${OPT_TOOL}" && \
+    if [ "${OPT_DIRSONLY}" = "yes" ] && ! tool_supports_dirsonly "${OPT_TOOL_NAME}"
+    then
+        end_die "Option -E is invalid when using ${OPT_TOOL_NAME} tool"
+    fi
+    if [ -z "${OPT_TOOL}" ]
+    then
+        OPT_TOOL=$(tool_get_base_opts "${OPT_TOOL_NAME}")
+    else
+        tool_uses_forbidden_option "${OPT_TOOL_NAME}" "${OPT_TOOL}" && \
             end_die "Incompatible option(s) detected within toolopts (option -o)"
+    fi
 
-        [ -z "${OPT_TOOL}" ] && \
-            OPT_TOOL="-lptgoD -v --numeric-ids"
-        ;;
-    esac
+
 }
 
 ########## Work-related functions (in-memory, running-jobs handling)
@@ -545,13 +678,13 @@ job_queue_info_load () {
     { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
         end_die "Invalid option value loaded from resumed run: OPT_RJOBS"
 
-    [ "${OPT_TOOL_NAME}" != "rsync" ] && [ "${OPT_TOOL_NAME}" != "cpio" ] && \
+    ! tool_is_supported "${OPT_TOOL_NAME}" && \
         end_die "Invalid option value loaded from resumed run: OPT_TOOL_NAME"
 
     is_abs_path "${OPT_SRCDIR}" || \
         end_die "Invalid options value loaded from resumed run: OPT_SRCDIR"
 
-    if [ "${OPT_TOOL_NAME}" = "cpio" ]
+    if ! tool_supports_urls "${OPT_TOOL_NAME}"
     then
         is_abs_path "${OPT_DSTURL}" || \
             end_die "Invalid options value loaded from resumed run: OPT_DSTURL"
@@ -832,48 +965,9 @@ FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_RUNID}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Prepare mode-specific tool and fpart options
-# We do *not* want fpart option -zz in dirs-only mode because un-readable
-# directories will be created when sync'ing the parent.
-if [ -n "${OPT_DIRSONLY}" ]
-then
-    # Dirs-only mode, single-depth rsync(1)
-    # Postpone deletion to limit impacts of a user interruption
-    TOOL_MODEOPTS="-d --relative --delete --delete-after"
-    FPART_MODEOPTS="-E"
-else
-    # File-based mode
-    if [ "${OPT_TOOL_NAME}" = "cpio" ]
-    then
-        TOOL_MODEOPTS="-pdm"
-        FPART_MODEOPTS="-zzz"
-    else
-        # Recursive rsync(1)
-        TOOL_MODEOPTS="-r"
-        FPART_MODEOPTS="-zz"
-    fi
-fi
-
-# Fpart hooks (black magic is here !)
-if [ "${OPT_TOOL_NAME}" = "cpio" ]
-then
-    # XXX Warning: -0 and --quiet are non-standard
-    # (not supported on Solaris), see:
-    # http://pubs.opengroup.org/onlinepubs/7908799/xcu/cpio.html
-    # XXX Exec whole shell cmd as root, because we need to cwd first
-    FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
-        cat \\\"\${FPART_PARTFILENAME}\\\" | \
-        ${SUDO} ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
-        \\\"${OPT_DSTURL}/\\\"' \
-        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
-else
-    FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
-        ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
-        \\\"${OPT_SRCDIR}/\\\" \
-        \\\"${OPT_DSTURL}/\\\"' \
-        1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-        2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
-fi
+TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
+FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
+FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}"
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
