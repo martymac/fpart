@@ -250,11 +250,11 @@ tool_get_tool_mode_opts () {
         # File-based mode
         case "$1" in
         "rsync")
-	    # Recursive rsync(1)
-	    echo "-r"
+	        # Recursive rsync(1)
+	        echo "-r"
             ;;
         "cpio")
-	    echo "-pdm"
+	        echo "-pdm"
             ;;
         *)
             ;;
@@ -263,9 +263,9 @@ tool_get_tool_mode_opts () {
         # Dirs-only mode
         case "$1" in
         "rsync")
-	    # Single-depth rsync(1)
-	    # Postpone deletion to limit impacts of a user interruption
-	    echo "-d --relative --delete --delete-after"
+	        # Single-depth rsync(1)
+	        # Postpone deletion to limit impacts of a user interruption
+	        echo "-d --relative --delete --delete-after"
             ;;
         *)
             ;;
@@ -282,10 +282,10 @@ tool_get_fpart_mode_opts () {
         # File-based mode
         case "$1" in
         "rsync")
-	    echo "-zz"
+	        echo "-zz"
             ;;
         "cpio")
-	    echo "-zzz"
+	        echo "-zzz"
             ;;
         *)
             ;;
@@ -294,9 +294,9 @@ tool_get_fpart_mode_opts () {
         # Dirs-only mode
         case "$1" in
         "rsync")
-	    # We do *not* want fpart option -zz in dirs-only mode because
-	    # un-readable directories will be created when sync'ing the parent.
-	    echo "-E"
+	        # We do *not* want fpart option -zz in dirs-only mode because
+	        # un-readable directories will be created when sync'ing the parent.
+	        echo "-E"
             ;;
         *)
             ;;
