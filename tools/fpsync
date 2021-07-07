@@ -325,7 +325,7 @@ tool_init_fpart_job_command () {
         # XXX Exec whole shell cmd as root, because we need to cwd first
         FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
-            ${SUDO} ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
+            ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""

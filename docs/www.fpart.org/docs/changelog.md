@@ -4,6 +4,7 @@
     - fpsync: allow special characters and white spaces within fpart options
       Allows something like: fpsync ... -O "-y|foo bar|-y|*.txt" /src/ /dst/
       (fixes GH issue #33)
+    - fpsync: fix useless double call to sudo(1) in cpio(1) jobs
 ```
 # Current: 1.3.0
 ```nohighlight
