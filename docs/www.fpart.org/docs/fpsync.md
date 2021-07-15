@@ -140,6 +140,15 @@ You've been warned. Anyway, maybe you do not care about copying original
 directory mtimes. If this is the case, you can ignore that situation. If you
 care about them, running a second pass of fpsync will fix the timestamps.
 
+# Tarify tool
+
+Tar can be used in a special mode called 'tarify'. In that mode, fpsync(1) will
+*not* copy the original file tree but generate tarballs (one per partition) into
+the specified destination directory.
+
+Extracting (merging) those tarball to a another directory will reproduce the
+original file tree.
+
 # Notes about GNU cpio
 
 Developments have been made with BSD cpio (FreeBSD version). Fpsync will work

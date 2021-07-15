@@ -126,9 +126,11 @@ External copy
 .Ar tool
 used to synchronize files.
 Currently supported tools are:
-.Sy rsync
+.Sy rsync ,
+.Sy cpio ,
+.Sy tar ,
 and
-.Sy cpio .
+.Sy tarify .
 Default:
 .Sy rsync .
 When using
@@ -137,6 +139,9 @@ or
 .Sy tar
 and more than one worker, directory timestamps may not be replicated.
 A second pass will fix them.
+Special tool
+.Sy tarify
+generates tarballs into destination directory.
 .It Ic -f Ar files
 Transfer at most
 .Ar files
@@ -181,7 +186,7 @@ usage (e.g. rsync's
 .Cm --delete ) .
 Default for rsync:
 .Dq -lptgoD -v --numeric-ids .
-Empty for cpio and tar.
+Empty for cpio, tar and tarify.
 .It Ic -O Ar fpartopts
 Override default
 .Xr fpart 1

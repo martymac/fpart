@@ -214,12 +214,12 @@ is_runid () {
 # Chek if a tool is supported
 # $1 = tool name
 tool_is_supported () {
-    echo "$1" | grep -qE '^(rsync|cpio|tar)$'
+    echo "$1" | grep -qE '^(rsync|cpio|tar|tarify)$'
 }
 
 # Print supported tools in a friendly manner
 tool_print_supported () {
-    echo "'rsync', 'cpio' or 'tar'"
+    echo "'rsync', 'cpio', 'tar' or 'tarify'"
 }
 
 # Check if a tool supports a URL as sync target
@@ -257,7 +257,7 @@ tool_get_tool_mode_opts () {
         "cpio")
 	        echo "-pdm"
             ;;
-        "tar")
+        "tar"|"tarify")
 	        # Update directories themselves but do not recurse
 	        echo "--no-recursion"
             ;;
@@ -289,7 +289,7 @@ tool_get_fpart_mode_opts () {
         "rsync")
 	        echo "-zz"
             ;;
-        "cpio"|"tar")
+        "cpio"|"tar"|"tarify")
             # We want empty directory entries with those tools
             # to re-apply correct metadata
 	        echo "-zzz"
@@ -343,6 +343,14 @@ tool_init_fpart_job_command () {
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
             ${SUDO} ${TOOL_BIN} xpf - \
             ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\"' \
+            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        ;;
+    "tarify")
+        FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} c \
+            -f \\\"${OPT_DSTURL}/\${FPART_PARTNUMBER}.tar\\\" \
+            ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
+            --null -T \\\"\${FPART_PARTFILENAME}\\\"' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
@@ -904,7 +912,12 @@ SUDO=""
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
-TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+if [ "${OPT_TOOL_NAME}" = "tarify" ]
+then
+    TOOL_BIN=$(command -v "tar")
+else
+    TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+fi
 
 ## Simple run-related -independent- actions, not requiring FPART_RUNID
 
@@ -1149,7 +1162,7 @@ then
 
         # Finally, check for tool presence
         "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${TOOL_BIN}\" ]'" || \
-            end_die "Tool ${OPT_TOOL_NAME} not found on target ${_host}"
+            end_die "Tool ${OPT_TOOL_NAME} not useable on target ${_host}: ${TOOL_BIN} not found"
 
         echo_log "2" "<=== ${_host}: OK"
     done
@@ -1170,7 +1183,7 @@ else
             end_die "Cannot create destination directory: ${OPT_DSTURL}"
     fi
     [ ! -x "${TOOL_BIN}" ] && \
-        end_die "Tool ${OPT_TOOL_NAME} is missing locally, check your configuration"
+        end_die "Tool ${OPT_TOOL_NAME} not useable locally: ${TOOL_BIN} not found"
 fi
 
 # Dispatch OPT_WRKRS into WORK_FREEWORKERS
