@@ -220,18 +220,14 @@ tool_is_supported () {
 # Check if a tool supports a URL as sync target
 # $1 = tool name
 tool_supports_urls () {
-    [ "$1" = "rsync" ] && \
-        return 0
-    return 1
+    echo "$1" | grep -q '^rsync$'
 }
 
 # Check if a tool supports directory-only mode
 # (requires the ability to sync a single-level directory tree)
 # $1 = tool name
 tool_supports_dirsonly () {
-    [ "$1" = "rsync" ] && \
-        return 0
-    return 1
+    echo "$1" | grep -q '^rsync$'
 }
 
 # Get default tool-related options
