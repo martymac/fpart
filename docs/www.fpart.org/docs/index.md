@@ -18,7 +18,7 @@ under the BSD license.
 
 ## Fpsync
 
-* Parallelizes rsync(1) or cpio(1) jobs
+* Parallelizes rsync(1), cpio(1) or tar(1) jobs
 * Supports using a SSH cluster for efficient data migrations
 * Starts transfers while FS crawling still goes on
 * Supports remote target URLs when using rsync(1)

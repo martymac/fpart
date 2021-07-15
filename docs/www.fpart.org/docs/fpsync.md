@@ -5,8 +5,8 @@
 
 To demonstrate fpart possibilities, a program called 'fpsync' is provided within
 the tools/ directory. This tool is a shell script that wraps fpart(1) and
-rsync(1) (or cpio(1)) to launch several synchronization jobs in parallel as
-presented in the previous section, but while the previous example used GNU
+rsync(1), cpio(1) or tar(1) to launch several synchronization jobs in parallel
+as presented in the previous section, but while the previous example used GNU
 Parallel to schedule transfers, fpsync provides its own -embedded- scheduler.
 It can execute several synchronization processes locally or launch them on
 several nodes (workers) through SSH.
@@ -24,7 +24,7 @@ memory footprint compared to rsync itself when migrating filesystems with a big
 number of files.
 
 Last but not least, fpsync is very easy to set up and only requires a few
-(common) software to run: fpart, rsync and/or cpio, a POSIX shell, sudo and ssh.
+(common) software to run: fpart, rsync/cpio/tar, a POSIX shell, sudo and ssh.
 
 See fpsync(1) to learn more about that tool and get a list of all supported
 options.
@@ -61,7 +61,9 @@ options.
 # Examples
 
 In its default mode, fpsync uses rsync(1) and works with file lists to perform
-incremental (only) synchronizations. You can choose to use cpio(1) instead of rsync(1) with option '-m' (see [Cpio support](#cpio-support) below).
+incremental (only) synchronizations. You can choose to use cpio(1) or tar(1)
+instead of rsync(1) with option '-m' (see
+[Cpio and Tar support](#cpio-and-tar-support) below).
 
 The following examples show two typical usage.
 
@@ -105,27 +107,27 @@ speed up the final pass only.
 [Solving_the_final_pass_challenge.txt](https://github.com/martymac/fpart/blob/master/docs/Solving_the_final_pass_challenge.txt)
 in the docs/ directory for more details about fpsync's option -E)
 
-# Cpio support
+# Cpio and Tar support
 
-Fpsync's option '-m' allows you to use cpio(1) instead of rsync(1) to copy
-files. Cpio(1) is much faster than rsync(1) but there is a catch: when
+Fpsync's option '-m' allows you to use cpio(1) or tar(1) instead of rsync(1) to
+copy files. Those tools are much faster than rsync(1) but there is a catch: when
 re-creating a complex file tree, missing parent directories are created
 on-the-fly. In that case, original directory metadata (e.g. timestamps) are
 *not* copied from source.
 
 To overcome that limitation, fpsync uses fpart's -zzz option to ask fpart to
 also pack every single directory (0-sized) with file lists. Making directories
-appear in file lists will ask cpio to copy their metadata when the directory is
-processed (of course, fpart ensures that a parent directory entry appears after
-files beneath. If the parent directory is missing it is first created on the
-fly, then the directory entry makes cpio update its metadata).
+appear in file lists will ask the external tool to copy their metadata when the
+directory is processed (of course, fpart ensures that a parent directory entry
+appears after files beneath. If the parent directory is missing it is first
+created on the fly, then directory metadata is updated).
 
-This works fine with a single cpio process (fpsync's option -n 1) but not with 2
-or more parallel processes which can treat partitions out-of-order. Indeed, if
-several workers copy files to the same directory at the same time, it is
-possible that the parent directory's original metadata gets re-applied while
-another worker is still adding files to that directory. That can occur if a
-directory list spreads over more than one partition. In such a situation,
+This works fine with a single cpio or tar process (fpsync's option -n 1) but
+not with 2 or more parallel processes which can treat partitions out-of-order.
+Indeed, if several workers copy files to the same directory at the same time,
+it is possible that the parent directory's original metadata gets re-applied
+while another worker is still adding files to that directory. That can occur if
+a directory list spreads over more than one partition. In such a situation,
 original metadata (here, mtime) gets overwritten while new files get added to
 the directory.
 

@@ -27,7 +27,7 @@
 .Os
 .Sh NAME
 .Nm fpsync
-.Nd Synchronize directories in parallel using fpart + rsync or cpio
+.Nd Synchronize directories in parallel using fpart and an external tool
 .Sh SYNOPSIS
 .Nm
 .Op Fl p
@@ -62,9 +62,10 @@ The
 tool synchronizes directories in parallel using
 .Xr fpart 1
 and
-.Xr rsync 1
+.Xr rsync 1 ,
+.Xr cpio 1
 or
-.Xr cpio 1 .
+.Xr tar 1 .
 It computes subsets of
 .Pa src_dir/
 and spawns jobs to synchronize them to
@@ -132,6 +133,8 @@ Default:
 .Sy rsync .
 When using
 .Sy cpio
+or
+.Sy tar
 and more than one worker, directory timestamps may not be replicated.
 A second pass will fix them.
 .It Ic -f Ar files
@@ -167,9 +170,10 @@ option by default (
 incremental passes using standard (file) mode.
 .It Ic -o Ar toolopts
 Override default
-.Xr rsync 1
-or
+.Xr rsync 1 ,
 .Xr cpio 1
+or
+.Xr tar 1
 options with
 .Ar toolopts .
 Use this option with care as certain options are incompatible with a parallel
@@ -177,7 +181,7 @@ usage (e.g. rsync's
 .Cm --delete ) .
 Default for rsync:
 .Dq -lptgoD -v --numeric-ids .
-Empty for cpio.
+Empty for cpio and tar.
 .It Ic -O Ar fpartopts
 Override default
 .Xr fpart 1
@@ -358,9 +362,7 @@ is mounted on SSH workers only (machine1 and machine2).
 .Sh LIMITATIONS
 Parallelizing
 .Xr rsync 1
-or
-.Xr cpio 1
-makes several options not usable, such as rsync's
+can make several options not usable, such as
 .Cm --delete .
 If your source directory is live while
 .Nm
