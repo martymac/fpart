@@ -162,6 +162,10 @@ get_size(char *file_path, struct stat *file_stat,
     }
 
     while((p = fts_read(ftsp)) != NULL) {
+        if(options->verbose >= OPT_VVVERBOSE) {
+            fprintf(stderr, "%s(%s): fts_info=%d, ftp_errno=%d\n", __func__,
+                p->fts_path, p->fts_info, p->fts_errno);
+        }
         switch (p->fts_info) {
             case FTS_ERR:   /* misc error */
             case FTS_DNR:   /* un-readable directory */
@@ -184,10 +188,10 @@ get_size(char *file_path, struct stat *file_stat,
                    already been made before */
                 if((!valid_file(p, options, VF_EXCLUDEONLY)) &&
                     (p->fts_level > 0)) {
-#if defined(DEBUG)
-                    fprintf(stderr, "%s(): skipping directory: %s\n", __func__,
-                        p->fts_path);
-#endif
+                    if(options->verbose >= OPT_VVVERBOSE) {
+                        fprintf(stderr, "%s(): skipping directory: %s\n", __func__,
+                            p->fts_path);
+                    }
                     fts_set(ftsp, p, FTS_SKIP);
                 }
                 continue;
@@ -198,10 +202,10 @@ get_size(char *file_path, struct stat *file_stat,
 
                 /* Excluded files do not account for returned size */
                 if(!valid_file(p, options, VF_EXCLUDEONLY)) {
-#if defined(DEBUG)
-                    fprintf(stderr, "%s(): skipping file: %s\n", __func__,
-                        p->fts_path);
-#endif
+                    if(options->verbose >= OPT_VVVERBOSE) {
+                        fprintf(stderr, "%s(): skipping file: %s\n", __func__,
+                            p->fts_path);
+                    }
                 }
                 else
                     file_size += p->fts_statp->st_size;

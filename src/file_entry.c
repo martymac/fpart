@@ -645,6 +645,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     fsize_t curdir_size = 0;            /* current dir size */
 
     while((p = fts_read(ftsp)) != NULL) {
+        if(options->verbose >= OPT_VVVERBOSE) {
+            fprintf(stderr, "%s(%s): fts_info=%d, ftp_errno=%d\n", __func__,
+                p->fts_path, p->fts_info, p->fts_errno);
+        }
         switch (p->fts_info) {
             /* misc errors */
             case FTS_ERR:
