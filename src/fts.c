@@ -680,6 +680,15 @@ fts_set_clientptr(FTS *sp, void *clientptr)
 	sp->fts_clientptr = clientptr;
 }
 
+static struct dirent *
+fts_safe_readdir(DIR *dirp)
+{
+	errno = 0;
+	if (!dirp)
+		return (NULL);
+	return readdir(dirp);
+}
+
 /*
  * This is the tricky part -- do not casually change *anything* in here.  The
  * idea is to build the linked list of entries that are used by fts_children
@@ -814,7 +823,7 @@ fts_build(FTS *sp, int type)
 
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
-	for (head = tail = NULL, nitems = 0; dirp && (dp = readdir(dirp));) {
+	for (head = tail = NULL, nitems = 0; (dp = fts_safe_readdir(dirp));) {
 #if defined(__sun) || defined(__sun__) || defined(__linux__)
 		dnamlen = strlen(dp->d_name);
 #else
@@ -904,6 +913,20 @@ mem1:				saved_errno = errno;
 		}
 		++nitems;
 	}
+
+	/*
+	 * The only way to distinguish between "no more files" and readdir
+	 * error is checking errno when readdir() returns NULL.
+	 */
+	if (errno) {
+		cur->fts_errno = errno;
+		/*
+		 * If we've not read any items yet, treat
+		 * the error as if we can't access the dir.
+		 */
+		cur->fts_info = nitems ? FTS_ERR : FTS_DNR;
+	}
+
 	if (dirp)
 		(void)closedir(dirp);
 
