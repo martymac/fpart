@@ -319,8 +319,14 @@ tool_get_fpart_mode_opts () {
 tool_init_fpart_job_command () {
     case "$1" in
     "rsync")
-        FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
-            ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
+        # MODEOPTS is set per partition according to $FPART_PARTSIZE
+        # When $FPART_PARTSIZE is negative, we force recursive rsync
+        # because fpart was not able to list sub-directories
+        FPART_JOBCOMMAND="/bin/sh -c 'MODEOPTS=\\\"${TOOL_MODEOPTS}\\\"; \
+            [ \\\"\${FPART_PARTSIZE}\\\" -lt 0 ] && \
+	        MODEOPTS=\\\"${TOOL_MODEOPTS_R}\\\"; \
+            ${SUDO} ${TOOL_BIN} ${OPT_TOOL} \\\${MODEOPTS} \
+            --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
             \\\"${OPT_SRCDIR}/\\\" \
             \\\"${OPT_DSTURL}/\\\"' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
@@ -1004,6 +1010,7 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Prepare mode-specific tool and fpart options
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
+TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "")
 FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
 FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}"
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
