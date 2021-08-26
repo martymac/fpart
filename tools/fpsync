@@ -303,7 +303,7 @@ tool_get_fpart_mode_opts () {
         "rsync")
 	        # We do *not* want fpart option -zz in dirs-only mode because
 	        # un-readable directories will be created when sync'ing the parent.
-	        echo "-E"
+	        printf "%s\n" "-E"
             ;;
         *)
             ;;
