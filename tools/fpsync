@@ -239,7 +239,7 @@ tool_supports_dirsonly () {
 # $1 = tool name
 tool_get_base_opts () {
     [ "$1" = "rsync" ] &&
-        echo "-lptgoD -v --numeric-ids"
+        printf '%s\n' '-lptgoD -v --numeric-ids'
 }
 
 # Get mode-specific complementary tool-related options
@@ -252,14 +252,14 @@ tool_get_tool_mode_opts () {
         case "$1" in
         "rsync")
 	        # Recursive rsync(1)
-	        echo "-r"
+	        printf '%s\n' '-r'
             ;;
         "cpio")
-	        echo "-pdm"
+	        printf '%s\n' '-pdm'
             ;;
         "tar"|"tarify")
 	        # Update directories themselves but do not recurse
-	        echo "--no-recursion"
+	        printf '%s\n' '--no-recursion'
             ;;
         *)
             ;;
@@ -270,7 +270,7 @@ tool_get_tool_mode_opts () {
         "rsync")
 	        # Single-depth rsync(1)
 	        # Postpone deletion to limit impacts of a user interruption
-	        echo "-d --relative --delete --delete-after"
+	        printf '%s\n' '-d --relative --delete --delete-after'
             ;;
         *)
             ;;
@@ -287,12 +287,12 @@ tool_get_fpart_mode_opts () {
         # File-based mode
         case "$1" in
         "rsync")
-	        echo "-zz"
+	        printf '%s\n' '-zz'
             ;;
         "cpio"|"tar"|"tarify")
             # We want empty directory entries with those tools
             # to re-apply correct metadata
-	        echo "-zzz"
+	        printf '%s\n' '-zzz'
             ;;
         *)
             ;;
@@ -303,7 +303,7 @@ tool_get_fpart_mode_opts () {
         "rsync")
 	        # We do *not* want fpart option -zz in dirs-only mode because
 	        # un-readable directories will be created when sync'ing the parent.
-	        printf "%s\n" "-E"
+	        printf '%s\n' '-E'
             ;;
         *)
             ;;
@@ -364,7 +364,7 @@ tool_init_fpart_job_command () {
 # $2 = tool options
 tool_uses_forbidden_option () {
     [ "$1" = "rsync" ] && \
-        echo "$2" | grep -q -- '--delete'
+        printf '%s\n' "$2" | grep -q -- '--delete'
 }
 
 ########## Options handling
@@ -1244,8 +1244,8 @@ then
         # ${JOBS_QUEUEDIR}/
         cd "${OPT_SRCDIR}" && \
             ${SUDO} "${FPART_BIN}" \
-            $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && echo -f "${OPT_FPMAXPARTFILES}") \
-            $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && echo -s "${OPT_FPMAXPARTSIZE}") \
+            $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && printf '%s\n' "-f ${OPT_FPMAXPARTFILES}") \
+            $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && printf '%s\n' "-s ${OPT_FPMAXPARTSIZE}") \
             -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
             -W "${FPART_POSTHOOK}" . 2>&1 | \
             tee -a "${FPART_LOGFILE}"
