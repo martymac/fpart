@@ -1,13 +1,13 @@
-# Next: 1.3.1
+# Current: 1.4.0
 ```nohighlight
-    2021/??/??, 1.3.1 ('???') :
+    2021/09/24, 1.4.0 ('Joining together') :
     - fpsync: allow special characters and white spaces within fpart options
       Allows something like: fpsync ... -O "-y|foo bar|-y|*.txt" /src/ /dst/
       (fixes GH issue #33)
     - fpsync: fix useless double call to sudo(1) in cpio(1) jobs
     - fpsync: add support for 'tar' and 'tarify' tools
 ```
-# Current: 1.3.0
+# 1.3.0
 ```nohighlight
     2021/05/08, 1.3.0 ('Cleaning room') :
     - fpart: align get_size() and init_file_entries() behaviour and take
