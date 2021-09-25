@@ -1,3 +1,7 @@
+# Next: 1.4.1
+```nohighlight
+    2021/??/??, 1.4.1 ('???') :
+```
 # Current: 1.4.0
 ```nohighlight
     2021/09/24, 1.4.0 ('Joining together') :

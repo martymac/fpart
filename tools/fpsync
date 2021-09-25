@@ -28,7 +28,7 @@
 # It uses fpart and a copy tool to spawn multiple instances to migrate data from
 # src_dir/ to dst_url/. Jobs can execute either locally or over SSH.
 
-FPSYNC_VERSION="1.4.0"
+FPSYNC_VERSION="1.4.1"
 
 ########## Default values for options
 
