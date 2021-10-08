@@ -1,6 +1,7 @@
 # Next: 1.4.1
 ```nohighlight
     2021/??/??, 1.4.1 ('???') :
+    - added 'make_release.sh' script to automate release tarball creation
 ```
 # Current: 1.4.0
 ```nohighlight
