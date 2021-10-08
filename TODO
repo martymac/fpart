@@ -8,6 +8,8 @@ Global :
 - Provide a FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
+- Option to add currently-examinated directory (as empty) when closing a partition
+  (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
 - chdir(2) to initial working directory before forking hooks ?
 - Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
