@@ -37,6 +37,12 @@ echo "Generating tarball..."
 
 echo "Created file: ${_target_dir}/${_release}.tar.gz"
 
+echo "Signing release..."
+gpg --detach-sign --armor ${_target_dir}/${_release}.tar.gz || \
+  end_die "Could not sign tarball"
+
+echo "Created signature: ${_target_dir}/${_release}.tar.gz.asc"
+
 echo "Cleaning up temporary directory..."
 rm -rf "${_target_dir}/${_release}" || \
   end_die "Error cleaning up: ${_target_dir}/${_release}"
