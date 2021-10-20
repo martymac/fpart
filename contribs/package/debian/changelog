@@ -11,8 +11,9 @@ fpart (1.4.0-1) unstable; urgency=low
     - Add missing copyright for src/fts.{h,c}
   * debian/watch
     - Add PGP signature check
+  * Add debian/upstream/signing-key.asc file
 
- -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Sat, 02 Oct 2021 17:17:24 +0200
+ -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Tue, 19 Oct 2021 21:02:12 +0200
 
 fpart (1.2.0-1) unstable; urgency=low
 
