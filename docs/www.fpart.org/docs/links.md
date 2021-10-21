@@ -65,7 +65,13 @@
   both presenting fpart and fpsync capabilities
 
 * [Microsoft](https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux)
-  suggests using fpart and fpsync to speed-up file transfers on Azure
+  suggests using fpart and fpsync to speed-up file transfers
 
 * [Alibaba (Aliyun)](https://www.alibabacloud.com/help/doc-detail/128764.htm)
   has the same advice
+
+* [Nutanix](https://portal.nutanix.com/page/documents/solutions/details?targetId=TN-2016-Nutanix-Files-Migration-Guide:top-migration-tools.html)
+  suggests using fpsync as a file migration tool
+
+* [Oracle](https://docs.oracle.com/en-us/iaas/Content/File/Troubleshooting/transferring-windows-data-sms.htm)
+  too
