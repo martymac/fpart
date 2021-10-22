@@ -363,8 +363,16 @@ tool_init_fpart_job_command () {
 # $1 = tool name
 # $2 = tool options
 tool_uses_forbidden_option () {
+    # For rsync, prevent usage of :
+    # --delete
+    # --recursive, -r
+    # -a (implies -r)
+    # and leave fpsync handle them internally.
     [ "$1" = "rsync" ] && \
-        printf '%s\n' "$2" | grep -q -- '--delete'
+        { printf '%s\n' "$2" | grep -q -- '--delete' || \
+          printf '%s\n' "$2" | grep -q -- '--recursive' || \
+          printf '%s\n' "$2" | grep -qE -- '(^|[[:space:]])-[^[:space:]-]*r' || \
+          printf '%s\n' "$2" | grep -qE -- '(^|[[:space:]])-[^[:space:]-]*a' ;}
 }
 
 ########## Options handling
