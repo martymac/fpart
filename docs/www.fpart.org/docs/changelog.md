@@ -3,6 +3,7 @@
     2021/??/??, 1.4.1 ('???') :
     - added 'make_release.sh' script to automate release tarball creation
     - fpsync: add more checks for incompatible rsync options
+    - fpart: re-enable large files support on GNU/Linux
 ```
 # Current: 1.4.0
 ```nohighlight

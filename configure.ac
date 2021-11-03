@@ -73,16 +73,6 @@ AC_ARG_ENABLE([debug],
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
 esac],[debug=false])
 
-# Disable large file support on Linux when not using embedded fts
-# as Linux' fts.h cannot be used with _FILE_OFFSET_BITS==64
-if test x$embfts = xfalse
-then
-  if test x$host_os_linux = xtrue
-  then
-    enable_largefile=no
-  fi
-fi
-
 # Large file support
 AC_SYS_LARGEFILE
 
