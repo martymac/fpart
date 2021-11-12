@@ -4,6 +4,7 @@
     - added 'make_release.sh' script to automate release tarball creation
     - fpsync: add more checks for incompatible rsync options
     - fpart: re-enable large files support on GNU/Linux
+      (fixes Debian bug #834328)
 ```
 # Current: 1.4.0
 ```nohighlight
