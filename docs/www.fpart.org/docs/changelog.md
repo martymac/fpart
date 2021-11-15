@@ -5,6 +5,7 @@
     - fpsync: add more checks for incompatible rsync options
     - fpart: re-enable large files support on GNU/Linux
       (fixes Debian bug #834328)
+    - fpsync: force non-recursive rsync(1) in file-based mode
 ```
 # Current: 1.4.0
 ```nohighlight

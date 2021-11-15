@@ -248,11 +248,12 @@ tool_get_base_opts () {
 tool_get_tool_mode_opts () {
     if [ -z "$2" ]
     then
-        # File-based mode
+        # File-based mode: recursion is usually disabled here
+        # as we are working with leaf elements only
         case "$1" in
         "rsync")
-	        # Recursive rsync(1)
-	        printf '%s\n' '-r'
+	        # Non-recursive (more exactly: single-depth) rsync(1)
+	        printf '%s\n' '-d'
             ;;
         "cpio")
 	        printf '%s\n' '-pdm'
@@ -268,7 +269,7 @@ tool_get_tool_mode_opts () {
         # Dirs-only mode
         case "$1" in
         "rsync")
-	        # Single-depth rsync(1)
+	        # Single-depth rsync(1) + deletion
 	        # Postpone deletion to limit impacts of a user interruption
 	        printf '%s\n' '-d --relative --delete --delete-after'
             ;;
