@@ -52,6 +52,8 @@
 * [National Energy Research Scientific Computing Center](https://www.spectrumscaleug.org/wp-content/uploads/2019/10/HPCXXL19-NERSC-Site-update.pdf)
   (NERSC) writes about fpsync
 
+* Fpart is proudly referenced in the [French Government's 'SILL'](https://sill.etalab.gouv.fr/fr/software?id=229)
+
 # Fpsync users (Cloud providers)
 
 * [Intel](http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
