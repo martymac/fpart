@@ -8,8 +8,12 @@ Global :
 - Provide a FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
+- Start numbering regular partitions from 1 instead of 0 and always reserve
+  partition 0 for too-big files (option -s). Partition 0 may only appear
+  in non-live mode, when option -s is used and it contains files (see GH issue #36)
 - Option to add currently-examinated directory (as empty) when closing a partition
   (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
+- Provide long options
 - chdir(2) to initial working directory before forking hooks ?
 - Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
@@ -28,6 +32,7 @@ Fpart:
 - Unit testing
 
 Fpsync:
+- Ability to replay one or more jobs within a specific run
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
 - Improve portability (egrep vs grep, ...)
 - Colorized / Improved output / Progressbar
@@ -39,3 +44,6 @@ Autotools:
 - Use config.h (for program version, data types, header inclusion,
   build options info [...])
 - Add -Wall to CFLAGS when possible (gcc, clang)
+
+Documentation:
+- Better document fpart's option '-s' behaviour in live mode (see GH issue #36)
