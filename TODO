@@ -8,9 +8,13 @@ Global :
 - Provide a FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
-- Start numbering regular partitions from 1 instead of 0 and always reserve
-  partition 0 for too-big files (option -s). Partition 0 may only appear
-  in non-live mode, when option -s is used and it contains files (see GH issue #36)
+- Change special partition 0 handling (see GH issue #36) :
+  - Always start numbering regular partitions from 1 instead of 0 and strictly
+    reserve partition 0 for files that are too large (option -s).
+    => Partition 0 may only appear in non-live mode, when option -s is used and
+       it contains files
+    => For live mode, provide an option to exclude files too large regarding
+       the chosen partition size and log them to stdout (with size)
 - Option to add currently-examinated directory (as empty) when closing a partition
   (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
 - Provide long options
