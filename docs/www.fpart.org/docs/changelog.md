@@ -1,10 +1,15 @@
 # Next: 1.4.1
 ```nohighlight
-    2021/??/??, 1.4.1 ('???') :
+    2022/??/??, 1.4.1 ('???') :
     - added 'make_release.sh' script to automate release tarball creation
-    - fpsync: add more checks for incompatible rsync options
     - fpart: re-enable large files support on GNU/Linux
       (fixes Debian bug #834328)
+    - fpart: start numbering partitions from '1' instead of '0'.
+      Special partition '0' is now exclusively reserved for files that do not
+      fit in regular partitions when option '-s' *and* non-live mode are used.
+      Note for 3rd-party tools: that change may impact you!
+      (partly fixes GH issue #36)
+    - fpsync: add more checks for incompatible rsync options
     - fpsync: force non-recursive rsync(1) in file-based mode
 ```
 # Current: 1.4.0

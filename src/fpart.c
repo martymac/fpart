@@ -787,7 +787,7 @@ int main(int argc, char **argv)
 ************************/
 
     /* print result summary */
-    print_partitions(part_head);
+    print_partitions(part_head, &options);
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Writing output lists...\n");

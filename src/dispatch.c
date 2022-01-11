@@ -83,7 +83,8 @@ dispatch_file_entry_p_by_size(struct file_entry **file_entry_p,
         /* assign it */
         file_entry_p[i]->partition_index = smallest_partition_index;
 #if defined(DEBUG)
-        fprintf(stderr, "%s(): %s added to partition %ju (%p)\n", __func__,
+        fprintf(stderr, "%s(): %s assigned to partition_index %ju (%p)\n",
+            __func__,
             file_entry_p[i]->path, file_entry_p[i]->partition_index,
             smallest_partition);
 #endif
@@ -156,7 +157,7 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
                     /* assign new index to file entry */
                     head->partition_index = j;
 #if defined(DEBUG)
-                    fprintf(stderr, "%s(): %s (empty) re-assigned to partition "
+                    fprintf(stderr, "%s(): %s (empty) re-assigned to partition_index "
                         "%ju (%p)\n", __func__, head->path,
                         head->partition_index, part_head);
 #endif
@@ -226,7 +227,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
             default_partition->size += head->size;
             default_partition->num_files++;
 #if defined(DEBUG)
-            fprintf(stderr, "%s(): %s added to partition %ju (%p)\n",
+            fprintf(stderr, "%s(): %s assigned to partition_index %ju (%p)\n",
                 __func__, head->path, head->partition_index, default_partition);
 #endif
         }
@@ -261,7 +262,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
                     (*part_head)->size += head->size;
                     (*part_head)->num_files++;
 #if defined(DEBUG)
-                    fprintf(stderr, "%s(): %s added to partition %ju (%p)\n",
+                    fprintf(stderr, "%s(): %s assigned to partition_index %ju (%p)\n",
                         __func__, head->path, head->partition_index,
                         *part_head);
 #endif

@@ -29,14 +29,14 @@ the tools/ directory (see related documentation for more details).
 # Examples
 
 The following will produce 3 partitions, with (approximatively) the same size
-and number of files. Three files: "var-parts.[0-2]", are generated as output :
+and number of files. Three files: "var-parts.[1-3]", are generated as output :
 
     $ fpart -n 3 -o var-parts /var
 
     $ ls var-parts*
-    var-parts.0 var-parts.1 var-parts.2
+    var-parts.1 var-parts.2 var-parts.3
 
-    $ head -n 2 var-parts.0
+    $ head -n 2 var-parts.1
     /var/some/file1
     /var/some/file2
 
@@ -47,9 +47,9 @@ as output :
     $ fpart -s 4617089843 -o music-parts /path/to/my/music
 
 The following will produce partitions containing 10000 files each by examining
-/usr first and then /home and display only partition 0 on stdout :
+/usr first and then /home and display only partition 1 on stdout :
 
-    $ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'
+    $ find /usr ! -type d | fpart -f 10000 -i - /home | grep '^1 '
 
 The following will produce two partitions by re-using du(1) output. Fpart will
 not examine the filesystem but instead re-use arbitrary values printed by du(1)
@@ -77,9 +77,9 @@ See the following example :
     $ mkdir foo && touch foo/{bar,baz}
     $ fpart -L -f 1 -o /tmp/part.out -W \
         'echo == ${FPART_PARTFILENAME} == ; cat ${FPART_PARTFILENAME}' foo/
-    == /tmp/part.out.0 ==
-    foo/bar
     == /tmp/part.out.1 ==
+    foo/bar
+    == /tmp/part.out.2 ==
     foo/baz
 
 This example crawls foo/ in live mode (option -L). For each file (option -f,

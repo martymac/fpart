@@ -9,12 +9,9 @@ Global :
 
 Fpart:
 - Change special partition 0 handling (see GH issue #36) :
-  - Always start numbering regular partitions from 1 instead of 0 and strictly
-    reserve partition 0 for files that are too large (option -s).
-    => Partition 0 may only appear in non-live mode, when option -s is used and
-       it contains files
-    => For live mode, provide an option to exclude files too large regarding
-       the chosen partition size and log them to stdout (with size)
+  - Make partition 0 only appear when it contains files
+  - For live mode, provide an option to exclude files too large regarding
+    the chosen partition size and log them to stdout (with size)
 - Option to add currently-examinated directory (as empty) when closing a partition
   (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
 - Provide long options
@@ -29,7 +26,7 @@ Fpart:
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - As a second pass, remove partitions with no file (e.g. option -n with too many
-  partitions, special partition #0 for option -s, ...)
+  partitions, special partition #0 for option -s in non-live mode, ...)
 - Rework error code (errx(3), perror(3), ...)
 - Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
 - Use queue(3) ?

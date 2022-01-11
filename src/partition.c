@@ -146,14 +146,17 @@ get_partition_at(struct partition *head, pnum_t index)
 
 /* Print partitions from head */
 void
-print_partitions(struct partition *head)
+print_partitions(struct partition *head, struct program_options *options)
 {
-    pnum_t i = 0;
+    assert(options != NULL);
+
+    pnum_t partition_index = 0;
     while(head != NULL) {
-        fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n", i,
+        fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
+            display_index(partition_index, options),
             head->size, head->num_files);
         head = head->nextp;
-        i++;
+        partition_index++;
     }
     return;
 }

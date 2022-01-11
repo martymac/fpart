@@ -554,3 +554,23 @@ push_env(char *str, char ***env)
 
     return (0);
 }
+
+/* Adapt partition index for display, regarding program options
+   - returns an index suitable for user display */
+pnum_t
+display_index(pnum_t index, const struct program_options *options)
+{
+    assert(options != NULL);
+
+    pnum_t display_offset = 1;
+
+    /* compute displayed index offset: fpart always displays partitions starting
+       from '1' (but they internally start from '0'). Partition '0' -used for
+       large files that do not fit in regular partitions- only appears when
+       option '-s' is passed *and* non-live mode is used */
+    if((options->max_size != DFLT_OPT_MAX_SIZE) &&
+       (options->live_mode == OPT_NOLIVEMODE))
+        display_offset = 0;
+
+    return (index + display_offset);
+}

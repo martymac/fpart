@@ -94,7 +94,7 @@ and
 Create partitions with a maximum size of
 .Ar size
 bytes.
-With this option, partition 0 may be used to handle files that do not
+With this option, a special partition 0 may be used to handle files that do not
 fit in a regular partition, given the provided
 .Ar size
 limit.
@@ -254,8 +254,8 @@ line explicitly.
 .It Fl L
 Live mode (default: disabled).
 When using this mode, partitions will be generated while crawling filesystem.
-This option saves time and memory, but does not give partition 0 a special
-meaning (see option
+This option saves time and memory but will never produce special partition 0
+(see option
 .Fl s
 ).
 As a consequence, it can generate partitions larger than the size specified
@@ -325,15 +325,15 @@ Here are some examples:
 .Bl -tag -width indent
 .It Li "fpart -n 3 -o var-parts /var"
 Produce 3 partitions, with (hopefully) the same size and number of files.
-Three files: var-parts.0, var-parts.1 and var-parts.2 are generated as output.
+Three files: var-parts.1, var-parts.2 and var-parts.3 are generated as output.
 .It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
 Produce partitions of 4.4 GB, containing music files from /path/to/music as well
 as MP3 files from current directory; with such a partition size, each partition
 content will be ready to be burnt to a DVD.
 Files music-parts.0 to music-parts.n, are generated as output.
-.It Li "find /usr ! -type d | fpart -f 10000 -i - /home | grep '^0:'"
+.It Li "find /usr ! -type d | fpart -f 10000 -i - /home | grep '^1 '"
 Produce partitions containing 10000 files each by examining /usr first and then
-/home and display only partition 0 on stdout.
+/home and display only partition 1 on stdout.
 .It Li "du * | fpart -n 2 -a"
 Produce two partitions by using
 .Xr du 1
