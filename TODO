@@ -37,6 +37,7 @@ Fpsync:
 - Provide per-job pre- and post-xfer rc scripts
   (useful to perform tasks such as computing an
   additional src/ or dst/ prefix - to be added too)
+- Improve mail report contents
 - Ability to replay one or more jobs within a specific run
 - Add "debug" pseudo-tool ?
 - Show transmitted data size in final status + SIGINFO handler (see GH issue #24)
