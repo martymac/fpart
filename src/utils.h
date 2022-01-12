@@ -96,6 +96,5 @@ int valid_file(const FTSENT * const p, struct program_options *options,
     unsigned char exclude_only);
 char ** clone_env(void);
 int push_env(char *str, char ***env);
-pnum_t display_index(pnum_t index, const struct program_options *options);
 
 #endif /* _UTILS_H */

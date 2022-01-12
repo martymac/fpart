@@ -27,6 +27,7 @@
 #include "types.h"
 #include "utils.h"
 #include "options.h"
+#include "partition.h"
 #include "file_entry.h"
 
 /* stat(2) */
@@ -169,7 +170,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing pre-part #%ju hook: '%s'\n",
-                display_index(*live_partition_index, options), cmd);
+                adapt_partition_index(*live_partition_index, options), cmd);
 
         /* FPART_HOOKTYPE (pre-part) */
         malloc_size = strlen(env_fpart_hooktype_name) + 1 +
@@ -192,7 +193,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing post-part #%ju hook: '%s'\n",
-                display_index(*live_partition_index, options), cmd);
+                adapt_partition_index(*live_partition_index, options), cmd);
 
         /* FPART_HOOKTYPE (post-part) */
         malloc_size = strlen(env_fpart_hooktype_name) + 1 +
@@ -228,13 +229,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
     /* FPART_PARTNUMBER */
     if(live_partition_index != NULL) {
         malloc_size = strlen(env_fpart_partnumber_name) + 1 +
-            get_num_digits(display_index(*live_partition_index, options)) + 1;
+            get_num_digits(adapt_partition_index(*live_partition_index, options)) + 1;
         if_not_malloc(env_fpart_partnumber_string, malloc_size,
             retval = 1;
             goto cleanup;
         )
         snprintf(env_fpart_partnumber_string, malloc_size, "%s=%ju",
-            env_fpart_partnumber_name, display_index(*live_partition_index, options));
+            env_fpart_partnumber_name, adapt_partition_index(*live_partition_index, options));
         if(push_env(env_fpart_partnumber_string, &envp) != 0) {
             retval = 1;
             goto cleanup;
@@ -404,12 +405,12 @@ live_print_file_entry(char *path, fsize_t size,
         if(out_template != NULL) {
             /* compute live_status.filename "out_template.i\0" */
             size_t malloc_size = strlen(out_template) + 1 +
-                get_num_digits(display_index(live_status.partition_index, options)) + 1;
+                get_num_digits(adapt_partition_index(live_status.partition_index, options)) + 1;
             if_not_malloc(live_status.filename, malloc_size,
                 return (1);
             )
             snprintf(live_status.filename, malloc_size, "%s.%ju", out_template,
-                display_index(live_status.partition_index, options));
+                adapt_partition_index(live_status.partition_index, options));
         }
 
         /* execute pre-partition hook */
@@ -441,7 +442,7 @@ live_print_file_entry(char *path, fsize_t size,
     if(out_template == NULL) {
         /* no template provided, just print to stdout */
         fprintf(stdout, "%ju (%ju): %s\n",
-            display_index(live_status.partition_index, options), size,
+            adapt_partition_index(live_status.partition_index, options), size,
             path);
     }
     else {
@@ -468,7 +469,7 @@ live_print_file_entry(char *path, fsize_t size,
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
-                display_index(live_status.partition_index, options),
+                adapt_partition_index(live_status.partition_index, options),
                 live_status.partition_size,
                 live_status.partition_num_files);
 
@@ -921,7 +922,7 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         if((options->verbose >= OPT_VERBOSE) &&
             (live_status.partition_num_files > 0))
             fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
-                display_index(live_status.partition_index, options),
+                adapt_partition_index(live_status.partition_index, options),
                 live_status.partition_size,
                 live_status.partition_num_files);
 
@@ -971,7 +972,7 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
     if(out_template == NULL) {
         while(head != NULL) {
             fprintf(stdout, "%ju (%ju): %s\n",
-                display_index(head->partition_index, options),
+                adapt_partition_index(head->partition_index, options),
                 head->size, head->path);
             head = head->nextp;
         }
@@ -997,7 +998,7 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
             /* compute out_filename  "out_template.i\0" */
             char *out_filename = NULL;
             size_t malloc_size = strlen(out_template) + 1 + get_num_digits
-                ((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) + 1;
+                (adapt_partition_index((current_chunk * PRINT_FE_CHUNKS) + current_file_entry, options)) + 1;
             if_not_malloc(out_filename, malloc_size,
                 /* close all open descriptors and return */
                 pnum_t i;
@@ -1006,7 +1007,7 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
                 return (1);
             )
             snprintf(out_filename, malloc_size, "%s.%ju", out_template,
-                (current_chunk * PRINT_FE_CHUNKS) + current_file_entry);
+                adapt_partition_index((current_chunk * PRINT_FE_CHUNKS) + current_file_entry, options));
 
             if((fd[current_file_entry] =
                 open(out_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
