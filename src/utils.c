@@ -345,7 +345,7 @@ str_is_negative(const char *str)
 
 /* Convert a str to a uintmax > 0
    - support human-friendly multipliers
-   - only accept values > 0 as input
+   - only accept values > 0 and < INTMAX_MAX as input
    - return 0 if an error occurs */
 uintmax_t
 str_to_uintmax(const char *str, const unsigned char handle_multiplier)
@@ -392,6 +392,9 @@ str_to_uintmax(const char *str, const unsigned char handle_multiplier)
             return (0);
         }
     }
+    /* Negative intmax_t values are reserved for error reporting */
+    if(val > INTMAX_MAX)
+        return (0);
 #if defined(DEBUG)
     fprintf(stderr, "%s(): converted string %s to value %ju\n", __func__,
         optarg, val);

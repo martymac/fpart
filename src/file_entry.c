@@ -249,7 +249,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
             retval = 1;
             goto cleanup;
         )
-        snprintf(env_fpart_partsize_string, malloc_size, "%s=%ju",
+        snprintf(env_fpart_partsize_string, malloc_size, "%s=%jd",
             env_fpart_partsize_name, *live_partition_size);
         if(push_env(env_fpart_partsize_string, &envp) != 0) {
             retval = 1;
@@ -394,9 +394,12 @@ live_print_file_entry(char *path, fsize_t size,
 
     char *out_template = options->out_filename;
     char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
+    int split = 0;
 
     /* beginning of a new partition */
     if(live_status.partition_num_files == 0) {
+start_part:
+        split = 0;
         /* very first pass of first partition, preload first partition */
         if(live_status.partition_index == 0)
             live_status.partition_size = options->preload_size;
@@ -433,6 +436,12 @@ live_print_file_entry(char *path, fsize_t size,
         }
     }
 
+    if(live_status.partition_num_files && size > INTMAX_MAX) {
+        /* close current part without adding negative size file */
+        split = 1;
+        goto end_part;
+    }
+
     /* count file in */
     live_status.partition_size +=
         round_num(size + options->overload_size, options->round_size);
@@ -461,13 +470,14 @@ live_print_file_entry(char *path, fsize_t size,
         fprintf(stderr, "%s\n", path);
 
     /* if end of partition reached */
-    if(((options->max_entries > 0) && 
+    if(((options->max_entries > 0) &&
             (live_status.partition_num_files >= options->max_entries)) ||
         ((options->max_size > 0) && 
             (live_status.partition_size >= options->max_size))) {
+end_part:
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
-            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
+            fprintf(stderr, "Filled part #%ju: size = %jd, %ju file(s)\n",
                 display_index(live_status.partition_index, options),
                 live_status.partition_size,
                 live_status.partition_num_files);
@@ -496,6 +506,10 @@ live_print_file_entry(char *path, fsize_t size,
         live_status.partition_index++;
         live_status.partition_size = options->preload_size;
         live_status.partition_num_files = 0;
+
+        /* create another partition with single file with negative size */
+        if (split)
+            goto start_part;
     }
 
     return (0);
@@ -654,6 +668,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             case FTS_ERR:
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
+
+                if(p->fts_errno && options->dnr_negative_size)
+                    goto add_directory;
+
                 continue;
 
             /* errors for which we know there is a file or directory
@@ -662,6 +680,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             {
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
+
+                if(p->fts_errno && options->dnr_negative_size)
+                    goto add_directory;
+
                 /* if requested by the -zz option,
                    add directory anyway by simulating FTS_DP */
                 if(options->dirs_include >= OPT_DNREMPTY) {
@@ -760,6 +782,15 @@ add_directory:
                             get_size(p->fts_accpath, p->fts_statp, options);
                     /* else, trust curdir_size and leave it untouched. */
 
+                    /*
+                     * If requested by the -Z option,
+                     * Report negative part size for un-reaadable directory.
+                     * Post partition hook can check $FPART_PARTSIZE to identify
+                     * a partition with an un-readable directory.
+                     */
+                    if(p->fts_errno && options->dnr_negative_size) {
+                        curdir_size = -p->fts_errno;
+                    }
                     /* add or display it */
                     if(handle_file_entry
                         (head, curdir_entry_path, curdir_size, options) == 0)
@@ -924,7 +955,7 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* display added partition */
         if((options->verbose >= OPT_VERBOSE) &&
             (live_status.partition_num_files > 0))
-            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
+            fprintf(stderr, "Filled part #%ju: size = %jd, %ju file(s)\n",
                 display_index(live_status.partition_index, options),
                 live_status.partition_size,
                 live_status.partition_num_files);

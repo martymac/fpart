@@ -95,6 +95,7 @@ init_options(struct program_options *options)
     options->nexclude_files_ci = 0;
     options->dirs_include = DFLT_OPT_DIRSINCLUDE;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
+    options->dnr_negative_size = 0;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->live_mode = DFLT_OPT_LIVEMODE;

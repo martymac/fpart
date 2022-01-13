@@ -132,6 +132,7 @@ usage(void)
         "(default: pack files only)\n");
     fprintf(stderr, "  -zz\ttreat un-readable directories as empty\n");
     fprintf(stderr, "  -zzz\tpack all directories (as empty)\n");
+    fprintf(stderr, "  -Z\tpack un-readable directories with negative size\n");
     fprintf(stderr, "  -d\tpack directories instead of files after a certain "
         "<depth>\n");
     fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "
@@ -260,9 +261,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "hVn:f:s:i:ao:0evlby:Y:x:X:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:Y:x:X:zZd:DELw:W:p:q:r:"
 #else
-        "hVn:f:s:i:ao:0evlby:x:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:x:zZd:DELw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
@@ -396,6 +397,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             }
             case 'z':
                 options->dirs_include++;
+                break;
+            case 'Z':
+                options->dnr_negative_size = 1;
                 break;
             case 'd':
             {
@@ -554,6 +558,19 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         fprintf(stderr,
             "Hooks can only be used with option -L.\n");
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    /* Option -Z requires -E and -L and conflicts with option -zz */
+    if(options->dnr_negative_size) {
+        if ((options->dirs_include >= OPT_DNREMPTY) ||
+            (options->live_mode == OPT_NOLIVEMODE) ||
+            (options->leaf_dirs == OPT_NOLEAFDIRS)) {
+            fprintf(stderr,
+                "Option -Z is incompatible with option -zz and requires -E -L.\n");
+            return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+        }
+        if (options->max_size == 0)
+            options->max_size = INTMAX_MAX;
     }
 
     if((options->in_filename == NULL) && (*argcp <= 0)) {
