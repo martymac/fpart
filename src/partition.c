@@ -84,6 +84,24 @@ add_partitions(struct partition **head, pnum_t num_parts,
     return (0);
 }
 
+/* Remove a specific partition from the chain */
+int
+remove_partition(struct partition *part)
+{
+    assert(part != NULL);
+
+    /* unlink partition */
+    if(part->prevp != NULL)
+            part->prevp->nextp = part->nextp;
+    if(part->nextp != NULL)
+            part->nextp->prevp = part->prevp;
+
+    /* free memory */
+    free(part);
+
+    return (0);
+}
+
 /* Un-initialize a double-linked list of partitions */
 void
 uninit_partitions(struct partition *head)
