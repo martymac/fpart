@@ -793,7 +793,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Writing output lists...\n");
 
     /* print file entries */
-    print_file_entries(head, num_parts, &options);
+    print_file_entries(head, part_head, num_parts, &options);
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Cleaning up...\n");

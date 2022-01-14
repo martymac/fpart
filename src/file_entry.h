@@ -61,8 +61,8 @@ int init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     struct program_options *options);
 void uninit_file_entries(struct file_entry *head,
     struct program_options *options);
-int print_file_entries(struct file_entry *head, pnum_t num_parts,
-    struct program_options *options);
+int print_file_entries(struct file_entry *head, struct partition *part_head,
+    pnum_t num_parts, struct program_options *options);
 void init_file_entry_p(struct file_entry **file_entry_p, fnum_t num_entries,
     struct file_entry *head);
 

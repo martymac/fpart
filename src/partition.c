@@ -190,9 +190,12 @@ print_partitions(struct partition *head, struct program_options *options)
 
     pnum_t partition_index = 0;
     while(head != NULL) {
-        fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
-            adapt_partition_index(partition_index, options),
-            head->size, head->num_files);
+        /* skip empty partition '0' */
+        if((partition_index != 0) || (head->num_files != 0)) {
+            fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
+                adapt_partition_index(partition_index, options),
+                head->size, head->num_files);
+        }
         head = head->nextp;
         partition_index++;
     }

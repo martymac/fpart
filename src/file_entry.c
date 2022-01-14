@@ -958,10 +958,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
 /* Print a double-linked list of file_entries from head
    - if no filename template given, print to stdout */
 int
-print_file_entries(struct file_entry *head, pnum_t num_parts,
-    struct program_options *options)
+print_file_entries(struct file_entry *head, struct partition *part_head,
+    pnum_t num_parts, struct program_options *options)
 {
     assert(head != NULL);
+    assert(part_head != NULL);
     assert(num_parts > 0);
     assert(options != NULL);
 
@@ -981,48 +982,67 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
 
     /* a template has been provided; to avoid opening too many files,
        open chunks of FDs and do as many passes as necessary */
-    struct file_entry *start = head;
-    pnum_t current_chunk = 0;           /* current chunk */
-    pnum_t current_file_entry = 0;      /* current file entry within chunk */
-
     assert(PRINT_FE_CHUNKS > 0);
 
-    while(((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) <
-        num_parts) {
+    struct file_entry *start = head;
+    pnum_t current_chunk = 0;       /* current chunk */
+    pnum_t current_fd_index = 0;    /* current file index within chunk */
+
+    /* current -absolute- partition index */
+#define current_partition_index \
+    ((current_chunk * PRINT_FE_CHUNKS) + current_fd_index)
+
+    /* current_partition_index gets incremented by PRINT_FE_CHUNKS */
+    while(current_partition_index < num_parts) {
         int fd[PRINT_FE_CHUNKS]; /* our <files per chunk> file descriptors */
 
         /* open as necessary file descriptors as needed
            to print num_part partitions */
-        while((current_file_entry < PRINT_FE_CHUNKS) &&
-              (((current_chunk * PRINT_FE_CHUNKS) + current_file_entry) < num_parts)) {
+        while((current_fd_index < PRINT_FE_CHUNKS) &&
+              (current_partition_index < num_parts)) {
+            /* skip empty partition '0':
+               XXX No need to skip write() calls below, as no file entry should
+               be associated with that partition */
+            if((current_partition_index == 0) && (part_head->num_files == 0)) {
+#if defined(DEBUG)
+                fprintf(stderr, "%s(): skip creating empty partition '0'\n",
+                    __func__);
+#endif
+                fd[current_fd_index] = (-1); /* for close() calls below */
+                current_fd_index++;
+                continue;
+            }
+
             /* compute out_filename  "out_template.i\0" */
             char *out_filename = NULL;
             size_t malloc_size = strlen(out_template) + 1 + get_num_digits
-                (adapt_partition_index((current_chunk * PRINT_FE_CHUNKS) + current_file_entry, options)) + 1;
+                (adapt_partition_index(current_partition_index, options)) + 1;
             if_not_malloc(out_filename, malloc_size,
                 /* close all open descriptors and return */
                 pnum_t i;
-                for(i = 0; i < current_file_entry; i++)
+                for(i = 0; i < current_fd_index; i++)
                      close(fd[i]);
                 return (1);
             )
             snprintf(out_filename, malloc_size, "%s.%ju", out_template,
-                adapt_partition_index((current_chunk * PRINT_FE_CHUNKS) + current_file_entry, options));
+                adapt_partition_index(current_partition_index, options));
 
-            if((fd[current_file_entry] =
+            if((fd[current_fd_index] =
                 open(out_filename, O_WRONLY|O_CREAT|O_TRUNC, 0660)) < 0) {
                 fprintf(stderr, "%s: %s\n", out_filename, strerror(errno));
                 free(out_filename);
                 /* close all open descriptors and return */
                 pnum_t i;
-                for(i = 0; i < current_file_entry; i++)
+                for(i = 0; i < current_fd_index; i++)
                      close(fd[i]);
                 return (1);
             }
             free(out_filename);
-            current_file_entry++;
+
+            current_fd_index++;
         }
 
+        /* write data to opened file descriptors */
         while(head != NULL) {
             if((head->partition_index >= (current_chunk * PRINT_FE_CHUNKS)) &&
                (head->partition_index < ((current_chunk + 1) * PRINT_FE_CHUNKS))) {
@@ -1047,7 +1067,7 @@ print_file_entries(struct file_entry *head, pnum_t num_parts,
         for(i = 0; (i < PRINT_FE_CHUNKS) && (((current_chunk * PRINT_FE_CHUNKS) + i) < num_parts); i++)
             close(fd[i]);
 
-        current_file_entry = 0;
+        current_fd_index = 0;
         current_chunk++;
     }
 
