@@ -376,7 +376,7 @@ str_to_uintmax(const char *str, const unsigned char handle_multiplier)
 
         uintmax_t orig_val = val;
         /* more than one character remain or invalid multiplier specified */
-        if ((*(endptr + 1) != '\0') ||
+        if((*(endptr + 1) != '\0') ||
             (multiplier = char_to_multiplier(*endptr)) == 0) {
             fprintf(stderr, "%s(): %s\n", __func__, "unknown unit provided");
             return (0);

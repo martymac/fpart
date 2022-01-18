@@ -631,7 +631,7 @@ int main(int argc, char **argv)
         bzero(line, MAX_LINE_LENGTH);
         while(fgets(line, MAX_LINE_LENGTH, in_fp) != NULL) {
             /* replace '\n' with '\0' */
-            if ((line_end_p = strchr(line, '\n')) != NULL)
+            if((line_end_p = strchr(line, '\n')) != NULL)
                 *line_end_p = '\0';
 
             if(handle_argument(line, &totalfiles, &head, &options) != 0) {
