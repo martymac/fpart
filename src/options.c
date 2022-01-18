@@ -69,6 +69,8 @@ init_options(struct program_options *options)
            (DFLT_OPT_DIRSONLY == OPT_DIRSONLY));
     assert((DFLT_OPT_LIVEMODE == OPT_NOLIVEMODE) ||
            (DFLT_OPT_LIVEMODE == OPT_LIVEMODE));
+    assert((DFLT_OPT_SKIPBIG == OPT_NOSKIPBIG) ||
+           (DFLT_OPT_SKIPBIG == OPT_SKIPBIG));
     assert(DFLT_OPT_PRELOAD_SIZE >= 0);
     assert(DFLT_OPT_OVERLOAD_SIZE >= 0);
     assert(DFLT_OPT_ROUND_SIZE >= 1);
@@ -98,6 +100,7 @@ init_options(struct program_options *options)
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->live_mode = DFLT_OPT_LIVEMODE;
+    options->skip_big = DFLT_OPT_SKIPBIG;
     options->pre_part_hook = NULL;
     options->post_part_hook = NULL;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
@@ -116,6 +119,7 @@ uninit_options(struct program_options *options)
         free(options->post_part_hook);
     if(options->pre_part_hook != NULL)
         free(options->pre_part_hook);
+    options->skip_big = DFLT_OPT_SKIPBIG;
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;

@@ -371,7 +371,10 @@ cleanup:
     return (retval);
 }
 
-/* Print or add a file entry (redirector) */
+/* Print or add a file entry (redirector)
+   - returns (0) if entry has been added
+   - returns (1) if entry has been skipped (option -S)
+   - returns (-1) if error */
 int
 handle_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options)
@@ -384,7 +387,10 @@ handle_file_entry(struct file_entry **head, char *path, fsize_t size,
         return (add_file_entry(head, path, size, options));
 }
 
-/* Print a file entry */
+/* Print a file entry
+   - returns (0) if entry has been added
+   - returns (1) if entry has been skipped (option -S)
+   - returns (-1) if error */
 int
 live_print_file_entry(char *path, fsize_t size,
     struct program_options *options)
@@ -395,6 +401,19 @@ live_print_file_entry(char *path, fsize_t size,
 
     char *out_template = options->out_filename;
     char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
+
+    /* option -S: skip files bigger than maximum partition size (option -s)
+       and print them to stdout in hardcoded pseudo-partition 'S' ('S'kipped).
+       Preloading and overloading are used here too */
+    if(options->skip_big == OPT_SKIPBIG) {
+        fsize_t needed_part_size = options->preload_size +
+            round_num(size + options->overload_size, options->round_size);
+        if(needed_part_size > options->max_size) {
+            fprintf(stdout, "S (%ju): %s\n", size, path);
+            fflush(stdout);
+            return (1);
+        }
+    }
 
     /* beginning of a new partition */
     if(live_status.partition_num_files == 0) {
@@ -407,7 +426,7 @@ live_print_file_entry(char *path, fsize_t size,
             size_t malloc_size = strlen(out_template) + 1 +
                 get_num_digits(adapt_partition_index(live_status.partition_index, options)) + 1;
             if_not_malloc(live_status.filename, malloc_size,
-                return (1);
+                return (-1);
             )
             snprintf(live_status.filename, malloc_size, "%s.%ju", out_template,
                 adapt_partition_index(live_status.partition_index, options));
@@ -429,7 +448,7 @@ live_print_file_entry(char *path, fsize_t size,
                     strerror(errno));
                 free(live_status.filename);
                 live_status.filename = NULL;
-                return (1);
+                return (-1);
             }
         }
     }
@@ -453,7 +472,7 @@ live_print_file_entry(char *path, fsize_t size,
             fprintf(stderr, "%s\n", strerror(errno));
             /* do not close(livefd) and free(live_status.filename) here because
                it will be useful and free'd in uninit_file_entries() below */
-            return (1);
+            return (-1);
         }
     }
 
@@ -509,6 +528,8 @@ live_print_file_entry(char *path, fsize_t size,
 /* Add a file entry to a double-linked list of file_entries
    - if head is NULL, creates a new file entry ; if not, chains a new file
      entry to it
+   - returns (0) if entry has been added
+   - returns (-1) if error
    - returns with head set to the newly added element */
 int
 add_file_entry(struct file_entry **head, char *path, fsize_t size,
@@ -526,7 +547,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     previous = *current;
 
     if_not_malloc(*current, sizeof(struct file_entry),
-        return (1);
+        return (-1);
     )
 
     /* set head on first call */
@@ -539,7 +560,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     if_not_malloc((*current)->path, malloc_size,
         free(*current);
         *current = previous;
-        return (1);
+        return (-1);
     )
     snprintf((*current)->path, malloc_size, "%s", path);
     (*current)->size = size + options->overload_size;
@@ -758,10 +779,11 @@ add_directory:
                     /* else, trust curdir_size and leave it untouched. */
 
                     /* add or display it */
-                    if(handle_file_entry
-                        (head, curdir_entry_path, curdir_size, options) == 0)
+                    int handled = handle_file_entry
+                        (head, curdir_entry_path, curdir_size, options);
+                    if(handled == 0)
                         (*count)++;
-                    else {
+                    else if(handled < 0) {
                         fprintf(stderr, "%s(): cannot add file entry\n",
                             __func__);
                         free(curdir_entry_path);
@@ -870,10 +892,11 @@ two-pass check to handle include and exclude options properly. */
                     continue;
 
                 /* add or display it */
-                if(handle_file_entry
-                    (head, p->fts_path, curfile_size, options) == 0)
+                int handled = handle_file_entry
+                    (head, p->fts_path, curfile_size, options);
+                if(handled == 0)
                     (*count)++;
-                else {
+                else if(handled < 0) {
                     fprintf(stderr, "%s(): cannot add file entry\n", __func__);
                     fts_close(ftsp);
                     return (1);

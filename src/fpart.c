@@ -141,6 +141,10 @@ usage(void)
     fprintf(stderr, "Live mode:\n");
     fprintf(stderr, "  -L\tlive mode: generate partitions during filesystem "
         "crawling\n");
+    fprintf(stderr, "  -S\tdo not pack files bigger than specified maximum "
+        "partition size\n");
+    fprintf(stderr, "    \tbut print them to stdout instead (needs -L, -s and no "
+        "-o)\n");
     fprintf(stderr, "  -w\tpre-partition hook: execute <cmd> at partition "
         "start\n");
     fprintf(stderr, "  -W\tpost-partition hook: execute <cmd> at partition "
@@ -182,9 +186,11 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         )
 
         if(sscanf(argument, "%ju %[^\n]", &input_size, input_path) == 2) {
-            if(handle_file_entry(head, input_path, input_size, options) == 0)
+            int handled = handle_file_entry
+                (head, input_path, input_size, options);
+            if(handled == 0)
                 (*totalfiles)++;
-            else {
+            else if(handled < 0) {
                 fprintf(stderr, "%s(): cannot add file entry\n", __func__);
                 free(input_path);
                 return (1);
@@ -260,9 +266,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "hVn:f:s:i:ao:0evlby:Y:x:X:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:Y:x:X:zd:DELSw:W:p:q:r:"
 #else
-        "hVn:f:s:i:ao:0evlby:x:zd:DELw:W:p:q:r:"
+        "hVn:f:s:i:ao:0evlby:x:zd:DELSw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
@@ -418,6 +424,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
             case 'L':
                 options->live_mode = OPT_LIVEMODE;
                 break;
+            case 'S':
+                options->skip_big = OPT_SKIPBIG;
+                break;
             case 'w':
             {
                 /* check for empty argument */
@@ -553,6 +562,16 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         (options->post_part_hook != NULL))) {
         fprintf(stderr,
             "Hooks can only be used with option -L.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    /* option -S (needs '-L', '-s' and no '-o') */
+    if((options->skip_big == OPT_SKIPBIG) &&
+        ((options->live_mode == OPT_NOLIVEMODE) ||
+        (options->out_filename != NULL) ||
+        (options->max_size == DFLT_OPT_MAX_SIZE))) {
+        fprintf(stderr,
+            "Option -S can only be used with options -L and -s (without -o).\n");
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
