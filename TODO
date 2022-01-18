@@ -4,13 +4,11 @@ TODO (ideas) :
 That file shares several ideas I've had for the project. Feel free to contribute !
 
 Global :
+- Unit testing !
 - Provide ready-to-use docker nodes ?
-- Provide a FS analysis tool to help optimize fpart/fpsync options ?
+- FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
-- Change special partition 0 handling (see GH issue #36) :
-  - For live mode, provide an option to exclude files too large regarding
-    the chosen partition size and log them to stdout (with size)
 - Option to add currently-examinated directory (as empty) when closing a partition
   (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
 - Provide long options
@@ -27,7 +25,6 @@ Fpart:
 - Rework error code (errx(3), perror(3), ...)
 - Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
 - Use queue(3) ?
-- Unit testing
 
 Fpsync:
 - When waiting for sync jobs to complete, regularly show status
