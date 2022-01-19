@@ -180,7 +180,7 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
    - must be called with *part_head == NULL (will create partitions)
    - if max_size > 0, partition 0 will hold files that cannot be held by other
      partitions
-   - returns the number of parts created with part_head set to the last
+   - returns the number of parts created with part_head set to the first
      element */
 pnum_t
 dispatch_file_entries_by_limits(struct file_entry *head,
@@ -210,6 +210,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
     /* create a first data partition and keep a pointer to it */
     if(add_partitions(part_head, 1, options) != 0) {
         fprintf(stderr, "%s(): cannot create partition\n", __func__);
+        *part_head = default_partition;
         return (num_parts_created);
     }
     num_parts_created++;
@@ -242,6 +243,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
                         if(add_partitions(part_head, 1, options) != 0) {
                             fprintf(stderr, "%s(): cannot create partition\n",
                                 __func__);
+                            *part_head = start_partition;
                             return (num_parts_created);
                         }
                         num_parts_created++;
@@ -282,5 +284,17 @@ dispatch_file_entries_by_limits(struct file_entry *head,
         current_partition_index = start_partition_index;
         *part_head = start_partition;
     }
+
+    /* empty partition cleanup:
+       When using option -s, if only special partition '0' (default_partition)
+       has been populated, remove start_partition to avoid returning an
+       additional -empty- partition */
+    if((max_size > 0) && (start_partition->num_files == 0)) {
+        remove_partition(start_partition);
+        start_partition = NULL;
+        num_parts_created--;
+        *part_head = default_partition;
+    }
+
     return (num_parts_created);
 }

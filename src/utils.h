@@ -67,14 +67,14 @@
 
 #define if_not_malloc(ptr, size, err_action)                            \
     ptr = malloc(size);                                                 \
-    if (ptr == NULL) {                                                  \
+    if(ptr == NULL) {                                                   \
         fprintf(stderr, "%s(): cannot allocate memory\n", __func__);    \
         err_action                                                      \
     }
 
 #define if_not_realloc(ptr, size, err_action)                           \
     ptr = realloc(ptr, size);                                           \
-    if (ptr == NULL) {                                                  \
+    if(ptr == NULL) {                                                   \
         fprintf(stderr, "%s(): cannot reallocate memory\n", __func__);  \
         err_action                                                      \
     }
@@ -96,6 +96,5 @@ int valid_file(const FTSENT * const p, struct program_options *options,
     unsigned char exclude_only);
 char ** clone_env(void);
 int push_env(char *str, char ***env);
-pnum_t display_index(pnum_t index, const struct program_options *options);
 
 #endif /* _UTILS_H */

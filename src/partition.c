@@ -84,6 +84,24 @@ add_partitions(struct partition **head, pnum_t num_parts,
     return (0);
 }
 
+/* Remove a specific partition from the chain */
+int
+remove_partition(struct partition *part)
+{
+    assert(part != NULL);
+
+    /* unlink partition */
+    if(part->prevp != NULL)
+            part->prevp->nextp = part->nextp;
+    if(part->nextp != NULL)
+            part->nextp->prevp = part->prevp;
+
+    /* free memory */
+    free(part);
+
+    return (0);
+}
+
 /* Un-initialize a double-linked list of partitions */
 void
 uninit_partitions(struct partition *head)
@@ -144,6 +162,26 @@ get_partition_at(struct partition *head, pnum_t index)
     return (head);
 }
 
+/* Adapt partition index for output, regarding program options
+   - returns an index suitable for user output (display or filename) */
+pnum_t
+adapt_partition_index(pnum_t index, const struct program_options *options)
+{
+    assert(options != NULL);
+
+    pnum_t offset = 1;
+
+    /* compute output index offset: fpart always produces partitions starting
+       from '1' (but they internally start from '0'). Partition '0' -used for
+       large files that do not fit in regular partitions- only appears when
+       option '-s' is passed *and* non-live mode is used */
+    if((options->max_size != DFLT_OPT_MAX_SIZE) &&
+       (options->live_mode == OPT_NOLIVEMODE))
+        offset = 0;
+
+    return (index + offset);
+}
+
 /* Print partitions from head */
 void
 print_partitions(struct partition *head, struct program_options *options)
@@ -152,9 +190,12 @@ print_partitions(struct partition *head, struct program_options *options)
 
     pnum_t partition_index = 0;
     while(head != NULL) {
-        fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
-            display_index(partition_index, options),
-            head->size, head->num_files);
+        /* skip empty partition '0' */
+        if((partition_index != 0) || (head->num_files != 0)) {
+            fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
+                adapt_partition_index(partition_index, options),
+                head->size, head->num_files);
+        }
         head = head->nextp;
         partition_index++;
     }

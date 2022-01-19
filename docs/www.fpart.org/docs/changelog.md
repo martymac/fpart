@@ -9,6 +9,13 @@
       fit in regular partitions when option '-s' *and* non-live mode are used.
       Note for 3rd-party tools: that change may impact you!
       (partly fixes GH issue #36)
+    - fpart: avoid returning an additional -empty- partition '1' when only
+      special partition '0' has been used
+    - fpart: avoid returning special partition '0' when it is empty
+      (partly fixes GH issue #36)
+    - fpart: add option -S to skip, in live mode, files that are bigger than
+      maximum partition size
+      (see man page for more details, fixes GH issue #36)
     - fpsync: add more checks for incompatible rsync options
     - fpsync: force non-recursive rsync(1) in file-based mode
 ```

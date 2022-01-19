@@ -122,6 +122,11 @@ struct program_options {
 #define OPT_LIVEMODE                1
 #define DFLT_OPT_LIVEMODE           OPT_NOLIVEMODE
     unsigned char live_mode;
+/* skip big files (option -S) */
+#define OPT_NOSKIPBIG            0
+#define OPT_SKIPBIG              1
+#define DFLT_OPT_SKIPBIG         OPT_NOSKIPBIG
+    unsigned char skip_big;
 /* pre-partition hook (option -w) */
     char *pre_part_hook;
 /* post-partition hook (option -W) */
