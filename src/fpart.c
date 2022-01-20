@@ -143,8 +143,8 @@ usage(void)
         "crawling\n");
     fprintf(stderr, "  -S\tdo not pack files bigger than specified maximum "
         "partition size\n");
-    fprintf(stderr, "    \tbut print them to stdout instead (needs -L, -s and no "
-        "-o)\n");
+    fprintf(stderr, "    \tbut print them to stdout instead (needs -L and "
+        "-s)\n");
     fprintf(stderr, "  -w\tpre-partition hook: execute <cmd> at partition "
         "start\n");
     fprintf(stderr, "  -W\tpost-partition hook: execute <cmd> at partition "
@@ -565,13 +565,12 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
-    /* option -S (needs '-L', '-s' and no '-o') */
+    /* option -S (needs '-L' and '-s') */
     if((options->skip_big == OPT_SKIPBIG) &&
         ((options->live_mode == OPT_NOLIVEMODE) ||
-        (options->out_filename != NULL) ||
         (options->max_size == DFLT_OPT_MAX_SIZE))) {
         fprintf(stderr,
-            "Option -S can only be used with options -L and -s (without -o).\n");
+            "Option -S can only be used with options -L and -s.\n");
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 

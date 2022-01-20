@@ -272,20 +272,22 @@ but not with option
 .Fl n .
 .It Fl S
 Skip big files (default: disabled).
-In live mode, no special partition 0 can be produced.
-That option makes fpart skip files bigger than the specified maximum size
-(option
+In live mode, no special partition 0 can be produced and big files are added to
+the current partition as they are found while crawling the filesystem.
+That can lead to huge partitions.
+That option makes fpart skip files bigger than the specified maximum partition
+size (option
 .Fl s
-) and print them to stdout as belonging to a pseudo-partition S (as
+) and print them to stdout (even when using option
+.Fl o
+) as belonging to a pseudo-partition S (as
 in 'S'kipped).
-It allows a consumer to handle big files immediately through a separate
-process (no fpart hook will be executed for skipped files).
+It allows a consumer to handle them immediately through a separate process (no
+fpart hook will be executed for skipped files).
 That option can only be used in Live mode (option
 .Fl L
 ), when a maximum partition size has been given (option
 .Fl s
-) and no output file has been specified (no option
-.Fl o
 ).
 .It Ic -w Ar cmd
 When using live mode, execute
