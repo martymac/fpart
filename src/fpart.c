@@ -580,6 +580,7 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         }
         if (options->max_size == 0)
             options->max_size = INTMAX_MAX;
+    }
 
     /* option -S (needs '-L' and '-s') */
     if((options->skip_big == OPT_SKIPBIG) &&
