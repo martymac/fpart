@@ -569,13 +569,14 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
-    /* Option -Z requires -E and -L and conflicts with option -zz */
+    /* Option -Z requires -E and -L and conflicts with options -zz and -zzz */
     if(options->dnr_negative_size) {
         if ((options->dirs_include >= OPT_DNREMPTY) ||
             (options->live_mode == OPT_NOLIVEMODE) ||
             (options->leaf_dirs == OPT_NOLEAFDIRS)) {
             fprintf(stderr,
-                "Option -Z is incompatible with option -zz and requires -E -L.\n");
+                "Option -Z is incompatible with options -zz and -zzz and "
+                "requires options -E and -L.\n");
             return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
         }
         if (options->max_size == 0)

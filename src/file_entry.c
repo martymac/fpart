@@ -812,7 +812,7 @@ add_directory:
 
                     /*
                      * If requested by the -Z option,
-                     * Report negative part size for un-reaadable directory.
+                     * Report negative part size for un-readable directory.
                      * Post partition hook can check $FPART_PARTSIZE to identify
                      * a partition with an un-readable directory.
                      */
