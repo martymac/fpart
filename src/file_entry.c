@@ -691,7 +691,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
 
-                if(p->fts_errno && options->dnr_negative_size)
+                /* if requested by option -Z,
+                   add entry anyway with a negative size */
+                if((options->dnr_negative_size == OPT_DNRNEGSZ) &&
+                    (p->fts_errno != 0))
                     goto add_directory;
 
                 continue;
@@ -703,7 +706,10 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(p->fts_errno));
 
-                if(p->fts_errno && options->dnr_negative_size)
+                /* if requested by option -Z,
+                   add directory anyway with a negative size */
+                if((options->dnr_negative_size == OPT_DNRNEGSZ) &&
+                    (p->fts_errno != 0))
                     goto add_directory;
 
                 /* if requested by the -zz option,
@@ -810,9 +816,10 @@ add_directory:
                      * Post partition hook can check $FPART_PARTSIZE to identify
                      * a partition with an un-readable directory.
                      */
-                    if(p->fts_errno && options->dnr_negative_size) {
-                        curdir_size = -p->fts_errno;
-                    }
+                    if((options->dnr_negative_size == OPT_DNRNEGSZ) &&
+                        (p->fts_errno != 0))
+                        curdir_size = -(p->fts_errno);
+
                     /* add or display it */
                     int handled = handle_file_entry
                         (head, curdir_entry_path, curdir_size, options);

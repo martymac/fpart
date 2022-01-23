@@ -405,7 +405,7 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 options->dirs_include++;
                 break;
             case 'Z':
-                options->dnr_negative_size = 1;
+                options->dnr_negative_size = OPT_DNRNEGSZ;
                 break;
             case 'd':
             {
