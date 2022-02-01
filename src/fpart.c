@@ -132,7 +132,8 @@ usage(void)
         "(default: pack files only)\n");
     fprintf(stderr, "  -zz\ttreat un-readable directories as empty\n");
     fprintf(stderr, "  -zzz\tpack all directories (as empty)\n");
-    fprintf(stderr, "  -Z\tpack un-readable directories with negative size\n");
+    fprintf(stderr, "  -Z\tpack un-readable directories in separate "
+        "partitions\n");
     fprintf(stderr, "  -d\tpack directories instead of files after a certain "
         "<depth>\n");
     fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "
@@ -187,8 +188,8 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         )
 
         if(sscanf(argument, "%ju %[^\n]", &input_size, input_path) == 2) {
-            int handled = handle_file_entry
-                (head, input_path, input_size, options);
+            int handled = handle_file_entry(head, input_path, input_size,
+                0, options); /* entry_errno irrelevant here */
             if(handled == 0)
                 (*totalfiles)++;
             else if(handled < 0) {
@@ -405,7 +406,7 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 options->dirs_include++;
                 break;
             case 'Z':
-                options->dnr_negative_size = OPT_DNRNEGSZ;
+                options->dnr_split = OPT_DNRSPLIT;
                 break;
             case 'd':
             {
@@ -569,18 +570,13 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
-    /* Option -Z requires -E and -L and conflicts with options -zz and -zzz */
-    if(options->dnr_negative_size) {
-        if ((options->dirs_include >= OPT_DNREMPTY) ||
-            (options->live_mode == OPT_NOLIVEMODE) ||
-            (options->leaf_dirs == OPT_NOLEAFDIRS)) {
-            fprintf(stderr,
-                "Option -Z is incompatible with options -zz and -zzz and "
-                "requires options -E and -L.\n");
-            return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
-        }
-        if (options->max_size == 0)
-            options->max_size = INTMAX_MAX;
+    /* Option -Z requires -L and -zz (or -zzz) */
+    if((options->dnr_split == OPT_DNRSPLIT) &&
+        ((options->live_mode == OPT_NOLIVEMODE) ||
+         (options->dirs_include < OPT_DNREMPTY))) {
+        fprintf(stderr,
+            "Option -Z requires options -L and -zz (or -zzz).\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 
     /* option -S (needs '-L' and '-s') */

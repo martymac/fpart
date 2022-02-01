@@ -50,10 +50,11 @@ struct file_entry {
 
 int fpart_hook(const char *cmd, const struct program_options *options,
     const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fnum_t *live_num_files);
+    const fsize_t *live_partition_size, const fnum_t *live_num_files,
+    const int partition_errno);
 int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
-    struct program_options *options);
-int live_print_file_entry(char *path, fsize_t size,
+    int entry_errno, struct program_options *options);
+int live_print_file_entry(char *path, fsize_t size, int entry_errno,
     struct program_options *options);
 int add_file_entry(struct file_entry **head, char *path, fsize_t size,
     struct program_options *options);

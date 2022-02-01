@@ -101,11 +101,11 @@ struct program_options {
 #define OPT_ALLDIRS                 3   /* include all directories */
 #define DFLT_OPT_DIRSINCLUDE        OPT_NOEMPTYDIRS
     unsigned char dirs_include;
-/* report negative part size for un-readable directories (option -Z) */
-#define OPT_NODNRNEGSZ              0
-#define OPT_DNRNEGSZ                1
-#define DFLT_OPT_DNRNEGSZ           OPT_NODNRNEGSZ
-    unsigned char dnr_negative_size;
+/* pack un-readable directories in separate partitions (option -Z) */
+#define OPT_NODNRSPLIT              0
+#define OPT_DNRSPLIT                1
+#define DFLT_OPT_DNRSPLIT           OPT_NODNRSPLIT
+    unsigned char dnr_split;
 /* display directories after certain depth (option -d) */
 #define OPT_NODIRDEPTH              -1
 #define DFLT_OPT_DIR_DEPTH          OPT_NODIRDEPTH

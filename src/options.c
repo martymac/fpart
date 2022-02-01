@@ -62,8 +62,8 @@ init_options(struct program_options *options)
            (DFLT_OPT_DIRSINCLUDE == OPT_EMPTYDIRS) ||
            (DFLT_OPT_DIRSINCLUDE == OPT_DNREMPTY) ||
            (DFLT_OPT_DIRSINCLUDE == OPT_ALLDIRS));
-    assert((DFLT_OPT_DNRNEGSZ == OPT_NODNRNEGSZ) ||
-           (DFLT_OPT_DNRNEGSZ == OPT_DNRNEGSZ));
+    assert((DFLT_OPT_DNRSPLIT == OPT_NODNRSPLIT) ||
+           (DFLT_OPT_DNRSPLIT == OPT_DNRSPLIT));
     assert(DFLT_OPT_DIR_DEPTH >= OPT_NODIRDEPTH);
     assert((DFLT_OPT_LEAFDIRS == OPT_NOLEAFDIRS) ||
            (DFLT_OPT_LEAFDIRS == OPT_LEAFDIRS));
@@ -99,7 +99,7 @@ init_options(struct program_options *options)
     options->nexclude_files_ci = 0;
     options->dirs_include = DFLT_OPT_DIRSINCLUDE;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
-    options->dnr_negative_size = OPT_NODNRNEGSZ;
+    options->dnr_split = OPT_NODNRSPLIT;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->live_mode = DFLT_OPT_LIVEMODE;
@@ -126,7 +126,7 @@ uninit_options(struct program_options *options)
     options->live_mode = DFLT_OPT_LIVEMODE;
     options->dirs_only = DFLT_OPT_DIRSONLY;
     options->leaf_dirs = DFLT_OPT_LEAFDIRS;
-    options->dnr_negative_size = OPT_NODNRNEGSZ;
+    options->dnr_split = OPT_NODNRSPLIT;
     options->dir_depth = DFLT_OPT_DIR_DEPTH;
     options->dirs_include = DFLT_OPT_DIRSINCLUDE;
     if(options->exclude_files_ci != NULL)
