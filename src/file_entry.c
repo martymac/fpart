@@ -755,8 +755,12 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             case FTS_ERR:
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(fts_read_errno));
-                /* XXX handle directory errors as in FTS_DNR ? */
-                continue;
+
+                if(!S_ISDIR(p->fts_statp->st_mode))
+                    continue;
+                /* else, fallthrough to FTS_DNR for directory-related
+                   errors as fts_read() may return FTS_ERR during an
+                   un-finished readdir() */
 
             /* errors for which we know there is a file or directory
                within current directory */
