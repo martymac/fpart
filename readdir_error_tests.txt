@@ -1,0 +1,263 @@
+==============================
+amir73il/readdir_error branch (including your merge and fixups):
+==============================
+
+--------------------
+No errors injection:
+--------------------
+
+13 dirs in 7 parts
+
+--------------------
+$ ./src/fpart -L -E -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i/j
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i
+/mnt/nfs/a/b/c/d/e/f/g/h/i
+Filled part #1: size = 0, 2 file(s)
+2 (0): /mnt/nfs/a/b/c/d/e/f/g/h
+/mnt/nfs/a/b/c/d/e/f/g/h
+2 (0): /mnt/nfs/a/b/c/d/e/f/g
+/mnt/nfs/a/b/c/d/e/f/g
+Filled part #2: size = 0, 2 file(s)
+3 (0): /mnt/nfs/a/b/c/d/e/f
+/mnt/nfs/a/b/c/d/e/f
+3 (0): /mnt/nfs/a/b/c/d/e
+/mnt/nfs/a/b/c/d/e
+Filled part #3: size = 0, 2 file(s)
+4 (28): /mnt/nfs/a/b/c/d
+/mnt/nfs/a/b/c/d
+4 (0): /mnt/nfs/a/b/c
+/mnt/nfs/a/b/c
+Filled part #4: size = 28, 2 file(s)
+5 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+5 (0): /mnt/nfs/a/amir/subdir
+/mnt/nfs/a/amir/subdir
+Filled part #5: size = 0, 2 file(s)
+6 (10650): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+6 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+Filled part #6: size = 10650, 2 file(s)
+7 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #7: size = 12, 1 file(s)
+13 file(s) found.
+
+
+---------------------------------
+Errors injection at odd #readdir:
+---------------------------------
+
+6 dirs in 4 parts, because some subdirs are missed.
+missed subtrees (e.g. a/b/c) will be synced with recursive rsync.
+
+--------------------
+sudo ./fanotify_example /mnt/nfs/ 5
+
+$ ./src/fpart -L -E -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+/mnt/nfs/a/b/c: Operation not permitted
+1 (18446744073709551615): /mnt/nfs/a/b/c
+/mnt/nfs/a/b/c
+Filled part #1: size = 18446744073709551615, 1 file(s)
+2 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+2 (0): /mnt/nfs/a/amir/subdir
+/mnt/nfs/a/amir/subdir
+Filled part #2: size = 0, 2 file(s)
+/mnt/nfs/a/amir/dir: Operation not permitted
+3 (18446744073709551615): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+Filled part #3: size = 18446744073709551615, 1 file(s)
+4 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+4 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #4: size = 12, 2 file(s)
+6 file(s) found.
+
+
+----------------------------------
+Errors injection at even #readdir:
+----------------------------------
+
+13 dirs in 10 parts, because of separate parts
+All subdirs observed because error is never on first readdir
+
+--------------------
+sudo ./fanotify_example /mnt/nfs/ 6
+
+$ ./src/fpart -L -E -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i: Operation not permitted
+Filled part #1: size = 0, 1 file(s)
+2 (18446744073709551615): /mnt/nfs/a/b/c/d/e/f/g/h/i
+/mnt/nfs/a/b/c/d/e/f/g/h/i
+Filled part #2: size = 18446744073709551615, 1 file(s)
+3 (0): /mnt/nfs/a/b/c/d/e/f/g/h
+/mnt/nfs/a/b/c/d/e/f/g/h
+3 (0): /mnt/nfs/a/b/c/d/e/f/g
+/mnt/nfs/a/b/c/d/e/f/g
+Filled part #3: size = 0, 2 file(s)
+/mnt/nfs/a/b/c/d/e/f: Operation not permitted
+4 (18446744073709551615): /mnt/nfs/a/b/c/d/e/f
+/mnt/nfs/a/b/c/d/e/f
+Filled part #4: size = 18446744073709551615, 1 file(s)
+5 (0): /mnt/nfs/a/b/c/d/e
+/mnt/nfs/a/b/c/d/e
+5 (28): /mnt/nfs/a/b/c/d
+/mnt/nfs/a/b/c/d
+Filled part #5: size = 28, 2 file(s)
+/mnt/nfs/a/b/c: Operation not permitted
+6 (18446744073709551615): /mnt/nfs/a/b/c
+/mnt/nfs/a/b/c
+Filled part #6: size = 18446744073709551615, 1 file(s)
+7 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+/mnt/nfs/a/amir/subdir: Operation not permitted
+Filled part #7: size = 0, 1 file(s)
+8 (18446744073709551615): /mnt/nfs/a/amir/subdir
+/mnt/nfs/a/amir/subdir
+Filled part #8: size = 18446744073709551615, 1 file(s)
+9 (10650): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+9 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+Filled part #9: size = 10650, 2 file(s)
+10 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #10: size = 12, 1 file(s)
+13 file(s) found.
+
+
+==============================
+amir73il-readdir_error branch (including all your code changes):
+==============================
+
+--------------------
+No errors injection:
+--------------------
+
+13 dirs in 7 parts
+
+--------------------
+$ ./src/fpart -L -E -zz -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i/j
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i
+/mnt/nfs/a/b/c/d/e/f/g/h/i
+Filled part #1: size = 0, 2 file(s), errno = 0
+2 (0): /mnt/nfs/a/b/c/d/e/f/g/h
+/mnt/nfs/a/b/c/d/e/f/g/h
+2 (0): /mnt/nfs/a/b/c/d/e/f/g
+/mnt/nfs/a/b/c/d/e/f/g
+Filled part #2: size = 0, 2 file(s), errno = 0
+3 (0): /mnt/nfs/a/b/c/d/e/f
+/mnt/nfs/a/b/c/d/e/f
+3 (0): /mnt/nfs/a/b/c/d/e
+/mnt/nfs/a/b/c/d/e
+Filled part #3: size = 0, 2 file(s), errno = 0
+4 (28): /mnt/nfs/a/b/c/d
+/mnt/nfs/a/b/c/d
+4 (0): /mnt/nfs/a/b/c
+/mnt/nfs/a/b/c
+Filled part #4: size = 28, 2 file(s), errno = 0
+5 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+5 (0): /mnt/nfs/a/amir/subdir
+/mnt/nfs/a/amir/subdir
+Filled part #5: size = 0, 2 file(s), errno = 0
+6 (10650): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+6 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+Filled part #6: size = 10650, 2 file(s), errno = 0
+7 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #7: size = 12, 1 file(s)
+13 file(s) found.
+
+
+---------------------------------
+Errors injection at odd #readdir:
+---------------------------------
+
+6 dirs in 4 parts, because some subdirs are missed.
+missed subtrees (e.g. a/b/c) will be synced with recursive rsync.
+
+--------------------
+sudo ./fanotify_example /mnt/nfs/ 6
+
+
+$ ./src/fpart -L -E -zz -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+/mnt/nfs/a/b/c: Operation not permitted
+1 (0): /mnt/nfs/a/b/c
+/mnt/nfs/a/b/c
+Filled part #1: size = 0, 1 file(s), errno = 1
+2 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+2 (0): /mnt/nfs/a/amir/subdir
+/mnt/nfs/a/amir/subdir
+Filled part #2: size = 0, 2 file(s), errno = 0
+/mnt/nfs/a/amir/dir: Operation not permitted
+3 (0): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+Filled part #3: size = 0, 1 file(s), errno = 1
+4 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+4 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #4: size = 12, 2 file(s), errno = 0
+6 file(s) found.
+
+
+----------------------------------
+Errors injection at even #readdir:
+----------------------------------
+
+9 dirs in 5 parts, because dirs with errors are not packed.
+All subdirs have been observed because error is never on first readdir,
+but 4 dirs will not be synced.
+
+--------------------
+sudo ./fanotify_example /mnt/nfs/ 6
+
+$ ./src/fpart -L -E -zz -Z -f 2 -vv /mnt/nfs/a
+Examining filesystem...
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i/j
+/mnt/nfs/a/b/c/d/e/f/g/h/i: Operation not permitted
+1 (0): /mnt/nfs/a/b/c/d/e/f/g/h
+/mnt/nfs/a/b/c/d/e/f/g/h
+Filled part #1: size = 0, 2 file(s), errno = 0
+2 (0): /mnt/nfs/a/b/c/d/e/f/g
+/mnt/nfs/a/b/c/d/e/f/g
+/mnt/nfs/a/b/c/d/e/f: Operation not permitted
+2 (0): /mnt/nfs/a/b/c/d/e
+/mnt/nfs/a/b/c/d/e
+Filled part #2: size = 0, 2 file(s), errno = 0
+3 (28): /mnt/nfs/a/b/c/d
+/mnt/nfs/a/b/c/d
+/mnt/nfs/a/b/c: Operation not permitted
+3 (0): /mnt/nfs/a/b
+/mnt/nfs/a/b
+Filled part #3: size = 28, 2 file(s), errno = 0
+/mnt/nfs/a/amir/subdir: Operation not permitted
+4 (10650): /mnt/nfs/a/amir/dir
+/mnt/nfs/a/amir/dir
+4 (0): /mnt/nfs/a/amir
+/mnt/nfs/a/amir
+Filled part #4: size = 10650, 2 file(s), errno = 0
+5 (12): /mnt/nfs/a
+/mnt/nfs/a
+Filled part #5: size = 12, 1 file(s)
+9 file(s) found.
+
+
