@@ -1,12 +1,18 @@
 /*
 
+Small library to test implementation of option -Z and FPART_PARTERRNO
+
 Inspired from:
 https://lists.gnu.org/archive/html/bug-gnulib/2016-06/msg00058.html
 
 $ cc -fPIC -shared -o libfake_readdir.so fake_readdir.c
 
 $ mkdir -p /tmp/test/a/b/c/d/e/f/g/h/i/j
-$ LD_PRELOAD=./libfake_readdir.so fpart -L -E -zz -Z -f 2 -vv /tmp/test/a
+$ LD_PRELOAD=./libfake_readdir.so fpart -L -E -zz -Z -f 2 -vvv /tmp/test
+
+$ mkdir -p /tmp/test/b/{c,d}
+$ touch /tmp/test/b/{c,d}/{a..z}
+$ LD_PRELOAD=./libfake_readdir.so fpart -L -E -zz -Z -f 2 -vvv /tmp/test/b
 
 */
 
@@ -19,10 +25,8 @@ $ LD_PRELOAD=./libfake_readdir.so fpart -L -E -zz -Z -f 2 -vv /tmp/test/a
 
 #include <dlfcn.h>
 
-int verbose = 1;
-
 static size_t counter = 0;
-#define FAIL_EVERY 4
+#define FAIL_EVERY 7
 
 static struct dirent *(*real_readdir)(DIR *dirp) = NULL;
 
@@ -33,13 +37,13 @@ struct dirent *readdir(DIR *dirp)
         real_readdir = dlsym(RTLD_NEXT, "readdir");
 
     counter++;
-    if((counter % FAIL_EVERY) != 0) { 
-	    if(verbose) fprintf(stderr, "XXX Real call to readdir(), counter = %zu\n", counter);
-        return real_readdir(dirp);
+
+    if((counter % FAIL_EVERY) == 0) {
+        fprintf(stderr, "XXX Failing call to readdir(), counter = %zu\n", counter);
+        fflush(stderr);
+        errno=EIO;
+        return NULL;
     }
-    else {
-	    if(verbose) fprintf(stderr, "XXX Failing call to readdir(), counter = %zu\n", counter);
-	    errno=EPERM;
-	    return NULL;
-    }
+
+    return real_readdir(dirp);
 }
