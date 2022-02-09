@@ -47,6 +47,8 @@ OPT_FPMAXPARTFILES="2000"
 OPT_FPMAXPARTSIZE="$((4 * 1024 * 1024 * 1024))" # 4 GB
 # Work on a per-directory basis (disabled by default)
 OPT_DIRSONLY=""
+# Pack erroneous dirs apart and enable recursive rsync
+OPT_AGGRESSIVE=""
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
 # Fpart shared dir (must be shared amongst all workers, -d)
@@ -116,6 +118,9 @@ SYNCHRONIZATION OPTIONS:
   -s z        transfer at most <z> bytes per sync job
   -E          work on a per-directory basis ('rsync' tool only)
               (WARNING!!! Enables rsync(1)'s --delete option!)
+              Specify twice to enable "aggressive" mode that will isolate
+              erroneous directories and enable recursive synchronization for
+              them ('rsync' tool only)
   -o options  override default copy tool options with <options>
               See fpsync(1) for more details.
   -O options  override default fpart options with pipe-separated <options>
@@ -235,6 +240,13 @@ tool_supports_dirsonly () {
     echo "$1" | grep -q '^rsync$'
 }
 
+# Check if a tool supports aggressive mode
+# (requires the ability to sync recursively)
+# $1 = tool name
+tool_supports_aggressive () {
+    echo "$1" | grep -q '^rsync$'
+}
+
 # Get default tool-related options
 # $1 = tool name
 tool_get_base_opts () {
@@ -252,15 +264,15 @@ tool_get_tool_mode_opts () {
         # as we are working with leaf elements only
         case "$1" in
         "rsync")
-	        # Non-recursive (more exactly: single-depth) rsync(1)
-	        printf '%s\n' '-d'
+            # Non-recursive (more exactly: single-depth) rsync(1)
+            printf '%s\n' '-d'
             ;;
         "cpio")
-	        printf '%s\n' '-pdm'
+            printf '%s\n' '-pdm'
             ;;
         "tar"|"tarify")
-	        # Update directories themselves but do not recurse
-	        printf '%s\n' '--no-recursion'
+            # Update directories themselves but do not recurse
+            printf '%s\n' '--no-recursion'
             ;;
         *)
             ;;
@@ -269,9 +281,12 @@ tool_get_tool_mode_opts () {
         # Dirs-only mode
         case "$1" in
         "rsync")
-	        # Single-depth rsync(1) + deletion
-	        # Postpone deletion to limit impacts of a user interruption
-	        printf '%s\n' '-d --relative --delete --delete-after'
+            # Single-depth rsync(1) + deletion
+            # Postpone deletion to limit impacts of a user interruption
+            # XXX Aggressive mode can set option -r, which takes precedence
+            # over -d (in fact, aggressive mode *depends* on having option -r
+            # overriding -d)
+            printf '%s\n' '-d --relative --delete --delete-after'
             ;;
         *)
             ;;
@@ -279,21 +294,29 @@ tool_get_tool_mode_opts () {
     fi
 }
 
+# Get recursive option for specified tool
+# $1 = tool name
+tool_get_tool_mode_opts_recursive () {
+    [ "$1" = "rsync" ] &&
+        printf '%s\n' '-r'
+}
+
 # Get mode-specific fpart options
 # $1 = tool name
 # $2 = dirs only mode (if string not empty)
+# $3 = aggressive mode (if string not empty)
 tool_get_fpart_mode_opts () {
     if [ -z "$2" ]
     then
         # File-based mode
         case "$1" in
         "rsync")
-	        printf '%s\n' '-zz'
+            printf '%s\n' '-zz'
             ;;
         "cpio"|"tar"|"tarify")
             # We want empty directory entries with those tools
             # to re-apply correct metadata
-	        printf '%s\n' '-zzz'
+            printf '%s\n' '-zzz'
             ;;
         *)
             ;;
@@ -302,9 +325,26 @@ tool_get_fpart_mode_opts () {
         # Dirs-only mode
         case "$1" in
         "rsync")
-	        # We do *not* want fpart option -zz in dirs-only mode because
-	        # un-readable directories will be created when sync'ing the parent.
-	        printf '%s\n' '-E'
+            if [ -z "$3" ]
+            then
+                # Regular mode
+                #
+                # We do *not* want fpart option -zz in regular dirs-only mode
+                # because un-readable directories will be created when sync'ing
+                # the parent
+                printf '%s\n' '-E'
+            else
+                # Aggressive mode
+                #
+                # Erroneous dirs are -from fpart's point of view-, mostly leaf
+                # dirs (no subdirs should have been packed before, except
+                # maybe in case of partially-read directories containing
+                # subdirs). Pack erroneous dirs separately and enable recursive
+                # rsync for them to try to overcome transcient errors such as
+                # Linux SMB client deferring opendir() to support compound SMB
+                # requests. See: https://github.com/martymac/fpart/pull/37
+                printf '%s\n' '-E|-zz|-Z'
+            fi
             ;;
         *)
             ;;
@@ -314,23 +354,45 @@ tool_get_fpart_mode_opts () {
 
 # Init tool-specific fpart hooks (black magic is here !)
 # $1 = tool name
-# XXX That function works on global variable to avoid too many escape characters
+# $2 = aggressive mode (if string not empty)
+# XXX That function modifies a global variable to avoid too many escape characters
 # when returning values through stdout
 tool_init_fpart_job_command () {
     case "$1" in
     "rsync")
-        # MODEOPTS is set per partition according to $FPART_PARTSIZE
-        # When $FPART_PARTSIZE is negative, we force recursive rsync
-        # because fpart was not able to list sub-directories
-        FPART_JOBCOMMAND="/bin/sh -c 'MODEOPTS=\\\"${TOOL_MODEOPTS}\\\"; \
-            [ \\\"\${FPART_PARTSIZE}\\\" -lt 0 ] && \
-	        MODEOPTS=\\\"${TOOL_MODEOPTS_R}\\\"; \
-            ${SUDO} ${TOOL_BIN} ${OPT_TOOL} \\\${MODEOPTS} \
-            --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
-            \\\"${OPT_SRCDIR}/\\\" \
-            \\\"${OPT_DSTURL}/\\\"' \
-            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        if [ -z "$2" ]
+        then
+            # Regular mode
+            FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
+                ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
+                \\\"${OPT_SRCDIR}/\\\" \
+                \\\"${OPT_DSTURL}/\\\"' \
+                1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+                2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        else
+            # Aggressive mode: enable recursivity for erroneous partitions
+            # (i.e. where: (errno != 0) && (errno != EACCESS))
+            # Also, skip sync for errno==EACCESS as this is a legitimate error:
+            # un-accessible dirs will be re-created by parents, anyway
+            FPART_JOBCOMMAND="/bin/sh -c ' \
+                FPART_PARTERRNO=\\\"\${FPART_PARTERRNO}\\\"; \
+                TOOL_MODEOPTS_R=; \
+                if [ \\\${FPART_PARTERRNO} -ne 0 ]; \
+                then \
+                    if [ \\\${FPART_PARTERRNO} -eq 13 ]; \
+                    then \
+                        exit 0; \
+                    else \
+                        TOOL_MODEOPTS_R=\\\"${TOOL_MODEOPTS_R}\\\"; \
+                    fi; \
+                fi; \
+                ${SUDO} ${TOOL_BIN} ${OPT_TOOL} ${TOOL_MODEOPTS} \
+                \\\${TOOL_MODEOPTS_R} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
+                \\\"${OPT_SRCDIR}/\\\" \
+                \\\"${OPT_DSTURL}/\\\"' \
+                1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+                2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        fi
         ;;
     "cpio")
         # XXX Warning: -0 and --quiet are non-standard
@@ -424,6 +486,10 @@ parse_opts () {
             fi
             ;;
         "E")
+            if [ "${OPT_DIRSONLY}" = "yes" ]
+            then
+                OPT_AGGRESSIVE="yes"
+            fi
             OPT_DIRSONLY="yes"
             ;;
         "w")
@@ -603,6 +669,10 @@ parse_opts () {
     then
         end_die "Option -E is invalid when using ${OPT_TOOL_NAME} tool"
     fi
+    if [ "${OPT_AGGRESSIVE}" = "yes" ] && ! tool_supports_aggressive "${OPT_TOOL_NAME}"
+    then
+        end_die "Aggressive mode is invalid when using ${OPT_TOOL_NAME} tool"
+    fi
     if [ -z "${OPT_TOOL}" ]
     then
         OPT_TOOL=$(tool_get_base_opts "${OPT_TOOL_NAME}")
@@ -610,8 +680,6 @@ parse_opts () {
         tool_uses_forbidden_option "${OPT_TOOL_NAME}" "${OPT_TOOL}" && \
             end_die "Incompatible option(s) detected within toolopts (option -o)"
     fi
-
-
 }
 
 ########## Work-related functions (in-memory, running-jobs handling)
@@ -1010,9 +1078,9 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 
 # Prepare mode-specific tool and fpart options
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
-TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "")
-FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
-FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}"
+TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts_recursive "${OPT_TOOL_NAME}")
+FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "${OPT_AGGRESSIVE}")
+FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRESSIVE}"
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
