@@ -751,20 +751,35 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
         }
 
         switch (p->fts_info) {
-            /* misc errors */
-            case FTS_ERR:
+            case FTS_ERR:   /* misc errors, but also partially-read dirs */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(fts_read_errno));
 
                 if(!S_ISDIR(p->fts_statp->st_mode))
                     continue;
-                /* else, fallthrough to FTS_DNR for directory-related
-                   errors as fts_read() may return FTS_ERR during an
-                   un-finished readdir() */
+                /* else, fallthrough to FTS_DNR for directory-related errors
+                   as fts_read() may return FTS_ERR during an un-finished
+                   readdir().
+
+                   Note: we may be adding parent directory entries while
+                   children files have previously been packed, e.g.:
+                     Partition 1 containing /tmp/foo/file1
+                     [readdir() error while reading /tmp/foo/]
+                     Partition 2 containing /tmp/foo/ + errno set
+                   Do we need an option to enable that fallthrough here ?
+                   Or provide a way to consumer to differentiate FTS_ERR from
+                   FTS_DNR ?
+                */
 
             /* errors for which we know there is a file or directory
                within current directory */
-            case FTS_DNR:   /* un-readable directory */
+            case FTS_DNR:   /* un-readable directory, which can be:
+                               - because of EACCES (permission denied)
+                               - because of a readdir() *technical* error
+                                 with directory not read at all
+                               - because of a readdir() *technical* error
+                                 with directory partially-read
+                                 (because of FTS_ERR fallthrough above) */
             {
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(fts_read_errno));
@@ -784,14 +799,14 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(fts_read_errno));
-            case FTS_NSOK: /* no stat(2) available (not requested) */
+            case FTS_NSOK:  /* no stat(2) available (not requested) */
                 /* mark current dir as not empty */
                 curdir_empty = 0;
                 continue;
 
             case FTS_DC:
                 fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
-            case FTS_DOT:  /* ignore "." and ".." */
+            case FTS_DOT:   /* ignore "." and ".." */
                 continue;
 
             case FTS_DP:
@@ -923,9 +938,8 @@ reset_directory:
                 continue;
             }
 
-            default:
-            /* XXX default means remaining file types:
-               FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
+            default:    /* XXX default means remaining file types:
+                           FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
                 /* get current file size to add it to our current directory
                    size. We must have visited all directories first for that
