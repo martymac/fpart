@@ -93,12 +93,15 @@ static struct {
     pnum_t partition_index;      /* current partition number */
     fsize_t partition_size;      /* current partition size */
     fnum_t partition_num_files;  /* number of files in current partition */
+    int partition_errno;         /* 0 if every single entry has been fts_read()
+                                    without error, else last entry's errno */
     int exit_summary;            /* 0 if every single hook exit()ed with 0,
                                     else 1 */
     pid_t child_pid;
 } live_status = {
     STDOUT_FILENO,
     NULL,
+    0,
     0,
     0,
     0,
@@ -127,10 +130,12 @@ kill_child(int sig)
 int
 fpart_hook(const char *cmd, const struct program_options *options,
     const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fnum_t *live_num_files)
+    const fsize_t *live_partition_size, const fnum_t *live_num_files,
+    const int partition_errno)
 {
     assert(cmd != NULL);
     assert(options != NULL);
+    assert(partition_errno >= 0);
 
     int retval = 0;
 
@@ -140,6 +145,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
     char *env_fpart_partsize_name = "FPART_PARTSIZE";
     char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
+    char *env_fpart_parterrno_name = "FPART_PARTERRNO";
     char *env_fpart_pid_name = "FPART_PID";
 
     /* env variables' values */
@@ -148,6 +154,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partnumber_string = NULL;
     char *env_fpart_partsize_string = NULL;
     char *env_fpart_partnumfiles_string = NULL;
+    char *env_fpart_parterrno_string = NULL;
     char *env_fpart_pid_string = NULL;
 
     /* XXX As setenv(3)/unsetenv(3) are not available on all platforms, and there does not
@@ -274,6 +281,20 @@ fpart_hook(const char *cmd, const struct program_options *options,
         }
     }
 
+    /* FPART_PARTERRNO */
+    malloc_size = strlen(env_fpart_parterrno_name) + 1 +
+        get_num_digits(partition_errno) + 1;
+    if_not_malloc(env_fpart_parterrno_string, malloc_size,
+        retval = 1;
+        goto cleanup;
+    )
+    snprintf(env_fpart_parterrno_string, malloc_size, "%s=%d",
+        env_fpart_parterrno_name, partition_errno);
+    if(push_env(env_fpart_parterrno_string, &envp) != 0) {
+        retval = 1;
+        goto cleanup;
+    }
+
     /* FPART_PID */
     pid_t fpart_pid = getpid();
     malloc_size = strlen(env_fpart_pid_name) + 1 +
@@ -377,13 +398,15 @@ cleanup:
    - returns (-1) if error */
 int
 handle_file_entry(struct file_entry **head, char *path, fsize_t size,
-    struct program_options *options)
+    int entry_errno, struct program_options *options)
 {
     assert(options != NULL);
+    assert(entry_errno >= 0);
 
     if(options->live_mode == OPT_LIVEMODE)
-        return (live_print_file_entry(path, size, options));
+        return (live_print_file_entry(path, size, entry_errno, options));
     else
+        /* XXX propagate (and exploit) entry_errno in non-live mode too ? */
         return (add_file_entry(head, path, size, options));
 }
 
@@ -392,15 +415,22 @@ handle_file_entry(struct file_entry **head, char *path, fsize_t size,
    - returns (1) if entry has been skipped (option -S)
    - returns (-1) if error */
 int
-live_print_file_entry(char *path, fsize_t size,
+live_print_file_entry(char *path, fsize_t size, int entry_errno,
     struct program_options *options)
 {
+/* split states */
+#define SPLIT_NONE 0
+#define SPLIT_DO   1
+#define SPLIT_END  2
+
     assert(path != NULL);
     assert(options != NULL);
     assert(options->live_mode == OPT_LIVEMODE);
+    assert(entry_errno >= 0);
 
     char *out_template = options->out_filename;
     char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
+    int split = SPLIT_NONE;
 
     /* option -S: skip files bigger than maximum partition size (option -s)
        and print them to stdout in hardcoded pseudo-partition 'S' ('S'kipped).
@@ -417,6 +447,7 @@ live_print_file_entry(char *path, fsize_t size,
 
     /* beginning of a new partition */
     if(live_status.partition_num_files == 0) {
+start_part:
         /* very first pass of first partition, preload first partition */
         if(live_status.partition_index == 0)
             live_status.partition_size = options->preload_size;
@@ -434,9 +465,12 @@ live_print_file_entry(char *path, fsize_t size,
 
         /* execute pre-partition hook */
         if(options->pre_part_hook != NULL) {
-            if(fpart_hook(options->pre_part_hook, options, live_status.filename,
-                &live_status.partition_index, &live_status.partition_size,
-                &live_status.partition_num_files) != 0)
+            if(fpart_hook(options->pre_part_hook, options,
+                live_status.filename,
+                &live_status.partition_index,
+                &live_status.partition_size,
+                &live_status.partition_num_files,
+                0) != 0) /* partition_errno irrelevant here */
                 live_status.exit_summary = 1;
         }
 
@@ -453,13 +487,27 @@ live_print_file_entry(char *path, fsize_t size,
         }
     }
 
+    if((options->dnr_split == OPT_DNRSPLIT) && (entry_errno != 0)) {
+        if (live_status.partition_num_files > 0) {
+            /* close current -non-empty- partition, do not (yet) count file in
+               and create a new partition to add our single -erroneous- entry */
+            split = SPLIT_DO;
+            goto end_part;
+        }
+        else
+            /* work on current partition */
+            split = SPLIT_END;
+    }
+
     /* count file in */
     live_status.partition_size +=
         round_num(size + options->overload_size, options->round_size);
     live_status.partition_num_files++;
+    if(entry_errno != 0)
+        live_status.partition_errno = entry_errno;
 
     if(out_template == NULL) {
-        /* no template provided, just print to stdout */
+        /* no template provided, just print entry to stdout */
         fprintf(stdout, "%ju (%ju): %s\n",
             adapt_partition_index(live_status.partition_index, options), size,
             path);
@@ -481,16 +529,19 @@ live_print_file_entry(char *path, fsize_t size,
         fprintf(stderr, "%s\n", path);
 
     /* if end of partition reached */
-    if(((options->max_entries > 0) && 
+    if(((options->max_entries > 0) &&
             (live_status.partition_num_files >= options->max_entries)) ||
         ((options->max_size > 0) && 
-            (live_status.partition_size >= options->max_size))) {
+            (live_status.partition_size >= options->max_size)) ||
+        (split == SPLIT_END)) {
+end_part:
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
-            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
+            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s), errno = %d\n",
                 adapt_partition_index(live_status.partition_index, options),
                 live_status.partition_size,
-                live_status.partition_num_files);
+                live_status.partition_num_files,
+                live_status.partition_errno);
 
         /* close fd or flush buffer */
         if(out_template == NULL)
@@ -501,9 +552,11 @@ live_print_file_entry(char *path, fsize_t size,
         /* execute post-partition hook */
         if(options->post_part_hook != NULL) {
             if(fpart_hook(options->post_part_hook, options,
-                live_status.filename, &live_status.partition_index,
+                live_status.filename,
+                &live_status.partition_index,
                 &live_status.partition_size,
-                &live_status.partition_num_files) != 0)
+                &live_status.partition_num_files,
+                live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }
 
@@ -516,6 +569,13 @@ live_print_file_entry(char *path, fsize_t size,
         live_status.partition_index++;
         live_status.partition_size = options->preload_size;
         live_status.partition_num_files = 0;
+        live_status.partition_errno = 0;
+
+        /* create another partition with single entry */
+        if (split == SPLIT_DO) {
+            split = SPLIT_END;
+            goto start_part;
+        }
     }
 
     return (0);
@@ -666,28 +726,69 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     unsigned char curdir_addme = 0;     /* current dir must be added */
     fsize_t curdir_size = 0;            /* current dir size */
 
+    int fts_read_errno = 0;             /* kept apart because p->fts_errno
+                                           is only significant with
+                                           FTS_ERR, FTS_DNR and FTS_NS
+                                           (see fts(3)), but fts_read_errno is
+                                           needed in FTS_DP */
+
     while((p = fts_read(ftsp)) != NULL) {
         if(options->verbose >= OPT_VVVERBOSE) {
-            fprintf(stderr, "%s(%s): fts_info=%d, ftp_errno=%d\n", __func__,
+            fprintf(stderr, "%s(%s): fts_info=%d, fts_errno=%d\n", __func__,
                 p->fts_path, p->fts_info, p->fts_errno);
         }
+
+        /* update fts_read_errno with relevant values only */
         switch (p->fts_info) {
-            /* misc errors */
             case FTS_ERR:
+            case FTS_DNR:
+            case FTS_NS:
+                fts_read_errno = p->fts_errno;
+                break;
+            default:
+                fts_read_errno = 0;
+                break;
+        }
+
+        switch (p->fts_info) {
+            case FTS_ERR:   /* misc errors, but also partially-read dirs */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
-                    strerror(p->fts_errno));
-                continue;
+                    strerror(fts_read_errno));
+
+                if(!S_ISDIR(p->fts_statp->st_mode))
+                    continue;
+                /* else, fallthrough to FTS_DNR for directory-related errors
+                   as fts_read() may return FTS_ERR during an un-finished
+                   readdir().
+
+                   Note: we may be adding parent directory entries while
+                   children files have previously been packed, e.g.:
+                     Partition 1 containing /tmp/foo/file1
+                     [readdir() error while reading /tmp/foo/]
+                     Partition 2 containing /tmp/foo/ + errno set
+                   Do we need an option to enable that fallthrough here ?
+                   Or provide a way to consumer to differentiate FTS_ERR from
+                   FTS_DNR ?
+                */
 
             /* errors for which we know there is a file or directory
                within current directory */
-            case FTS_DNR:   /* un-readable directory */
+            case FTS_DNR:   /* un-readable directory, which can be:
+                               - because of EACCES (permission denied)
+                               - because of a readdir() *technical* error
+                                 with directory not read at all
+                               - because of a readdir() *technical* error
+                                 with directory partially-read
+                                 (because of FTS_ERR fallthrough above) */
             {
                 fprintf(stderr, "%s: %s\n", p->fts_path,
-                    strerror(p->fts_errno));
+                    strerror(fts_read_errno));
+
                 /* if requested by the -zz option,
                    add directory anyway by simulating FTS_DP */
                 if(options->dirs_include >= OPT_DNREMPTY) {
-                    curdir_empty = 1;
+                    curdir_empty = 1; /* avoid re-crawling erroneous dir
+                                         through get_size() */
                     goto add_directory;
                 }
                 /* else, mark current dir as not empty */
@@ -697,15 +798,15 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
             }
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
-                    strerror(p->fts_errno));
-            case FTS_NSOK: /* no stat(2) available (not requested) */
+                    strerror(fts_read_errno));
+            case FTS_NSOK:  /* no stat(2) available (not requested) */
                 /* mark current dir as not empty */
                 curdir_empty = 0;
                 continue;
 
             case FTS_DC:
                 fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
-            case FTS_DOT:  /* ignore "." and ".." */
+            case FTS_DOT:   /* ignore "." and ".." */
                 continue;
 
             case FTS_DP:
@@ -783,8 +884,8 @@ add_directory:
                     /* else, trust curdir_size and leave it untouched. */
 
                     /* add or display it */
-                    int handled = handle_file_entry
-                        (head, curdir_entry_path, curdir_size, options);
+                    int handled = handle_file_entry(head, curdir_entry_path,
+                        curdir_size, fts_read_errno, options);
                     if(handled == 0)
                         (*count)++;
                     else if(handled < 0) {
@@ -837,9 +938,8 @@ reset_directory:
                 continue;
             }
 
-            default:
-            /* XXX default means remaining file types:
-               FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
+            default:    /* XXX default means remaining file types:
+                           FTS_F, FTS_SL, FTS_SLNONE, FTS_DEFAULT */
             {
                 /* get current file size to add it to our current directory
                    size. We must have visited all directories first for that
@@ -896,8 +996,9 @@ two-pass check to handle include and exclude options properly. */
                     continue;
 
                 /* add or display it */
-                int handled = handle_file_entry
-                    (head, p->fts_path, curfile_size, options);
+                int handled = handle_file_entry(head, p->fts_path,
+                    curfile_size, 0, options); /* fts_read_errno is always 0
+                                                  here, so harcode it */
                 if(handled == 0)
                     (*count)++;
                 else if(handled < 0) {
@@ -963,9 +1064,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         if((options->post_part_hook != NULL) &&
             (live_status.partition_num_files > 0)) {
             if(fpart_hook(options->post_part_hook, options,
-                live_status.filename, &live_status.partition_index,
+                live_status.filename,
+                &live_status.partition_index,
                 &live_status.partition_size,
-                &live_status.partition_num_files) != 0)
+                &live_status.partition_num_files,
+                live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }
 
