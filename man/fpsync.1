@@ -173,6 +173,14 @@ option by default (
 .Sy WARNING ! ! !
 ), making it a good candidate for a final (cleaning) pass after several
 incremental passes using standard (file) mode.
+When option
+.Fl E
+is specified twice, it enables 'aggressive' mode which isolates erroneous
+directories and enables recursive synchronization for them.
+This advanced mode can be useful to try to overcome transcient errors such as
+Linux SMB client deferring
+.Fn opendir
+calls to support compound SMB requests.
 .It Ic -o Ar toolopts
 Override default
 .Xr rsync 1 ,

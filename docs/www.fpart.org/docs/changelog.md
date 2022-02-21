@@ -2,6 +2,8 @@
 ```nohighlight
     2022/??/??, 1.4.1 ('???') :
     - added 'make_release.sh' script to automate release tarball creation
+    - embedded fts: check errors from readdir()
+      (GH issue #37)
     - fpart: re-enable large files support on GNU/Linux
       (fixes Debian bug #834328)
     - fpart: start numbering partitions from '1' instead of '0'.
@@ -16,8 +18,18 @@
     - fpart: add option -S to skip, in live mode, files that are bigger than
       maximum partition size
       (see man page for more details, fixes GH issue #36)
+    - fpart: add FPART_PARTERRNO hook variable that contains 0 if every single
+      partition's entry has been fts_read() without error, else last erroneous
+      entry's errno
+      (GH issue #37)
+    - fpart: add option -Z, used to isolate a failing directory alone within a
+      partition
+      (GH issue #37)
     - fpsync: add more checks for incompatible rsync options
     - fpsync: force non-recursive rsync(1) in file-based mode
+    - fpsync: add aggressive mode option (-EE) to enable recursive
+      synchronization for erroneous directories
+      (GH issue #37)
 ```
 # Current: 1.4.0
 ```nohighlight

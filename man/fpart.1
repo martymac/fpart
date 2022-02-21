@@ -48,6 +48,7 @@
 .Op Fl z
 .Op Fl zz
 .Op Fl zzz
+.Op Fl Z
 .Op Fl d Ar depth
 .Op Fl D
 .Op Fl E
@@ -221,11 +222,25 @@ See the
 .Fl zz
 option to also pack un-readable directories.
 .It Fl zz
-Treat un-readable directories as empty, causing them to be packed anyway.
+Treat un-readable or erroneous (partly-read) directories as empty, causing them to
+be packed anyway.
+Partly-read (non-empty) directories can end up being packed while some of their
+children have already been packed.
 .It Fl zzz
 Pack all directories (as empty).
 Useful when 3rd party tools need directory entries to update them (e.g. cpio or
 tar).
+.It Fl Z
+Pack un-readable/erroneous directories in dedicated partitions.
+This option helps isolating erroneous parts of a filesystem.
+Used in conjuction with FPART_PARTERRNO variable, hooks can try to handle or
+work around the error.
+Requires live mode (option
+.Fl L )
+and option
+.Fl zz (
+or
+.Fl zzz )
 .It Ic -d Ar depth
 After a certain
 .Ar depth ,
@@ -306,9 +321,14 @@ state of the program:
 (current partition size),
 .Ev FPART_PARTNUMFILES
 (number of files in current partition),
+.Ev FPART_PARTERRNO
+(0 if every single partition's entry has been read without error, else last
+erroneous entry's errno.
+For error detection to work properly, you may need to rebuild fpart using embedded
+fts library, depending on the version shipped with your OS),
 .Ev FPART_PID
 (PID of fpart).
-Note that variables may or may not be defined, depending of requested options
+Note that variables may or may not be defined, depending on requested options
 and current partition's state when the hook is triggered.
 Also, note that hooks are executed in a synchronous way while crawling
 filesystem, so 1) avoid executing commands that take a long time to return as it
