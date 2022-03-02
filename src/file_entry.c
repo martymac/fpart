@@ -410,6 +410,21 @@ handle_file_entry(struct file_entry **head, char *path, fsize_t size,
         return (add_file_entry(head, path, size, options));
 }
 
+/* Display a single entry line */
+void
+display_file_entry(pnum_t partition_index, const fsize_t size,
+    const char * const path, const unsigned char display_type)
+{
+    assert(path != NULL);
+
+    if(display_type == DISPLAY_TYPE_STANDARD)
+        fprintf(stdout, "%ju %ju %s\n", partition_index, size, path);
+    else
+        fprintf(stdout, "S %ju %s\n", size, path);
+
+    return;
+}
+
 /* Print a file entry
    - returns (0) if entry has been added
    - returns (1) if entry has been skipped (option -S)
@@ -439,7 +454,7 @@ live_print_file_entry(char *path, fsize_t size, int entry_errno,
         fsize_t needed_part_size = options->preload_size +
             round_num(size + options->overload_size, options->round_size);
         if(needed_part_size > options->max_size) {
-            fprintf(stdout, "S (%ju): %s\n", size, path);
+            display_file_entry(0, size, path, DISPLAY_TYPE_SKIPPED); /* partition_index irrelevant here */
             fflush(stdout);
             return (1);
         }
@@ -508,9 +523,8 @@ start_part:
 
     if(out_template == NULL) {
         /* no template provided, just print entry to stdout */
-        fprintf(stdout, "%ju (%ju): %s\n",
-            adapt_partition_index(live_status.partition_index, options), size,
-            path);
+        display_file_entry(adapt_partition_index(live_status.partition_index, options),
+            size, path, DISPLAY_TYPE_STANDARD);
     }
     else {
         /* print to fd */
@@ -1102,9 +1116,8 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
     /* no template provided, just print to stdout and return */
     if(out_template == NULL) {
         while(head != NULL) {
-            fprintf(stdout, "%ju (%ju): %s\n",
-                adapt_partition_index(head->partition_index, options),
-                head->size, head->path);
+            display_file_entry(adapt_partition_index(head->partition_index, options),
+                head->size, head->path, DISPLAY_TYPE_STANDARD);
             head = head->nextp;
         }
         return (0);

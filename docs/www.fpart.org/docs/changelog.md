@@ -25,6 +25,11 @@
     - fpart: add option -Z, used to isolate a failing directory alone within a
       partition
       (GH issue #37)
+    - fpart: change display format when listing files to stdout:
+        "partition_index (file_size): file_path"
+      becomes:
+        "partition_index file_size file_path"
+      (GH issue #38)
     - fpsync: add more checks for incompatible rsync options
     - fpsync: force non-recursive rsync(1) in file-based mode
     - fpsync: add aggressive mode option (-EE) to enable recursive
