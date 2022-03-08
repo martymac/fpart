@@ -35,6 +35,8 @@
     - fpsync: add aggressive mode option (-EE) to enable recursive
       synchronization for erroneous directories
       (GH issue #37)
+    - fpsync: start all idle workers before refresh
+      (GH PR #40)
 ```
 # Current: 1.4.0
 ```nohighlight
