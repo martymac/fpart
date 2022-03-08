@@ -49,6 +49,11 @@ void uninit_partitions(struct partition *head);
 pnum_t find_smallest_partition_index(struct partition *head);
 struct partition * get_partition_at(struct partition *head, pnum_t index);
 pnum_t adapt_partition_index(pnum_t index, const struct program_options *options);
+#define PARTITION_DISPLAY_TYPE_STANDARD 0
+#define PARTITION_DISPLAY_TYPE_ERRNO    1
+void display_partition_summary(pnum_t partition_index,
+    const fsize_t partition_size, const fnum_t partition_num_files,
+    int partition_errno, const unsigned char partition_display_type);
 void print_partitions(struct partition *head, struct program_options *options);
 
 #endif /* _PARTITION_H */

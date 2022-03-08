@@ -551,11 +551,9 @@ start_part:
 end_part:
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
-            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s), errno = %d\n",
-                adapt_partition_index(live_status.partition_index, options),
-                live_status.partition_size,
-                live_status.partition_num_files,
-                live_status.partition_errno);
+            display_partition_summary(adapt_partition_index(live_status.partition_index, options),
+                live_status.partition_size, live_status.partition_num_files,
+                live_status.partition_errno, PARTITION_DISPLAY_TYPE_ERRNO);
 
         /* close fd or flush buffer */
         if(out_template == NULL)
@@ -1063,10 +1061,9 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* display added partition */
         if((options->verbose >= OPT_VERBOSE) &&
             (live_status.partition_num_files > 0))
-            fprintf(stderr, "Filled part #%ju: size = %ju, %ju file(s)\n",
-                adapt_partition_index(live_status.partition_index, options),
-                live_status.partition_size,
-                live_status.partition_num_files);
+            display_partition_summary(adapt_partition_index(live_status.partition_index, options),
+                live_status.partition_size, live_status.partition_num_files,
+                live_status.partition_errno, PARTITION_DISPLAY_TYPE_ERRNO);
 
         /* flush buffer or close last file if necessary */
         if(options->out_filename == NULL)

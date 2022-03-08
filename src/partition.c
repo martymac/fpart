@@ -182,6 +182,22 @@ adapt_partition_index(pnum_t index, const struct program_options *options)
     return (index + offset);
 }
 
+/* Display a partition summary */
+void
+display_partition_summary(pnum_t partition_index, const fsize_t partition_size,
+    const fnum_t partition_num_files, int partition_errno,
+    const unsigned char partition_display_type)
+{
+    if(partition_display_type == PARTITION_DISPLAY_TYPE_STANDARD)
+        fprintf(stderr, "Part #%ju: size = %ju, files = %ju\n",
+            partition_index, partition_size, partition_num_files);
+    else
+        fprintf(stderr, "Part #%ju: size = %ju, files = %ju, errno = %d\n",
+            partition_index, partition_size, partition_num_files, partition_errno);
+
+    return;
+}
+
 /* Print partitions from head */
 void
 print_partitions(struct partition *head, struct program_options *options)
@@ -191,11 +207,10 @@ print_partitions(struct partition *head, struct program_options *options)
     pnum_t partition_index = 0;
     while(head != NULL) {
         /* skip empty partition '0' */
-        if((partition_index != 0) || (head->num_files != 0)) {
-            fprintf(stderr, "Part #%ju: size = %ju, %ju file(s)\n",
-                adapt_partition_index(partition_index, options),
-                head->size, head->num_files);
-        }
+        if((partition_index != 0) || (head->num_files != 0))
+            display_partition_summary(adapt_partition_index(partition_index, options),
+                head->size, head->num_files, 0, /* partition_errno irrelevant here */
+                PARTITION_DISPLAY_TYPE_STANDARD);
         head = head->nextp;
         partition_index++;
     }
