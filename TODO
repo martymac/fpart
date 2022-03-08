@@ -27,6 +27,7 @@ Fpart:
 - Use queue(3) ?
 
 Fpsync:
+- Show if dirsonly/aggressive mode is enabled in status
 - When waiting for sync jobs to complete, regularly show status
 - Provide per-job pre- and post-xfer rc scripts
   (useful to perform tasks such as computing an
