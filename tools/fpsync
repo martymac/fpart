@@ -939,9 +939,10 @@ job_queue_loop () {
                     work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
                 fi
             fi
+        else
+            work_list_refresh
+            sleep 0.2
         fi
-        work_list_refresh
-        sleep 0.2
     done
 
     if [ "${_NEXT}" = "fp_done" ]
