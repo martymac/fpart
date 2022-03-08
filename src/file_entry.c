@@ -412,15 +412,15 @@ handle_file_entry(struct file_entry **head, char *path, fsize_t size,
 
 /* Display a single entry line */
 void
-display_file_entry(pnum_t partition_index, const fsize_t size,
-    const char * const path, const unsigned char display_type)
+display_file_entry(pnum_t partition_index, const fsize_t entry_size,
+    const char * const entry_path, const unsigned char entry_display_type)
 {
-    assert(path != NULL);
+    assert(entry_path != NULL);
 
-    if(display_type == DISPLAY_TYPE_STANDARD)
-        fprintf(stdout, "%ju %ju %s\n", partition_index, size, path);
+    if(entry_display_type == ENTRY_DISPLAY_TYPE_STANDARD)
+        fprintf(stdout, "%ju\t%ju\t%s\n", partition_index, entry_size, entry_path);
     else
-        fprintf(stdout, "S %ju %s\n", size, path);
+        fprintf(stdout, "S\t%ju\t%s\n", entry_size, entry_path);
 
     return;
 }
@@ -454,7 +454,7 @@ live_print_file_entry(char *path, fsize_t size, int entry_errno,
         fsize_t needed_part_size = options->preload_size +
             round_num(size + options->overload_size, options->round_size);
         if(needed_part_size > options->max_size) {
-            display_file_entry(0, size, path, DISPLAY_TYPE_SKIPPED); /* partition_index irrelevant here */
+            display_file_entry(0, size, path, ENTRY_DISPLAY_TYPE_SKIPPED); /* partition_index irrelevant here */
             fflush(stdout);
             return (1);
         }
@@ -524,7 +524,7 @@ start_part:
     if(out_template == NULL) {
         /* no template provided, just print entry to stdout */
         display_file_entry(adapt_partition_index(live_status.partition_index, options),
-            size, path, DISPLAY_TYPE_STANDARD);
+            size, path, ENTRY_DISPLAY_TYPE_STANDARD);
     }
     else {
         /* print to fd */
@@ -1117,7 +1117,7 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
     if(out_template == NULL) {
         while(head != NULL) {
             display_file_entry(adapt_partition_index(head->partition_index, options),
-                head->size, head->path, DISPLAY_TYPE_STANDARD);
+                head->size, head->path, ENTRY_DISPLAY_TYPE_STANDARD);
             head = head->nextp;
         }
         return (0);

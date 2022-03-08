@@ -55,10 +55,10 @@ int fpart_hook(const char *cmd, const struct program_options *options,
 int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
     int entry_errno, struct program_options *options);
 /* display types */
-#define DISPLAY_TYPE_STANDARD 0
-#define DISPLAY_TYPE_SKIPPED  1
-void display_file_entry(pnum_t partition_index, const fsize_t size,
-    const char * const path, const unsigned char display_type);
+#define ENTRY_DISPLAY_TYPE_STANDARD 0
+#define ENTRY_DISPLAY_TYPE_SKIPPED  1
+void display_file_entry(pnum_t partition_index, const fsize_t entry_size,
+    const char * const entry_path, const unsigned char entry_display_type);
 int live_print_file_entry(char *path, fsize_t size, int entry_errno,
     struct program_options *options);
 int add_file_entry(struct file_entry **head, char *path, fsize_t size,
