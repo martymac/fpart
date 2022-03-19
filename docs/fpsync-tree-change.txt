@@ -6,7 +6,7 @@ and its finalization through -r:
 
 $ fpsync -r 1616710085-80157
 
-It show file movements within involved directories.
+It shows file movements within involved directories.
 
 --- /tmp/before.list
 +++ /tmp/after.list
