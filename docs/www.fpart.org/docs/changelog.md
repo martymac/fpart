@@ -37,6 +37,9 @@
       (GH issue #37)
     - fpsync: start all idle workers before refresh
       (GH PR #40)
+    - fpsync: rework SIGINT handling and fix missing display of last jobs'
+      completion status
+      (inspired by GH PR #40)
 ```
 # Current: 1.4.0
 ```nohighlight

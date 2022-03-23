@@ -819,37 +819,23 @@ job_queue_sl_stop () {
     touch "${JOBS_QUEUEDIR}/sl_stop"
 }
 
-# Handle first ^C: stop queue processing by setting the "sl_stop" flag
-# then wait for sync jobs to complete and display status before exiting
 sigint_handler () {
     SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
-    job_queue_sl_stop
-    if [ ${SIGINT_COUNT} -eq 1 ]
+    if [ ${SIGINT_COUNT} -le 1 ]
     then
+        # Handle first ^C: stop queue processing by setting the "sl_stop" flag
+        job_queue_sl_stop
         echo_log "1" "===> Interrupted. Waiting for running jobs to complete..."
         echo_log "1" "===> (hit ^C again to kill them and exit)"
-        # Wait for queue processing to stop
-        wait
-        # Display current status before exiting
-        [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
-        # Exit program
-        end_die
-    fi
-}
-
-# Handle subsequent ^C from within job_queue_loop(): kill sync processes
-# to fast-unlock the main process (waiting for child processes to exit)
-job_queue_loop_sigint_handler () {
-    SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
-    if [ ${SIGINT_COUNT} -eq 2 ]
-    then
+    else
+        # Handle subsequent ^C: kill sync process groups to fast-unlock the
+        # main process (waiting for child processes to exit)
         echo_log "1" "===> Interrupted again, killing remaining jobs"
         for _JOB in ${WORK_LIST}
         do
-            kill "$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+            kill -s INT -- "-$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+            echo_log "2" "<= [QMGR] Job ${_JOB} killed"
         done
-        # Wait for child processes to exit and let parent process end_die()
-        wait
     fi
 }
 
@@ -910,9 +896,9 @@ job_queue_loop () {
     echo_log "2" "===> [QMGR] Starting queue manager"
 
     # Trap SIGINT
-    trap 'job_queue_loop_sigint_handler' 2
+    trap 'sigint_handler' SIGINT
     # Ignore SIGINFO from within loop, handled by the parent (master) process
-    trap '' 29
+    trap '' SIGINFO
 
     local _NEXT=""
     while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
@@ -928,15 +914,27 @@ job_queue_loop () {
                 if [ -z "${OPT_WRKRS}" ]
                 then
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
-                    /bin/sh "${JOBS_WORKDIR}/${_NEXT}" &
+                    # We want a new process group for sync processes
+                    # to prevent SIGINT propagation
+                    set -m
+                    (
+                        /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
+                    ) &
                     work_list_push "$!:${_NEXT}:local"
+                    set +m
                 else
                     local _NEXT_HOST="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
-                    "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
-                        < "${JOBS_WORKDIR}/${_NEXT}" &
+                    # We want a new process group for sync processes
+                    # to prevent SIGINT propagation
+                    set -m
+                    (
+                        "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
+                            < "${JOBS_WORKDIR}/${_NEXT}"
+                    ) &
                     work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
+                    set +m
                 fi
             fi
         else
@@ -951,7 +949,12 @@ job_queue_loop () {
     else
         echo_log "2" "<=== [QMGR] Stopped. Waiting for jobs to finish."
     fi
-    wait
+    # Wait for remaining processes, if any
+    while [ ${WORK_NUM} -gt 0 ]
+    do
+        work_list_refresh
+        sleep 0.2
+    done
     echo_log "2" "<=== [QMGR] Queue processed"
 
     # Set the 'sl_done' (sync done) flag to let the master process go
@@ -961,7 +964,7 @@ job_queue_loop () {
 # Print a specific run's status to stdout
 # $1 = runid
 run_status_print () {
-    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ]
+    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || [ -f "${OPT_TMPDIR}/queue/${1}/sl_stop" ]
     then
         echo "resumable (synchronization not complete, use -r to resume)"
     else
@@ -1303,10 +1306,10 @@ _run_start_time="$(date '+%s')"
 if [ -z "${OPT_PREPARERUN}" ]
 then
     # Set SIGINT and SIGINFO traps and start job_queue_loop
-    trap 'sigint_handler' 2
-    trap 'siginfo_handler' 29
+    trap '' SIGINT
+    trap 'siginfo_handler' SIGINFO
     echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
-    job_queue_loop&
+    job_queue_loop &
 fi
 
 # When not resuming a previous run, start fpart
@@ -1336,11 +1339,16 @@ then
             tee -a "${FPART_LOGFILE}"
     )
 
-    [ $? -ne 0 ] && \
-        end_die "Fpart exited with errors"
+    if [ $? -ne 0 ]
+    then
+        wait
+        echo_log "1" "===> Fpart exited with errors"
+        end_die
+    fi
 
     # Tell job_queue_loop that crawling has finished
     job_queue_fp_done
+    echo_log "1" "===> Fpart crawling finished"
 fi
 
 # When not in prepare mode, wait for job_queue_loop to terminate
@@ -1356,6 +1364,12 @@ fi
 
 # Display final status
 [ ${OPT_VERBOSE} -ge 1 ] && siginfo_handler
+
+if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
+then
+    echo_log "1" "<=== Fpsync interrupted."
+    end_die
+fi
 
 # Examine results and print/send report
 if [ -n "${OPT_PREPARERUN}" ]
