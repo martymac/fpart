@@ -895,10 +895,11 @@ job_queue_next () {
 job_queue_loop () {
     echo_log "2" "===> [QMGR] Starting queue manager"
 
-    # Trap SIGINT
-    trap 'sigint_handler' SIGINT
+    # Handle SIGINT from within job_queue_loop process
+    # to allow access to WORK_LIST
+    trap 'sigint_handler' 2
     # Ignore SIGINFO from within loop, handled by the parent (master) process
-    trap '' SIGINFO
+    trap '' 29
 
     local _NEXT=""
     while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
@@ -916,6 +917,7 @@ job_queue_loop () {
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
                     # We want a new process group for sync processes
                     # to prevent SIGINT propagation
+                    # XXX https://lists.freebsd.org/archives/freebsd-hackers/2022-March/000906.html
                     set -m
                     (
                         /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
@@ -1305,9 +1307,12 @@ _run_start_time="$(date '+%s')"
 # When not in prepare mode, start synchronization loop
 if [ -z "${OPT_PREPARERUN}" ]
 then
-    # Set SIGINT and SIGINFO traps and start job_queue_loop
-    trap '' SIGINT
-    trap 'siginfo_handler' SIGINFO
+    # XXX Should we *not* ignore SIGINT to let it be trap'able by
+    # job_queue_loop child process ?
+    # See: https://pubs.opengroup.org/onlinepubs/009695399/utilities/trap.html
+    # trap ':' 2
+    trap '' 2
+    trap 'siginfo_handler' 29
     echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
     job_queue_loop &
 fi
