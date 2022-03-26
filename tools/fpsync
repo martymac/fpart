@@ -355,8 +355,8 @@ tool_get_fpart_mode_opts () {
 # Init tool-specific fpart hooks (black magic is here !)
 # $1 = tool name
 # $2 = aggressive mode (if string not empty)
-# XXX That function modifies a global variable to avoid too many escape characters
-# when returning values through stdout
+# XXX That function modifies a global variable to avoid too many escape
+# characters when returning values through stdout
 tool_init_fpart_job_command () {
     case "$1" in
     "rsync")
@@ -819,17 +819,26 @@ job_queue_sl_stop () {
     touch "${JOBS_QUEUEDIR}/sl_stop"
 }
 
+# Handle first ^C from master process:
+# stop queue processing by setting the "sl_stop" flag
 sigint_handler () {
+    # Counter local to master process
     SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
     if [ ${SIGINT_COUNT} -le 1 ]
     then
-        # Handle first ^C: stop queue processing by setting the "sl_stop" flag
         job_queue_sl_stop
         echo_log "1" "===> Interrupted. Waiting for running jobs to complete..."
         echo_log "1" "===> (hit ^C again to kill them and exit)"
-    else
-        # Handle subsequent ^C: kill sync process groups to fast-unlock the
-        # main process (waiting for child processes to exit)
+    fi
+}
+
+# Handle subsequent ^C from within job_queue_loop() process:
+# kill sync processes to fast-unlock the main process
+job_queue_loop_sigint_handler () {
+    # Counter local to job_queue_loop process
+    SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
+    if [ ${SIGINT_COUNT} -ge 2 ]
+    then
         echo_log "1" "===> Interrupted again, killing remaining jobs"
         for _JOB in ${WORK_LIST}
         do
@@ -896,8 +905,14 @@ job_queue_loop () {
     echo_log "2" "===> [QMGR] Starting queue manager"
 
     # Handle SIGINT from within job_queue_loop process
-    # to allow access to WORK_LIST
-    trap 'sigint_handler' 2
+    # because handler needs access to WORK_LIST
+    #
+    # XXX Some shells do not seem to propagate SIGINT to job_queue_loop child
+    # process, even when its parent (master) process does not ignore it.
+    # (it should be propagated, see:
+    # https://pubs.opengroup.org/onlinepubs/009695399/utilities/trap.html)
+    # So, the following trap facility may be useless on some systems (shells)
+    trap 'job_queue_loop_sigint_handler' 2
     # Ignore SIGINFO from within loop, handled by the parent (master) process
     trap '' 29
 
@@ -915,9 +930,15 @@ job_queue_loop () {
                 if [ -z "${OPT_WRKRS}" ]
                 then
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
-                    # We want a new process group for sync processes
-                    # to prevent SIGINT propagation
-                    # XXX https://lists.freebsd.org/archives/freebsd-hackers/2022-March/000906.html
+                    # We want a new process group for each sync process to
+                    # prevent SIGINT propagation
+                    #
+                    # XXX Some shells will not create new process groups from
+                    # a child process (which that function is), even if
+                    # explicitly requested (using 'set -m'), see:
+                    # https://lists.freebsd.org/archives/freebsd-hackers/2022-March/000906.html
+                    # in that case, SIGINT will be propagated to sync processes
+                    # too, interrupting them at first ^C
                     set -m
                     (
                         /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
@@ -928,8 +949,6 @@ job_queue_loop () {
                     local _NEXT_HOST="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
-                    # We want a new process group for sync processes
-                    # to prevent SIGINT propagation
                     set -m
                     (
                         "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
@@ -952,6 +971,7 @@ job_queue_loop () {
         echo_log "2" "<=== [QMGR] Stopped. Waiting for jobs to finish."
     fi
     # Wait for remaining processes, if any
+    # (use an active wait to display process status)
     while [ ${WORK_NUM} -gt 0 ]
     do
         work_list_refresh
@@ -1307,11 +1327,8 @@ _run_start_time="$(date '+%s')"
 # When not in prepare mode, start synchronization loop
 if [ -z "${OPT_PREPARERUN}" ]
 then
-    # XXX Should we *not* ignore SIGINT to let it be trap'able by
-    # job_queue_loop child process ?
-    # See: https://pubs.opengroup.org/onlinepubs/009695399/utilities/trap.html
-    # trap ':' 2
-    trap '' 2
+    # Set SIGINT and SIGINFO traps and start job_queue_loop
+    trap 'sigint_handler' 2
     trap 'siginfo_handler' 29
     echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
     job_queue_loop &
@@ -1346,6 +1363,8 @@ then
 
     if [ $? -ne 0 ]
     then
+        # Block SIGINT and SIGINFO while waiting
+        trap '' 2 29
         wait
         echo_log "1" "===> Fpart exited with errors"
         end_die
