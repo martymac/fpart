@@ -681,12 +681,16 @@ fts_set_clientptr(FTS *sp, void *clientptr)
 }
 
 static struct dirent *
-fts_safe_readdir(DIR *dirp)
+fts_safe_readdir(DIR *dirp, int *readdir_errno)
 {
+	struct dirent *ret;
+
 	errno = 0;
 	if (!dirp)
 		return (NULL);
-	return readdir(dirp);
+	ret = readdir(dirp);
+	*readdir_errno = errno;
+	return (ret);
 }
 
 /*
@@ -712,7 +716,8 @@ fts_build(FTS *sp, int type)
 	DIR *dirp;
 	void *oldaddr;
 	char *cp;
-	int cderrno, descend, saved_errno, nostat, doadjust;
+	int cderrno, descend, saved_errno, nostat, doadjust,
+		readdir_errno;
 #ifdef FTS_WHITEOUT
 	int oflag;
 #endif
@@ -823,7 +828,9 @@ fts_build(FTS *sp, int type)
 
 	/* Read the directory, attaching each entry to the `link' pointer. */
 	doadjust = 0;
-	for (head = tail = NULL, nitems = 0; (dp = fts_safe_readdir(dirp));) {
+	readdir_errno = 0;
+	for (head = tail = NULL, nitems = 0;
+		(dp = fts_safe_readdir(dirp, &readdir_errno));) {
 #if defined(__sun) || defined(__sun__) || defined(__linux__)
 		dnamlen = strlen(dp->d_name);
 #else
@@ -914,12 +921,8 @@ mem1:				saved_errno = errno;
 		++nitems;
 	}
 
-	/*
-	 * The only way to distinguish between "no more files" and readdir
-	 * error is checking errno when readdir() returns NULL.
-	 */
-	if (errno) {
-		cur->fts_errno = errno;
+	if (readdir_errno) {
+		cur->fts_errno = readdir_errno;
 		/*
 		 * If we've not read any items yet, treat
 		 * the error as if we can't access the dir.
