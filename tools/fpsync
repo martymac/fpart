@@ -1007,6 +1007,7 @@ FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_RUNID}"
 FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
 FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_RUNID}"
 FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
+FPART_LOGFIFO="${FPART_LOGDIR}/.fpart.log.fifo"
 
 # Prepare mode-specific tool and fpart options
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
@@ -1237,6 +1238,11 @@ then
     trap ':' 2
     trap '' 29
 
+    # Prepare logger for sub-shell below
+    rm -f "${FPART_LOGFIFO}" 2>/dev/null
+    mkfifo "${FPART_LOGFIFO}" || \
+        end_die "Cannot create named pipe: ${FPART_LOGFIFO}"
+
     # Fpart process is forked in the same process group as its parent
     # (the main script) to allow SIGINT propagation and tty output
     # https://pubs.opengroup.org/onlinepubs/009604599/basedefs/xbd_chap11.html#tag_11_01_04
@@ -1245,10 +1251,11 @@ then
         # continue after fpart termination
         trap ':' 2
 
-        # Enable pipefail if supported by current shell
-        # (needed because of tee sink)
-        set -o | grep -q '^pipefail' && \
-            set -o pipefail
+        # We use a FIFO for logging to avoid a pipe because we would need
+        # a 'pipefail' option from the shell, which is not always available
+        # (Debian dash does not support it, for example)
+        tee -a "${FPART_LOGFILE}" < "${FPART_LOGFIFO}" &
+
         # Allow passing special characters within fpart sub-options
         # (OPT_FPART, FPART_MODEOPTS)
         set -o noglob
@@ -1263,11 +1270,8 @@ then
             $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && printf '%s\n' "-f ${OPT_FPMAXPARTFILES}") \
             $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && printf '%s\n' "-s ${OPT_FPMAXPARTSIZE}") \
             -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
-            -W "${FPART_POSTHOOK}" . 2>&1 | \
-            tee -a "${FPART_LOGFILE}"
+            -W "${FPART_POSTHOOK}" . 1>"${FPART_LOGFIFO}" 2>&1
 
-        # XXX Shell not supporting pipefail (such as dash on Debian) will
-        # always report success (0) here!
         if [ $? -ne 0 ]
         then
             job_queue_sl_stop
@@ -1277,6 +1281,9 @@ then
             job_queue_fp_done
             echo_log "1" "===> Fpart crawling finished"
         fi
+
+        # Remove FIFO (once tee exits and closes its fd)
+        rm -f "${FPART_LOGFIFO}"
     ) &
     echo_log "2" "===> Fpart started (from sub-shell pid=$!)"
 fi
