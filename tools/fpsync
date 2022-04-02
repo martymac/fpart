@@ -809,36 +809,24 @@ job_queue_fp_done () {
     touch "${JOBS_QUEUEDIR}/fp_done"
 }
 
-# Set the "sl_done" (sync loop done) flag within job queue
-job_queue_sl_done () {
-    touch "${JOBS_QUEUEDIR}/sl_done"
-}
-
 # Set the "sl_stop" (sync loop stop) flag within job queue
 job_queue_sl_stop () {
     touch "${JOBS_QUEUEDIR}/sl_stop"
 }
 
-# Handle first ^C from master process:
-# stop queue processing by setting the "sl_stop" flag
 sigint_handler () {
-    # Counter local to master process
     SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
+
+    # Handle first ^C:
+    # stop queue processing by setting the "sl_stop" flag
     if [ ${SIGINT_COUNT} -le 1 ]
     then
         job_queue_sl_stop
         echo_log "1" "===> Interrupted. Waiting for running jobs to complete..."
         echo_log "1" "===> (hit ^C again to kill them and exit)"
-    fi
-}
-
-# Handle subsequent ^C from within job_queue_loop() process:
-# kill sync processes to fast-unlock the main process
-job_queue_loop_sigint_handler () {
-    # Counter local to job_queue_loop process
-    SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
-    if [ ${SIGINT_COUNT} -ge 2 ]
-    then
+    # Handle subsequent ^C:
+    # kill sync processes to fast-unlock the main process
+    else
         echo_log "1" "===> Interrupted again, killing remaining jobs"
         for _JOB in ${WORK_LIST}
         do
@@ -849,6 +837,8 @@ job_queue_loop_sigint_handler () {
 }
 
 # Handle ^T: print info about queue status
+# (hint: on FreeBSD, SIGINFO verbosity can be reduced by setting sysctl
+# 'kern.tty_info_kstacks' to 0)
 siginfo_handler () {
     # Job counters
     local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l | awk '{print $1}')"
@@ -883,7 +873,6 @@ siginfo_handler () {
 # 'info': info file regarding this fpsync run
 # 'sl_stop': the 'immediate stop' flag, set when ^C is hit
 # 'fp_done': set when fpart has finished crawling src_dir/ and generated jobs
-# 'sl_done': set when job_queue_loop() terminates (either normally or stopped)
 job_queue_next () {
     local _NEXT=""
     if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
@@ -900,93 +889,10 @@ job_queue_next () {
     fi
 }
 
-# Main jobs' loop: pick up jobs within the queue directory and start them
-job_queue_loop () {
-    echo_log "2" "===> [QMGR] Starting queue manager"
-
-    # Handle SIGINT from within job_queue_loop process
-    # because handler needs access to WORK_LIST
-    #
-    # XXX Some shells do not seem to propagate SIGINT to job_queue_loop child
-    # process, even when its parent (master) process does not ignore it.
-    # (it should be propagated, see:
-    # https://pubs.opengroup.org/onlinepubs/009695399/utilities/trap.html)
-    # So, the following trap facility may be useless on some systems (shells)
-    trap 'job_queue_loop_sigint_handler' 2
-    # Ignore SIGINFO from within loop, handled by the parent (master) process
-    trap '' 29
-
-    local _NEXT=""
-    while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
-    do
-        local _PID=""
-        if [ ${WORK_NUM} -lt ${OPT_JOBS} ]
-        then
-            _NEXT="$(job_queue_next)"
-            if [ -n "${_NEXT}" ] && \
-                [ "${_NEXT}" != "fp_done" ] && \
-                [ "${_NEXT}" != "sl_stop" ]
-            then
-                if [ -z "${OPT_WRKRS}" ]
-                then
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
-                    # We want a new process group for each sync process to
-                    # prevent SIGINT propagation
-                    #
-                    # XXX Some shells will not create new process groups from
-                    # a child process (which that function is), even if
-                    # explicitly requested (using 'set -m'), see:
-                    # https://lists.freebsd.org/archives/freebsd-hackers/2022-March/000906.html
-                    # in that case, SIGINT will be propagated to sync processes
-                    # too, interrupting them at first ^C
-                    set -m
-                    (
-                        /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
-                    ) &
-                    work_list_push "$!:${_NEXT}:local"
-                    set +m
-                else
-                    local _NEXT_HOST="$(work_list_pick_next_free_worker)"
-                    work_list_trunc_next_free_worker
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
-                    set -m
-                    (
-                        "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
-                            < "${JOBS_WORKDIR}/${_NEXT}"
-                    ) &
-                    work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
-                    set +m
-                fi
-            fi
-        else
-            work_list_refresh
-            sleep 0.2
-        fi
-    done
-
-    if [ "${_NEXT}" = "fp_done" ]
-    then
-        echo_log "2" "<=== [QMGR] Done submitting jobs. Waiting for them to finish."
-    else
-        echo_log "2" "<=== [QMGR] Stopped. Waiting for jobs to finish."
-    fi
-    # Wait for remaining processes, if any
-    # (use an active wait to display process status)
-    while [ ${WORK_NUM} -gt 0 ]
-    do
-        work_list_refresh
-        sleep 0.2
-    done
-    echo_log "2" "<=== [QMGR] Queue processed"
-
-    # Set the 'sl_done' (sync done) flag to let the master process go
-    job_queue_sl_done
-}
-
 # Print a specific run's status to stdout
 # $1 = runid
 run_status_print () {
-    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || [ -f "${OPT_TMPDIR}/queue/${1}/sl_stop" ]
+    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ]
     then
         echo "resumable (synchronization not complete, use -r to resume)"
     else
@@ -1121,7 +1027,7 @@ FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
 
 ## End of options' post-processing section, let's start for real now !
 
-SIGINT_COUNT="0"    # ^C counter
+SIGINT_COUNT=0      # ^C counter
 
 WORK_NUM=0          # Current number of running processes
 WORK_LIST=""        # Work PID:PART:WORKER list
@@ -1195,9 +1101,8 @@ else
     # Run is resumable, try to reload info and prepare queues
     job_queue_info_load
 
-    # Remove the "sl_stop" and "sl_done" flags, if any
+    # Remove the "sl_stop" flag, if any
     rm -f "${JOBS_QUEUEDIR}/sl_stop" 2>/dev/null
-    rm -f "${JOBS_QUEUEDIR}/sl_done" 2>/dev/null
 
     # Move potentially-incomplete jobs to the jobs queue so that they can be
     # executed again. We consider the worst-case scenario and resume OPT_RJOBS
@@ -1324,21 +1229,22 @@ job_queue_info_dump
 _run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
 _run_start_time="$(date '+%s')"
 
-# When not in prepare mode, start synchronization loop
-if [ -z "${OPT_PREPARERUN}" ]
-then
-    # Set SIGINT and SIGINFO traps and start job_queue_loop
-    trap 'sigint_handler' 2
-    trap 'siginfo_handler' 29
-    echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
-    job_queue_loop &
-fi
-
 # When not resuming a previous run, start fpart
 if [ -z "${OPT_RUNID}" ]
 then
-    # Fork sub-shell to restrict set and IFS scope
+    # Set limited traps during FS crawling
+    # They will possibly be overridden if starting the queue manager
+    trap ':' 2
+    trap '' 29
+
+    # Fpart process is forked in the same process group as its parent
+    # (the main script) to allow SIGINT propagation and tty output
+    # https://pubs.opengroup.org/onlinepubs/009604599/basedefs/xbd_chap11.html#tag_11_01_04
     (
+        # Trap SIGINT to a noop to let sub-shell process
+        # continue after fpart termination
+        trap ':' 2
+
         # Enable pipefail if supported by current shell
         # (needed because of tee sink)
         set -o | grep -q '^pipefail' && \
@@ -1359,31 +1265,92 @@ then
             -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
             -W "${FPART_POSTHOOK}" . 2>&1 | \
             tee -a "${FPART_LOGFILE}"
-    )
 
-    if [ $? -ne 0 ]
-    then
-        # Block SIGINT and SIGINFO while waiting
-        trap '' 2 29
-        wait
-        echo_log "1" "===> Fpart exited with errors"
-        end_die
-    fi
-
-    # Tell job_queue_loop that crawling has finished
-    job_queue_fp_done
-    echo_log "1" "===> Fpart crawling finished"
+        # XXX Shell not supporting pipefail (such as dash on Debian) will
+        # always report success (0) here!
+        if [ $? -ne 0 ]
+        then
+            job_queue_sl_stop
+            echo_log "1" "===> Fpart exited with errors"
+        else
+            # Tell job_queue_loop that crawling has finished
+            job_queue_fp_done
+            echo_log "1" "===> Fpart crawling finished"
+        fi
+    ) &
+    echo_log "2" "===> Fpart started (from sub-shell pid=$!)"
 fi
 
-# When not in prepare mode, wait for job_queue_loop to terminate
+# When not in prepare mode, start synchronization loop
 if [ -z "${OPT_PREPARERUN}" ]
 then
-    # Use an active wait to allow signal processing (^T)
-    echo_log "1" "===> Waiting for sync jobs to complete..."
-    while [ ! -f "${JOBS_QUEUEDIR}/sl_done" ]
+    # Set SIGINT and SIGINFO traps and start job_queue_loop
+    trap 'sigint_handler' 2
+    trap 'siginfo_handler' 29
+    echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
+
+    # Main jobs' loop: pick up jobs within the queue directory and start them
+    echo_log "2" "===> [QMGR] Starting queue manager"
+
+    _NEXT=""
+    while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
     do
+        _PID=""
+        if [ ${WORK_NUM} -lt ${OPT_JOBS} ]
+        then
+            _NEXT="$(job_queue_next)"
+            if [ -n "${_NEXT}" ] && \
+                [ "${_NEXT}" != "fp_done" ] && \
+                [ "${_NEXT}" != "sl_stop" ]
+            then
+                if [ -z "${OPT_WRKRS}" ]
+                then
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
+                    # We want a new process group for each sync process to
+                    # prevent SIGINT propagation
+                    set -m
+                    (
+                        /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
+                    ) &
+                    work_list_push "$!:${_NEXT}:local"
+                    set +m
+                else
+                    _NEXT_HOST="$(work_list_pick_next_free_worker)"
+                    work_list_trunc_next_free_worker
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
+                    set -m
+                    (
+                        "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
+                            < "${JOBS_WORKDIR}/${_NEXT}"
+                    ) &
+                    work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
+                    set +m
+                fi
+            fi
+        else
+            work_list_refresh
+            sleep 0.2
+        fi
+    done
+
+    if [ "${_NEXT}" = "fp_done" ]
+    then
+        echo_log "2" "<=== [QMGR] Done submitting jobs. Waiting for them to finish."
+    else
+        echo_log "2" "<=== [QMGR] Stopped. Waiting for jobs to finish."
+    fi
+
+    # Wait for remaining processes, if any
+    # (use an active wait to display process status)
+    while [ ${WORK_NUM} -gt 0 ]
+    do
+        work_list_refresh
         sleep 0.2
     done
+    echo_log "2" "<=== [QMGR] Queue processed"
+else
+    # We are in prepare mode, just wait for fpart to finish FS crawling
+    wait
 fi
 
 # Display final status
