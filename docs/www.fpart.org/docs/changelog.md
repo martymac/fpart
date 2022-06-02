@@ -1,4 +1,4 @@
-# Next: 1.5.0
+# Current: 1.5.0
 ```nohighlight
     2022/02/06, 1.5.0 ('Rebirth') :
     - added 'make_release.sh' script to automate release tarball creation
@@ -34,7 +34,7 @@
     - fpsync: rework child processes and SIGINT handling and fix missing display
       of last jobs' completion status (inspired by GH PR #40)
 ```
-# Current: 1.4.0
+# 1.4.0
 ```nohighlight
     2021/09/24, 1.4.0 ('Joining together') :
     - fpsync: allow special characters and white spaces within fpart options
