@@ -27,7 +27,7 @@
 #ifndef _FPART_H
 #define _FPART_H
 
-#define FPART_VERSION "1.4.1"
+#define FPART_VERSION "1.5.0"
 
 /* maximum input line length, including '\n' and '\0' */
 #define MAX_LINE_LENGTH 2048

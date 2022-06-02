@@ -1,6 +1,6 @@
-# Next: 1.4.1
+# Next: 1.5.0
 ```nohighlight
-    2022/??/??, 1.4.1 ('???') :
+    2022/02/06, 1.5.0 ('Rebirth') :
     - added 'make_release.sh' script to automate release tarball creation
     - embedded fts: check errors from readdir() (GH issue #37)
     - fpart: re-enable large files support on GNU/Linux
