@@ -21,7 +21,7 @@ echo "Checking out tag ${_release}..."
 
 echo "Copying sources to ${_target_dir}/${_release}..."
 { mkdir -p "${_target_dir}/" && \
-  cp -rf ./ "${_target_dir}/${_release}" ;} || \
+  cp -Rf ./ "${_target_dir}/${_release}" ;} || \
   end_die "Error copying sources"
 
 echo "Running autoreconf..."
