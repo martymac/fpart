@@ -34,6 +34,8 @@ FPSYNC_VERSION="1.5.0"
 
 # External tool used to copy files
 OPT_TOOL_NAME="rsync"
+# External tool path
+OPT_TOOL_PATH=""
 # Number of sync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
 # Same, but autodetected
@@ -114,6 +116,7 @@ COMMON OPTIONS:
 SYNCHRONIZATION OPTIONS:
   -m tool     external copy tool to use: $(tool_print_supported)
               (default: 'rsync')
+  -T path     absolute path of copy tool absolute path to use
   -f y        transfer at most <y> files or directories per sync job
   -s z        transfer at most <z> bytes per sync job
   -E          work on a per-directory basis ('rsync' tool only)
@@ -450,7 +453,7 @@ tool_uses_forbidden_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:Svh" opt
+    while getopts "m:n:f:s:Ew:d:t:T:M:plr:Ra:D:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -459,6 +462,14 @@ parse_opts () {
                 OPT_TOOL_NAME=${OPTARG}
             else
                 end_die "Unsupported tool, please specify $(tool_print_supported)"
+            fi
+            ;;
+        "T")
+            if is_abs_path "${OPTARG}" "${OPTARG}"
+            then
+                OPT_TOOL_PATH=${OPTARG}
+            else
+                end_die "Please supply an absolute path for tool path"
             fi
             ;;
         "n")
@@ -771,6 +782,7 @@ job_queue_info_dump () {
 # Run information used for resuming, do not edit !
 OPT_RJOBS="${OPT_JOBS}"
 OPT_TOOL_NAME="${OPT_TOOL_NAME}"
+OPT_TOOL_PATH="${OPT_TOOL_PATH}"
 OPT_SRCDIR="${OPT_SRCDIR}"
 OPT_DSTURL="${OPT_DSTURL}"
 EOF
@@ -932,6 +944,14 @@ then
     TOOL_BIN=$(command -v "tar")
 else
     TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+fi
+
+# Use the path to the tool if provided on the command line
+if [ -n "${OPT_TOOL_PATH}" ]
+then
+    TOOL_BIN="${OPT_TOOL_PATH}"
+else
+    OPT_TOOL_PATH="${TOOL_BIN}"
 fi
 
 ## Simple run-related -independent- actions, not requiring FPART_RUNID
@@ -1214,6 +1234,7 @@ echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//
 echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
 echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
+echo_log "2" "===> Tool path: \"${OPT_TOOL_PATH}\""
 # The following options are ignored when resuming
 if [ -z "${OPT_RUNID}" ]
 then
