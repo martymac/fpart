@@ -1377,13 +1377,16 @@ then
 else
     _report_subj="Fpsync run ${FPART_RUNID}"
 fi
+
+_ts_now=$(date '+%s')
+_total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
 _report_logs=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
-_report_body=$( { [ -z "${_report_logs}" ] && echo 'Fpsync completed without error.' ;} || \
-    { echo "Fpsync completed with errors, see logs:" && echo "${_report_logs}" ;} )
+_report_body=$( { [ -z "${_report_logs}" ] && echo "Fpsync completed without error in ${_total_run_elapsed_time}s." ;} || \
+    { echo "Fpsync completed with errors in ${_total_run_elapsed_time}s, see logs:" && echo "${_report_logs}" ;} )
 echo_log "1" "<=== ${_report_body}"
 echo_log "2" "<=== End time: $(date)"
 [ -n "${OPT_MAIL}" ] && \
-    echo "${_report_body}" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
+    printf "Sync ${OPT_SRCDIR} => ${OPT_DSTURL}\n\n${_report_body}" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
 
 [ -n "${_report_logs}" ] && end_die
 end_ok
