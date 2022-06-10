@@ -1,6 +1,12 @@
+# Next: 1.5.1
+```nohighlight
+    2022/??/??, 1.5.1 ('???') :
+    - fpsync: add source, destination and total elapsed time to the email
+      report (GH issue #41)
+```
 # Current: 1.5.0
 ```nohighlight
-    2022/02/06, 1.5.0 ('Rebirth') :
+    2022/06/02, 1.5.0 ('Rebirth') :
     - added 'make_release.sh' script to automate release tarball creation
     - embedded fts: check errors from readdir() (GH issue #37)
     - fpart: re-enable large files support on GNU/Linux
