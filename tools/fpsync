@@ -1386,7 +1386,7 @@ _report_body=$( { [ -z "${_report_logs}" ] && echo "Fpsync completed without err
 echo_log "1" "<=== ${_report_body}"
 echo_log "2" "<=== End time: $(date)"
 [ -n "${OPT_MAIL}" ] && \
-    printf "Sync ${OPT_SRCDIR} => ${OPT_DSTURL}\n\n${_report_body}" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
+    printf "Sync ${OPT_SRCDIR} => ${OPT_DSTURL}\n\n${_report_body}\n" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
 
 [ -n "${_report_logs}" ] && end_die
 end_ok
