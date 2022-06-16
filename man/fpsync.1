@@ -34,6 +34,7 @@
 .Op Fl n Ar jobs
 .Op Fl w Ar wrks
 .Op Fl m Ar tool
+.Op Fl T Ar path
 .Op Fl f Ar files
 .Op Fl s Ar size
 .Op Fl E
@@ -142,6 +143,18 @@ A second pass will fix them.
 Special tool
 .Sy tarify
 generates tarballs into destination directory.
+.It Ic -T Ar path
+Specify absolute
+.Ar path
+of copy tool (guessed by default).
+If you force a specific
+.Ar path ,
+the copy tool must be present at that
+.Ar path
+on each worker.
+That
+.Ar path
+cannot be changed when resuming a run.
 .It Ic -f Ar files
 Transfer at most
 .Ar files

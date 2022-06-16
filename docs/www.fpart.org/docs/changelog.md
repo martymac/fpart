@@ -2,7 +2,8 @@
 ```nohighlight
     2022/??/??, 1.5.1 ('???') :
     - fpsync: add source, destination and total elapsed time to the email
-      report (GH issue #41)
+      report (GH PR #41)
+    - fpsync: add option -T to specify absolute path of copy tool (GH PR #42)
 ```
 # Current: 1.5.0
 ```nohighlight

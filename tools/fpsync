@@ -34,6 +34,8 @@ FPSYNC_VERSION="1.5.1"
 
 # External tool used to copy files
 OPT_TOOL_NAME="rsync"
+# External tool path
+OPT_TOOL_PATH=""
 # Number of sync jobs to run in parallel ("workers", -n)
 OPT_JOBS=2
 # Same, but autodetected
@@ -114,6 +116,7 @@ COMMON OPTIONS:
 SYNCHRONIZATION OPTIONS:
   -m tool     external copy tool to use: $(tool_print_supported)
               (default: 'rsync')
+  -T path     absolute path of copy tool (default: guessed)
   -f y        transfer at most <y> files or directories per sync job
   -s z        transfer at most <z> bytes per sync job
   -E          work on a per-directory basis ('rsync' tool only)
@@ -142,7 +145,7 @@ RUN HANDLING OPTIONS:
               synchronization jobs.
   -l          list previous runs and their status.
   -r runid    resume run <runid>
-              (options -m, -f, -s, -E, -o, -O, -S, /src_dir/ and
+              (options -m, -T, -f, -s, -E, -o, -O, -S, /src_dir/ and
               /dst_url/ are ignored when resuming a previous run)
   -R          replay mode (needs option -r): re-synchronize all
               partitions from run <runid> instead of working on
@@ -450,7 +453,7 @@ tool_uses_forbidden_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:Svh" opt
+    while getopts "m:T:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:Svh" opt
     do
         case "${opt}" in
         "m")
@@ -459,6 +462,14 @@ parse_opts () {
                 OPT_TOOL_NAME=${OPTARG}
             else
                 end_die "Unsupported tool, please specify $(tool_print_supported)"
+            fi
+            ;;
+        "T")
+            if is_abs_path "${OPTARG}"
+            then
+                OPT_TOOL_PATH="${OPTARG}"
+            else
+                end_die "Please supply an absolute path for tool path"
             fi
             ;;
         "n")
@@ -765,14 +776,20 @@ job_queue_info_dump () {
     touch "${JOBS_QUEUEDIR}/info" 2>/dev/null
     umask "${_TMPMASK}"
 
-    # Dump necessary information for resuming a run
+    # Dump necessary information to resume a run
+    # XXX OPT_TOOL_NAME and OPT_TOOL_PATH are technically ignored when resuming
+    # because fpart pass has finished and job scripts have already been written.
+    # Anyway, we record them for 2 reasons:
+    #   - to display them to the user
+    #   - to check if OPT_TOOL_PATH exists on all workers
     cat << EOF > "${JOBS_QUEUEDIR}/info" || \
         end_die "Cannot record run information"
 # Run information used for resuming, do not edit !
 OPT_RJOBS="${OPT_JOBS}"
-OPT_TOOL_NAME="${OPT_TOOL_NAME}"
 OPT_SRCDIR="${OPT_SRCDIR}"
 OPT_DSTURL="${OPT_DSTURL}"
+OPT_TOOL_NAME="${OPT_TOOL_NAME}"
+OPT_TOOL_PATH="${OPT_TOOL_PATH}"
 EOF
 }
 
@@ -787,6 +804,10 @@ job_queue_info_load () {
 
     ! tool_is_supported "${OPT_TOOL_NAME}" && \
         end_die "Invalid option value loaded from resumed run: OPT_TOOL_NAME"
+
+    ! is_abs_path "${OPT_TOOL_PATH}" && \
+        end_die "Invalid option value loaded from resumed run: OPT_TOOL_PATH"
+    TOOL_BIN="${OPT_TOOL_PATH}"
 
     is_abs_path "${OPT_SRCDIR}" || \
         end_die "Invalid options value loaded from resumed run: OPT_SRCDIR"
@@ -927,11 +948,21 @@ SUDO=""
 # Paths to executables that must exist either locally or remotely (depending
 # on if you use SSH or not). When using SSH, the following binaries must be
 # present at those paths on each worker.
-if [ "${OPT_TOOL_NAME}" = "tarify" ]
+#
+# XXX OPT_TOOL_NAME, OPT_TOOL_PATH and TOOL_BIN may be overridden
+# later when resuming a run, see job_queue_info_dump() and job_queue_info_load()
+if [ -n "${OPT_TOOL_PATH}" ]
 then
-    TOOL_BIN=$(command -v "tar")
+    # Use the path to the tool if provided on the command line
+    TOOL_BIN="${OPT_TOOL_PATH}"
 else
-    TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+    # Provide defaults regarding tool name
+    if [ "${OPT_TOOL_NAME}" = "tarify" ]
+    then
+        TOOL_BIN=$(command -v "tar")
+    else
+        TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
+    fi
 fi
 
 ## Simple run-related -independent- actions, not requiring FPART_RUNID
@@ -1010,6 +1041,7 @@ FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
 FPART_LOGFIFO="${FPART_LOGDIR}/.fpart.log.fifo"
 
 # Prepare mode-specific tool and fpart options
+# used when starting a new run (only)
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
 TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts_recursive "${OPT_TOOL_NAME}")
 FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "${OPT_AGGRESSIVE}")
@@ -1213,10 +1245,13 @@ echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
 echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
 echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
+# The following two options are just a recall to the user
+# (they are technically ignored when resuming a run)
 echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
-# The following options are ignored when resuming
+echo_log "2" "===> Tool path: \"${TOOL_BIN}\""
 if [ -z "${OPT_RUNID}" ]
 then
+    # The following options are useless when resuming a run
     echo_log "2" "===> Tool options: \"${OPT_TOOL}\""
     echo_log "2" "===> Fpart options: \"${OPT_FPART}\""
     echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
