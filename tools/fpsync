@@ -173,11 +173,11 @@ end_die () {
 # $1 = level (0 = quiet, 1 = verbose, >=2 more verbose)
 # $2 = message to log
 echo_log () {
-    local _ts=$(date '+%s')
+    local _log_ts=$(date '+%s')
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
-        echo "${_ts} $2"
+        echo "${_log_ts} $2"
     [ -n "$2" ] && \
-        echo "${_ts} $2" >> "${FPART_LOGFILE}"
+        echo "${_log_ts} $2" >> "${FPART_LOGFILE}"
 }
 
 # Check if $1 is an absolute path
@@ -871,8 +871,8 @@ siginfo_handler () {
         _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
 
     # Time counters, relative to the current run (resume-aware)
-    local _ts=$(date '+%s')
-    local _run_elapsed_time="$(( ${_ts} - ${_run_start_time} ))"
+    local _siginfo_ts=$(date '+%s')
+    local _run_elapsed_time="$(( ${_siginfo_ts} - ${_run_start_time} ))"
     local _run_jobs_done="$(( ${_jobs_done} - ${_run_start_jobs} ))"
 
     local _run_time_per_job="??"
@@ -883,8 +883,8 @@ siginfo_handler () {
         _run_time_remaining="$(( (${_run_elapsed_time} * ${_jobs_remaining}) / ${_run_jobs_done} ))"
     fi
 
-    echo "${_ts} <===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
-    echo "${_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
+    echo "${_siginfo_ts} <===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+    echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -895,17 +895,17 @@ siginfo_handler () {
 # 'sl_stop': the 'immediate stop' flag, set when ^C is hit
 # 'fp_done': set when fpart has finished crawling src_dir/ and generated jobs
 job_queue_next () {
-    local _NEXT=""
+    local _next=""
     if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
     then
         echo "sl_stop"
     else
-        _NEXT=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' 2>/dev/null | head -n 1)
-        if [ -n "${_NEXT}" ]
+        _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' 2>/dev/null | head -n 1)
+        if [ -n "${_next}" ]
         then
-            mv "${JOBS_QUEUEDIR}/${_NEXT}" "${JOBS_WORKDIR}" || \
+            mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
                 end_die "Cannot dequeue next job"
-            echo "${_NEXT}"
+            echo "${_next}"
         fi
     fi
 }
@@ -1334,38 +1334,38 @@ then
     # Main jobs' loop: pick up jobs within the queue directory and start them
     echo_log "2" "===> [QMGR] Starting queue manager"
 
-    _NEXT=""
-    while [ "${_NEXT}" != "fp_done" ] && [ "${_NEXT}" != "sl_stop" ]
+    _next_job=""
+    while [ "${_next_job}" != "fp_done" ] && [ "${_next_job}" != "sl_stop" ]
     do
         _PID=""
         if [ ${WORK_NUM} -lt ${OPT_JOBS} ]
         then
-            _NEXT="$(job_queue_next)"
-            if [ -n "${_NEXT}" ] && \
-                [ "${_NEXT}" != "fp_done" ] && \
-                [ "${_NEXT}" != "sl_stop" ]
+            _next_job="$(job_queue_next)"
+            if [ -n "${_next_job}" ] && \
+                [ "${_next_job}" != "fp_done" ] && \
+                [ "${_next_job}" != "sl_stop" ]
             then
                 if [ -z "${OPT_WRKRS}" ]
                 then
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} (local)"
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} (local)"
                     # We want a new process group for each sync process to
                     # prevent SIGINT propagation
                     set -m
                     (
-                        /bin/sh "${JOBS_WORKDIR}/${_NEXT}"
+                        /bin/sh "${JOBS_WORKDIR}/${_next_job}"
                     ) &
-                    work_list_push "$!:${_NEXT}:local"
+                    work_list_push "$!:${_next_job}:local"
                     set +m
                 else
-                    _NEXT_HOST="$(work_list_pick_next_free_worker)"
+                    _next_host="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_NEXT} -> ${_NEXT_HOST}"
+                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} -> ${_next_host}"
                     set -m
                     (
-                        "${SSH_BIN}" "${_NEXT_HOST}" '/bin/sh -s' \
-                            < "${JOBS_WORKDIR}/${_NEXT}"
+                        "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
+                            < "${JOBS_WORKDIR}/${_next_job}"
                     ) &
-                    work_list_push "$!:${_NEXT}:${_NEXT_HOST}"
+                    work_list_push "$!:${_next_job}:${_next_host}"
                     set +m
                 fi
             fi
@@ -1375,7 +1375,7 @@ then
         fi
     done
 
-    if [ "${_NEXT}" = "fp_done" ]
+    if [ "${_next_job}" = "fp_done" ]
     then
         echo_log "2" "<=== [QMGR] Done submitting jobs. Waiting for them to finish."
     else
