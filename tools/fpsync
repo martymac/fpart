@@ -883,7 +883,7 @@ siginfo_handler () {
         _run_time_remaining="$(( (${_run_elapsed_time} * ${_jobs_remaining}) / ${_run_jobs_done} ))"
     fi
 
-    echo "${_siginfo_ts} <===   Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+    echo "${_siginfo_ts} <=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
     echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
 }
 
@@ -1238,24 +1238,24 @@ fi
 work_list_free_workers_init
 
 # Let's rock !
-echo_log "2" "=====> [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTURL}"
-echo_log "1" "===> Run ID: ${FPART_RUNID}$([ -n "${OPT_RUNID}" ] && echo ' (resumed)')"
-echo_log "2" "===> Start time: $(date)"
-echo_log "2" "===> Concurrent sync jobs: ${OPT_JOBS}"
-echo_log "2" "===> Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
-echo_log "2" "===> Shared dir: ${OPT_FPSHDIR}"
-echo_log "2" "===> Temp dir: ${OPT_TMPDIR}"
+echo_log "2" "Info: [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTURL}"
+echo_log "1" "Info: Run ID: ${FPART_RUNID}$([ -n "${OPT_RUNID}" ] && echo ' (resumed)')"
+echo_log "2" "Info: Start time: $(date)"
+echo_log "2" "Info: Concurrent sync jobs: ${OPT_JOBS}"
+echo_log "2" "Info: Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
+echo_log "2" "Info: Shared dir: ${OPT_FPSHDIR}"
+echo_log "2" "Info: Temp dir: ${OPT_TMPDIR}"
 # The following two options are just a recall to the user
 # (they are technically ignored when resuming a run)
-echo_log "2" "===> Tool name: \"${OPT_TOOL_NAME}\""
-echo_log "2" "===> Tool path: \"${TOOL_BIN}\""
+echo_log "2" "Info: Tool name: \"${OPT_TOOL_NAME}\""
+echo_log "2" "Info: Tool path: \"${TOOL_BIN}\""
 if [ -z "${OPT_RUNID}" ]
 then
     # The following options are useless when resuming a run
-    echo_log "2" "===> Tool options: \"${OPT_TOOL}\""
-    echo_log "2" "===> Fpart options: \"${OPT_FPART}\""
-    echo_log "2" "===> Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
-    echo_log "2" "===> Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
+    echo_log "2" "Info: Tool options: \"${OPT_TOOL}\""
+    echo_log "2" "Info: Fpart options: \"${OPT_FPART}\""
+    echo_log "2" "Info: Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
+    echo_log "2" "Info: Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
 fi
 
 # Record run information
@@ -1278,6 +1278,7 @@ then
     mkfifo "${FPART_LOGFIFO}" || \
         end_die "Cannot create named pipe: ${FPART_LOGFIFO}"
 
+    echo_log "2" "===> Starting Fpart"
     # Fpart process is forked in the same process group as its parent
     # (the main script) to allow SIGINT propagation and tty output
     # https://pubs.opengroup.org/onlinepubs/009604599/basedefs/xbd_chap11.html#tag_11_01_04
@@ -1310,17 +1311,17 @@ then
         if [ $? -ne 0 ]
         then
             job_queue_sl_stop
-            echo_log "1" "===> Fpart exited with errors"
+            echo_log "1" "<=== Fpart exited with errors"
         else
             # Tell job_queue_loop that crawling has finished
             job_queue_fp_done
-            echo_log "1" "===> Fpart crawling finished"
+            echo_log "1" "<=== Fpart crawling finished"
         fi
 
         # Remove FIFO (once tee exits and closes its fd)
         rm -f "${FPART_LOGFIFO}"
     ) &
-    echo_log "2" "===> Fpart started (from sub-shell pid=$!)"
+    echo_log "2" "<=== Fpart started (from sub-shell pid=$!)"
 fi
 
 # When not in prepare mode, start synchronization loop
