@@ -1,11 +1,12 @@
-# Next: 1.5.1
+# Current: 1.5.1
 ```nohighlight
-    2022/??/??, 1.5.1 ('???') :
+    2022/06/22, 1.5.1 ('Feel the light') :
     - fpsync: add source, destination and total elapsed time to the email
       report (GH PR #41)
     - fpsync: add option -T to specify absolute path of copy tool (GH PR #42)
+    - fpsync: output cleanups
 ```
-# Current: 1.5.0
+# 1.5.0
 ```nohighlight
     2022/06/02, 1.5.0 ('Rebirth') :
     - added 'make_release.sh' script to automate release tarball creation
