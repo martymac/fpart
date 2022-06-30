@@ -47,5 +47,9 @@ echo "Cleaning up temporary directory..."
 rm -rf "${_target_dir}/${_release}" || \
   end_die "Error cleaning up: ${_target_dir}/${_release}"
 
+echo "Coming back to master branch..."
+git checkout "master" || \
+  end_die "Could not checkout master branch"
+
 echo "done."
 exit 0
