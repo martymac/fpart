@@ -1,3 +1,14 @@
+fpart (1.5.1-1) unstable; urgency=low
+
+  * New upstream release
+  * Fix large files handling on 32-bit machines (closes: #834328)
+  * debian/control
+    - Bump Standards-Version to 4.6.1 (no changes required)
+  * debian/copyright
+    - Bump copyright dates
+
+ -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Fri, 01 Jul 2022 17:26:19 +0200
+
 fpart (1.4.0-1) unstable; urgency=low
 
   * New upstream release
