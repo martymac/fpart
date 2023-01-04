@@ -84,6 +84,7 @@ unsigned int get_num_digits(double i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);
 char *abs_path(const char *path);
+void cleanup_path(char * const path);
 int str_push(char ***array, unsigned int *num, const char * const str);
 void str_cleanup(char ***array, unsigned int *num);
 int str_is_negative(const char * const str);

@@ -1,3 +1,7 @@
+# Next: 1.5.2
+```nohighlight
+    2023/??/??, 1.5.2 ('???')
+```
 # Current: 1.5.1
 ```nohighlight
     2022/06/22, 1.5.1 ('Feel the light') :

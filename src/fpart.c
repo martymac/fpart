@@ -213,14 +213,9 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
             return (1);
         )
         snprintf(input_path, malloc_size, "%s", argument);
-    
+
         /* remove multiple ending slashes */
-        while((input_path_len > 1) &&
-            (input_path[input_path_len - 1] == '/')  &&
-            (input_path[input_path_len - 2] == '/')) {
-            input_path[input_path_len - 1] = '\0';
-            input_path_len--;
-        }
+        cleanup_path(input_path);
 
         /* crawl path */
         if(input_path[0] != '\0') {

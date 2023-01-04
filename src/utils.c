@@ -270,6 +270,25 @@ abs_path(const char *path)
     return (abs);
 }
 
+/* In-place remove multiple ending slashes from path
+   - path must point to a writeable address */
+void
+cleanup_path(char * const path)
+{
+    assert(path != NULL);
+
+    size_t path_len = strlen(path);
+
+    while((path_len > 1) &&
+        (path[path_len - 1] == '/')  &&
+        (path[path_len - 2] == '/')) {
+        path[path_len - 1] = '\0';
+        path_len--;
+    }
+
+    return;
+}
+
 /* Push str into array and update num
    - allocate memory for array if NULL
    - return 0 (success) or 1 (failure) */
