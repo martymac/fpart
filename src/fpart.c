@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2022 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+ * Copyright (c) 2011-2023 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ static void
 version(void)
 {
     fprintf(stderr, "fpart v" FPART_VERSION "\n"
-        "Copyright (c) 2011-2022 "
+        "Copyright (c) 2011-2023 "
         "Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
         "WWW: http://contribs.martymac.org\n");
     fprintf(stderr, "Build options: debug=");

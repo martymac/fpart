@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2014-2022 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+# Copyright (c) 2014-2023 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -94,7 +94,7 @@ LC_ALL=C
 usage () {
     cat << EOF
 fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart
-Copyright (c) 2014-2022 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
+Copyright (c) 2014-2023 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 WWW: http://contribs.martymac.org
 Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/
        $0 -l
