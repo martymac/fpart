@@ -1,6 +1,8 @@
 # Next: 1.5.2
 ```nohighlight
-    2023/??/??, 1.5.2 ('???')
+    2023/??/??, 1.5.2 ('???') :
+    - fpsync: globally ignore SIGTTIN and SIGTTOU to avoid getting stopped when
+      run in the background (GH PR #43)
 ```
 # Current: 1.5.1
 ```nohighlight
