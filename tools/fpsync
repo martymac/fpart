@@ -963,6 +963,8 @@ else
     else
         TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
     fi
+    # Set this for job_queue_info_dump andjob_queue_info_load to work correctly
+    OPT_TOOL_PATH="${TOOL_BIN}"
 fi
 
 ## Simple run-related -independent- actions, not requiring FPART_RUNID
