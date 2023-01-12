@@ -1267,11 +1267,6 @@ job_queue_info_dump
 _run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
 _run_start_time="$(date '+%s')"
 
-# XXX later calls to 'set -m' cause dash to send a SIGTTIN signal that stops
-# the whole process group when run in the background.
-# Let's ignore that signal globally, as well as SIGTTOU (just in case).
-trap '' 21 22
-
 # When not resuming a previous run, start fpart
 if [ -z "${OPT_RUNID}" ]
 then

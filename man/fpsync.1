@@ -440,6 +440,13 @@ This is important to keep in mind when modifying
 or
 .Ar fpartopts
 dealing with file or directory paths.
+.sp
+If you want to run
+.Nm
+in the background, your shell must support enabling job control without a tty
+in non-interactive mode.
+As of this writing, Dash does not support that feature and will send a SIGTTIN
+to the whole process group, suspending fpsync execution.
 .Sh SEE ALSO
 .Xr cpio 1 ,
 .Xr fpart 1 ,

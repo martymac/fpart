@@ -1,8 +1,6 @@
 # Next: 1.5.2
 ```nohighlight
     2023/??/??, 1.5.2 ('???') :
-    - fpsync: globally ignore SIGTTIN and SIGTTOU to avoid getting stopped when
-      run in the background (GH PR #43)
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file
       (GH PR #44)
 ```
