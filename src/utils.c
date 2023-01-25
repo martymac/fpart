@@ -271,9 +271,10 @@ abs_path(const char *path)
 }
 
 /* In-place remove multiple ending slashes from path
+   leaving a single ending slash, if any
    - path must point to a writeable address */
 void
-cleanup_path(char * const path)
+cleanslash_path(char * const path)
 {
     assert(path != NULL);
 
@@ -439,13 +440,13 @@ file_match(const char * const * const array, const unsigned int num,
             /* Current string contains a file name */
             if(fnmatch(array[i], p->fts_name, FNM_PERIOD |
                 (ignore_case ? FNM_CASEFOLD : 0)) == 0)
-                return(1);
+                return (1);
         }
         else {
             /* Current string contains a path */
             if(fnmatch(array[i], p->fts_path, FNM_PATHNAME | FNM_PERIOD |
                 (ignore_case ? FNM_CASEFOLD : 0)) == 0)
-                return(1);
+                return (1);
         }
         i++;
     }

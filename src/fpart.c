@@ -215,7 +215,7 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         snprintf(input_path, malloc_size, "%s", argument);
 
         /* remove multiple ending slashes */
-        cleanup_path(input_path);
+        cleanslash_path(input_path);
 
         /* crawl path */
         if(input_path[0] != '\0') {
