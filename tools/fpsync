@@ -318,8 +318,9 @@ tool_get_fpart_mode_opts () {
             ;;
         "cpio"|"tar"|"tarify")
             # We want empty directory entries with those tools
+            # and fix parent dirs' timestamps with option -P
             # to re-apply correct metadata
-            printf '%s\n' '-zzz'
+            printf '%s\n' '-zzzP'
             ;;
         *)
             ;;

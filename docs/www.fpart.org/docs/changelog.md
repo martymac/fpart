@@ -5,6 +5,9 @@
       (GH PR #44)
     - fpart: add option -P (add parent directories when closing intermediate
       partitions). Useful for fixing directory dates when parallelizing cpio
+    - fpsync: enable fpart's option -P for cpio and tar tools. This finally
+      enables keeping directory modification times intact when parallelizing
+      cpio(1) and tar(1) jobs!
 ```
 # Current: 1.5.1
 ```nohighlight
