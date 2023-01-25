@@ -51,6 +51,8 @@ init_options(struct program_options *options)
            (DFLT_OPT_OUT0 == OPT_OUT0));
     assert((DFLT_OPT_ADDSLASH == OPT_NOADDSLASH) ||
            (DFLT_OPT_ADDSLASH == OPT_ADDSLASH));
+    assert((DFLT_OPT_ADDPARENTS == OPT_NOADDPARENTS) ||
+           (DFLT_OPT_ADDPARENTS == OPT_ADDPARENTS));
     assert((DFLT_OPT_VERBOSE == OPT_NOVERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VERBOSE) ||
            (DFLT_OPT_VERBOSE == OPT_VVERBOSE));
@@ -86,6 +88,7 @@ init_options(struct program_options *options)
     options->out_filename = NULL;
     options->out_zero = DFLT_OPT_OUT0;
     options->add_slash = DFLT_OPT_ADDSLASH;
+    options->add_parents = DFLT_OPT_ADDPARENTS;
     options->verbose = DFLT_OPT_VERBOSE;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
@@ -144,6 +147,7 @@ uninit_options(struct program_options *options)
     options->cross_fs_boundaries = DFLT_OPT_CROSSFSBOUNDARIES;
     options->follow_symbolic_links = DFLT_OPT_FOLLOWSYMLINKS;
     options->verbose = DFLT_OPT_VERBOSE;
+    options->add_parents = DFLT_OPT_ADDPARENTS;
     options->add_slash = DFLT_OPT_ADDSLASH;
     options->out_zero = DFLT_OPT_OUT0;
     if(options->out_filename != NULL)

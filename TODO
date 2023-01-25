@@ -9,8 +9,6 @@ Global :
 - FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
-- Option to add currently-examinated directory (as empty) when closing a partition
-  (that would finally allow parallel cpio/tar jobs to maintain directory mtimes)
 - Provide long options
 - chdir(2) to initial working directory before forking hooks ?
 - Implement option -zzzz to list directories only (0-sized) ?
@@ -23,6 +21,7 @@ Fpart:
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
 - Display total size in final status
 - Rework error code (errx(3), perror(3), ...)
+- Rework verbose and debug messages
 - Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
 - Use queue(3) ?
 

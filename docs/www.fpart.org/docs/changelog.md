@@ -3,6 +3,8 @@
     2023/??/??, 1.5.2 ('???') :
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file
       (GH PR #44)
+    - fpart: add option -P (add parent directories when closing intermediate
+      partitions). Useful for fixing directory dates when parallelizing cpio
 ```
 # Current: 1.5.1
 ```nohighlight

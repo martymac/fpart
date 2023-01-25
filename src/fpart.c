@@ -110,6 +110,8 @@ usage(void)
     fprintf(stderr, "  -0\tend filenames with a null (\\0) character when "
         "using option -o\n");
     fprintf(stderr, "  -e\tadd ending slash to directories\n");
+    fprintf(stderr, "  -P\tadd parent directories when closing intermediate "
+        "partitions (needs -L)\n");
     fprintf(stderr, "  -v\tverbose mode (may be specified more than once to "
         "increase verbosity)\n");
     fprintf(stderr, "\n");
@@ -263,9 +265,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     int ch;
     while((ch = getopt(*argcp, *argvp,
 #if defined(_HAS_FNM_CASEFOLD)
-        "hVn:f:s:i:ao:0evlby:Y:x:X:zZd:DELSw:W:p:q:r:"
+        "hVn:f:s:i:ao:0ePvlby:Y:x:X:zZd:DELSw:W:p:q:r:"
 #else
-        "hVn:f:s:i:ao:0evlby:x:zZd:DELSw:W:p:q:r:"
+        "hVn:f:s:i:ao:0ePvlby:x:zZd:DELSw:W:p:q:r:"
 #endif
         )) != -1) {
         switch(ch) {
@@ -354,6 +356,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 break;
             case 'e':
                 options->add_slash = OPT_ADDSLASH;
+                break;
+            case 'P':
+                options->add_parents = OPT_ADDPARENTS;
                 break;
             case 'v':
                 options->verbose++;
@@ -540,6 +545,14 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
         options->out_filename == NULL) {
         fprintf(stderr,
             "Option -0 is valid only when used with option -o.\n");
+        return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
+    }
+
+    /* option -P (needs '-L') */
+    if((options->add_parents == OPT_ADDPARENTS) &&
+        (options->live_mode == OPT_NOLIVEMODE)) {
+        fprintf(stderr,
+            "Option -P can only be used with options -L.\n");
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);
     }
 

@@ -87,9 +87,10 @@ static void kill_child(int)  __attribute__((__noreturn__));
 
 /* Status */
 static struct {
-    int fd;                      /* current file descriptor
+    char *entry_path;            /* current fts(3) entry path */
+    int fd;                      /* current output file descriptor
                                     (if option '-o' used) */
-    char *filename;              /* current file name */
+    char *filename;              /* current output file name */
     pnum_t partition_index;      /* current partition number */
     fsize_t partition_size;      /* current partition size */
     fnum_t partition_num_files;  /* number of files in current partition */
@@ -99,6 +100,7 @@ static struct {
                                     else 1 */
     pid_t child_pid;
 } live_status = {
+    NULL,
     STDOUT_FILENO,
     NULL,
     0,
@@ -532,7 +534,7 @@ start_part:
         if((write(live_status.fd, path, to_write) != (ssize_t)to_write) ||
             (write(live_status.fd, ln_term, 1) != 1)) {
             fprintf(stderr, "%s\n", strerror(errno));
-            /* do not close(livefd) and free(live_status.filename) here because
+            /* do not close(live_status.fd) and free(live_status.filename) here because
                it will be useful and free'd in uninit_file_entries() below */
             return (-1);
         }
@@ -549,6 +551,59 @@ start_part:
             (live_status.partition_size >= options->max_size)) ||
         (split == SPLIT_END)) {
 end_part:
+        /* display parent directories if requested */
+        if(options->add_parents == OPT_ADDPARENTS) {
+            char *parent = NULL;
+            char *grandparent = NULL;
+
+            if(options->verbose >= OPT_VVERBOSE)
+                fprintf(stderr, "Adding parents to finalize partition...\n");
+
+            /* allocate and compute parent paths,
+               stop when live_status.entry_path has been reached */
+            parent = parent_path(path, 1);
+            while((parent != NULL) &&
+                  (parent[0] != '\0') &&
+                  (strstr(parent, live_status.entry_path) != NULL)) {
+                if(out_template == NULL) {
+                    /* no template provided, just print parent to stdout */
+                    display_file_entry(adapt_partition_index(live_status.partition_index, options),
+                        0, parent, ENTRY_DISPLAY_TYPE_STANDARD);
+                }
+                else {
+                    /* print to fd */
+                    size_t to_write = strlen(parent);
+                    if((write(live_status.fd, parent, to_write) != (ssize_t)to_write) ||
+                        (write(live_status.fd, ln_term, 1) != 1)) {
+                        fprintf(stderr, "%s\n", strerror(errno));
+                        free(parent);
+                        /* do not close(live_status.fd) and free(live_status.filename) here because
+                           it will be useful and free'd in uninit_file_entries() below */
+                        return (-1);
+                    }
+                }
+
+                /* display added parent */
+                if(options->verbose >= OPT_VVERBOSE)
+                    fprintf(stderr, "%s\n", parent);
+
+                /* root reached */
+                if((parent[0] == '/') && (parent[1] == '\0'))
+                    break;
+
+                /* next parent */
+                grandparent = parent;
+                parent = parent_path(grandparent, 1);
+                free(grandparent);
+            }
+            if(parent == NULL)
+                /* do not close(live_status.fd) and free(live_status.filename) here because
+                   it will be useful and free'd in uninit_file_entries() below */
+                return (-1);
+
+            free(parent);
+        }
+
         /* display added partition */
         if(options->verbose >= OPT_VERBOSE)
             display_partition_summary(adapt_partition_index(live_status.partition_index, options),
@@ -719,7 +774,8 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
     int (*fts_sortfuncp)(const FTSENT * const *, const FTSENT * const *);
 #endif
     if((options->dirs_only == OPT_DIRSONLY) ||
-       (options->leaf_dirs == OPT_LEAFDIRS))
+       (options->leaf_dirs == OPT_LEAFDIRS) ||
+       (options->add_parents == OPT_ADDPARENTS))
         fts_sortfuncp = &fts_dirsfirst;
     else
         fts_sortfuncp = NULL;
@@ -743,6 +799,20 @@ init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
                                            FTS_ERR, FTS_DNR and FTS_NS
                                            (see fts(3)), but fts_read_errno is
                                            needed in FTS_DP */
+
+    /* keep a copy of current entry path in live mode */
+    if(options->live_mode == OPT_LIVEMODE) {
+        /* free() previous entry path if necessary */
+        if(live_status.entry_path != NULL)
+            free(live_status.entry_path);
+
+        /* copy current entry path */
+        size_t malloc_size = strlen(file_path) + 1;
+        if_not_malloc(live_status.entry_path, malloc_size,
+            return (0);
+        )
+        snprintf(live_status.entry_path, malloc_size, "%s", file_path);
+    }
 
     while((p = fts_read(ftsp)) != NULL) {
         if(options->verbose >= OPT_VVVERBOSE) {
@@ -1086,6 +1156,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         if(live_status.filename != NULL) {
             free(live_status.filename);
             live_status.filename = NULL;
+        }
+
+        if(live_status.entry_path != NULL) {
+            free(live_status.entry_path);
+            live_status.entry_path = NULL;
         }
 
         /* print hooks' exit codes summary */
