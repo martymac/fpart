@@ -265,6 +265,7 @@ tool_get_base_opts () {
 }
 
 # Get mode-specific complementary tool-related options
+# (main call or left part of a pipeline)
 # $1 = tool name
 # $2 = dirs only mode (if string not empty)
 tool_get_tool_mode_opts () {
@@ -281,16 +282,7 @@ tool_get_tool_mode_opts () {
             printf '%s\n' '-pdm'
             ;;
         "tar"|"tarify")
-            # GNU Tar needs --delay-directory-restore during extraction.
-            # XXX For simplicity, options set here are used both when creating
-            # the archive (left side of the pipeline, see later in the script)
-            # and extracting it (right side). This does not seem to disturb tar.
-            if tar_is_GNU_tar
-            then
-                printf '%s\n' '--no-recursion --delay-directory-restore'
-            else
-                printf '%s\n' '--no-recursion'
-            fi
+            printf '%s\n' '--no-recursion'
             ;;
         *)
             ;;
@@ -305,6 +297,29 @@ tool_get_tool_mode_opts () {
             # over -d (in fact, aggressive mode *depends* on having option -r
             # overriding -d)
             printf '%s\n' '-d --relative --delete --delete-after'
+            ;;
+        *)
+            ;;
+        esac
+    fi
+}
+
+# Get mode-specific complementary tool-related options
+# (right part of a pipeline), if any)
+# $1 = tool name
+# $2 = dirs only mode (if string not empty)
+tool_get_tool_mode_opts_2 () {
+    if [ -z "$2" ]
+    then
+        # File-based mode: recursion is usually disabled here
+        # as we are working with leaf elements only
+        case "$1" in
+        "tar")
+            # GNU Tar needs --delay-directory-restore during extraction.
+            if tar_is_GNU_tar
+            then
+                printf '%s\n' '--delay-directory-restore'
+            fi
             ;;
         *)
             ;;
@@ -430,7 +445,7 @@ tool_init_fpart_job_command () {
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
             ${SUDO} ${TOOL_BIN} xpf - \
-            ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\" ${TOOL_MODEOPTS}' \
+            ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\" ${TOOL_MODEOPTS_2}' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
@@ -1061,6 +1076,7 @@ FPART_LOGFIFO="${FPART_LOGDIR}/.fpart.log.fifo"
 # Prepare mode-specific tool and fpart options
 # used when starting a new run (only)
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
+TOOL_MODEOPTS_2=$(tool_get_tool_mode_opts_2 "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
 TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts_recursive "${OPT_TOOL_NAME}")
 FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "${OPT_AGGRESSIVE}")
 FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRESSIVE}"
