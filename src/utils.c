@@ -310,10 +310,12 @@ str_push(char ***array, unsigned int *num, const char * const str)
     snprintf(tmp_str, malloc_size, "%s", str);
 
     /* add new char *pointer to array */
-    if_not_realloc(*array, sizeof(char *) * ((*num) + 1),
-        free(tmp_str);
-        return (1);
-    )
+    {
+        if_not_realloc(*array, sizeof(char *) * ((*num) + 1),
+            free(tmp_str);
+            return (1);
+        )
+    }
     (*array)[*num] = tmp_str;
     *num += 1;
 

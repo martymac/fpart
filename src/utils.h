@@ -72,9 +72,12 @@
         err_action                                                      \
     }
 
+/* use enclosed in curly brackets to avoid namespace clash */
 #define if_not_realloc(ptr, size, err_action)                           \
+    void *old_ptr = ptr;                                                \
     ptr = realloc(ptr, size);                                           \
     if(ptr == NULL) {                                                   \
+        ptr = old_ptr;                                                  \
         fprintf(stderr, "%s(): cannot reallocate memory\n", __func__);  \
         err_action                                                      \
     }
