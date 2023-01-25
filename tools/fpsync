@@ -225,6 +225,13 @@ tool_is_supported () {
     echo "$1" | grep -qE '^(rsync|cpio|tar|tarify)$'
 }
 
+# Chek if TAR_BIN is GNU tar
+# TAR_BIN must be initialized
+tar_is_GNU_tar () {
+    [ -n "${TAR_BIN}" ] &&
+        "${TAR_BIN}" --version 2>/dev/null | head -n 1 | grep -q 'GNU tar'
+}
+
 # Print supported tools in a friendly manner
 tool_print_supported () {
     echo "'rsync', 'cpio', 'tar' or 'tarify'"
@@ -274,8 +281,16 @@ tool_get_tool_mode_opts () {
             printf '%s\n' '-pdm'
             ;;
         "tar"|"tarify")
-            # Update directories themselves but do not recurse
-            printf '%s\n' '--no-recursion'
+            # GNU Tar needs --delay-directory-restore during extraction.
+            # XXX For simplicity, options set here are used both when creating
+            # the archive (left side of the pipeline, see later in the script)
+            # and extracting it (right side). This does not seem to disturb tar.
+            if tar_is_GNU_tar
+            then
+                printf '%s\n' '--no-recursion --delay-directory-restore'
+            else
+                printf '%s\n' '--no-recursion'
+            fi
             ;;
         *)
             ;;
@@ -415,7 +430,7 @@ tool_init_fpart_job_command () {
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
             ${SUDO} ${TOOL_BIN} xpf - \
-            ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\"' \
+            ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\" ${TOOL_MODEOPTS}' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
