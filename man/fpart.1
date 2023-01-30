@@ -38,6 +38,7 @@
 .Op Fl o Ar outfile
 .Op Fl 0
 .Op Fl e
+.Op Fl P
 .Op Fl v
 .Op Fl l
 .Op Fl b
@@ -149,6 +150,47 @@ When adding directories (see
 ), add an ending
 .Dq Li "/"
 to each directory entry.
+.It Fl P
+Add parent directories when closing partitions.
+That option can be used in conjunction with
+.Fl zzz
+to produce partitions that can be synchronized
+.Sy in parallel
+whith tools such as
+.Xr cpio 1
+or
+.Xr tar 1 .
+Adding parent directories at the end of each partition ensures that
+modification times get reapplied to directories whatever the processing order
+of partitions is.
+Directories added that way are 0-sized and
+.Sy not
+subject to partition counters
+(for example, a file limit given using option
+.Fl f
+will be exceeded by n parent directories).
+Also, they are not subject to inclusion/exclusion options (
+.Fl y ,
+.Fl Y ,
+.Fl x ,
+.Fl X )
+and they always have an ending
+.Dq Li "/"
+even if option
+.Fl e
+has not been used (this simplifies symlinks handling as we always want to add
+targets here, never the links themselves).
+That option may lead to creating duplicate directory entries when next
+partition begins with a directory entry that has already been added as a parent
+when closing the previous partition.
+Only intermediate partitions will get parent directories added, not the very
+last one which gets its parents through option
+.Fl zzz
+when
+.Xr fts 3
+crawling finishes.
+Requires live mode (option
+.Fl L )
 .It Fl v
 Verbose mode (may be specified more than once).
 .El
