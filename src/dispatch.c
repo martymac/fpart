@@ -189,7 +189,6 @@ dispatch_file_entries_by_limits(struct file_entry *head,
 {
     assert(head != NULL);
     assert((part_head != NULL) && (*part_head == NULL));
-    assert(max_size >= 0);
     assert(options != NULL);
 
     /* number of partitions created, our return value */
