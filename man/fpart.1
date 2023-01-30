@@ -244,7 +244,9 @@ Exclude patterns also apply when computing size of directories.
 Same as
 .Fl x
 but case insensitive.
-This option may not be available on your platform (at least FreeBSD and
+This option may not be available on your platform (at least
+.Fx
+and
 GNU/Linux support it, Solaris does not).
 .El
 .Sh DIRECTORY HANDLING
@@ -264,14 +266,16 @@ See the
 .Fl zz
 option to also pack un-readable directories.
 .It Fl zz
-Treat un-readable or erroneous (partly-read) directories as empty, causing them to
-be packed anyway.
+Treat un-readable or erroneous (partly-read) directories as empty, causing them
+to be packed anyway.
 Partly-read (non-empty) directories can end up being packed while some of their
 children have already been packed.
 .It Fl zzz
 Pack all directories (as empty).
-Useful when 3rd party tools need directory entries to update them (e.g. cpio or
-tar).
+Useful when 3rd party tools need directory entries to update them (e.g.
+.Xr cpio 1
+or
+.Xr tar 1 ).
 .It Fl Z
 Pack un-readable/erroneous directories in dedicated partitions.
 This option helps isolating erroneous parts of a filesystem.
@@ -366,16 +370,18 @@ state of the program:
 .Ev FPART_PARTERRNO
 (0 if every single partition's entry has been read without error, else last
 erroneous entry's errno.
-For error detection to work properly, you may need to rebuild fpart using embedded
-fts library, depending on the version shipped with your OS),
+For error detection to work properly, you may need to rebuild fpart using
+embedded
+.Xr fts 3
+library, depending on the version shipped with your OS),
 .Ev FPART_PID
 (PID of fpart).
 Note that variables may or may not be defined, depending on requested options
 and current partition's state when the hook is triggered.
 Also, note that hooks are executed in a synchronous way while crawling
-filesystem, so 1) avoid executing commands that take a long time to return as it
-slows down filesystem crawling and 2) do not presume cwd (PWD) is the one fpart
-has been started in, as it is regularly changed to speed up crawling (use
+filesystem, so 1) avoid executing commands that take a long time to return as
+it slows down filesystem crawling and 2) do not presume cwd (PWD) is the one
+fpart has been started in, as it is regularly changed to speed up crawling (use
 absolute paths within hooks).
 .It Ic -W Ar cmd
 Same as
@@ -411,9 +417,9 @@ Here are some examples:
 Produce 3 partitions, with (hopefully) the same size and number of files.
 Three files: var-parts.1, var-parts.2 and var-parts.3 are generated as output.
 .It Li "fpart -s 4724464025 -o music-parts /path/to/music ./*.mp3"
-Produce partitions of 4.4 GB, containing music files from /path/to/music as well
-as MP3 files from current directory; with such a partition size, each partition
-content will be ready to be burnt to a DVD.
+Produce partitions of 4.4 GB, containing music files from /path/to/music as
+well as MP3 files from current directory; with such a partition size, each
+partition content will be ready to be burnt to a DVD.
 Files music-parts.0 to music-parts.n, are generated as output.
 .It Li "find /usr ! -type d | fpart -f 10000 -i - /home | grep '^1 '"
 Produce partitions containing 10000 files each by examining /usr first and then
