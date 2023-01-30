@@ -690,8 +690,7 @@ int main(int argc, char **argv)
         }
 
         /* cleanup */
-        if(in_fp != NULL)
-            fclose(in_fp);
+        fclose(in_fp);
     }
 
 /******************
