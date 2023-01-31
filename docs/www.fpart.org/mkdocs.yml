@@ -10,3 +10,5 @@ nav:
     - Links: links.md
 # See: https://mkdocs.github.io/mkdocs-bootswatch/#litera
 theme: litera
+markdown_extensions:
+    - attr_list
