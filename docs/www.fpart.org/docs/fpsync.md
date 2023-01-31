@@ -13,9 +13,9 @@ several nodes (workers) through SSH.
 
 Despite its initial "proof of concept" status, fpsync has quickly evolved into
 a powerful (yet simple to use) migration tool and has been successfully used
-to boost migration of several hundreds of TB of data (initially at $work but it
-has also been tested by several organizations such as UCI, Intel and Amazon ;
-see the 'See also' section at the end of this document).
+to boost migration of several PB of data (initially at $work but it has also
+been tested by several organizations such as UCI, Intel and Amazon ; see the
+'Links' section).
 
 In addition to being very fast (as transfers start during FS crawling and are
 parallelized), fpsync is able to resume or replay synchronization "runs" (see
@@ -115,7 +115,7 @@ re-creating a complex file tree, missing parent directories are created
 on-the-fly. In that case, original directory metadata (e.g. timestamps) are
 *not* copied from source.
 
-To overcome that limitation, fpsync uses fpart's -zzz option to ask fpart to
+To overcome that limitation, fpsync uses fpart's option -zzz to ask fpart to
 also pack every single directory (0-sized) with file lists. Making directories
 appear in file lists will ask the external tool to copy their metadata when the
 directory is processed (of course, fpart ensures that a parent directory entry
@@ -131,20 +131,19 @@ a directory list spreads over more than one partition. In such a situation,
 original metadata (here, mtime) gets overwritten while new files get added to
 the directory.
 
-That race condition is un-avoidable (fpart would have to guarantee the
-directory entry belongs to the *same* partition as its files beneath, that
-would probably lead to un-balanced partitions as well as increased -and useless-
-complexity).
-
-You've been warned. Anyway, maybe you do not care about copying original
-directory mtimes. If this is the case, you can ignore that situation. If you
-care about them, running a second pass of fpsync will fix the timestamps.
+To handle that situation, fpsync leverages another fpart option (-P) that asks
+fpart to flush last file's parent hierarchy (that is, every single parent
+directory up to the root) before closing each partition. Adding parent
+directories at the end of each partition ensures that modification times get
+reapplied to directories whatever the processing order of partitions is. Used
+in conjunction with -zzz, this allows seemless migrations when parallelizing
+cpio(1) or tar(1) jobs.
 
 # Tarify tool
 
-Tar can be used in a special mode called 'tarify'. In that mode, fpsync(1) will
-*not* copy the original file tree but generate tarballs (one per partition) into
-the specified destination directory.
+Tar(1) can be used in a special mode called 'tarify'. In that mode, fpsync(1)
+will *not* copy the original file tree but generate tarballs (one per
+partition) into the specified destination directory.
 
 Extracting (merging) those tarball to a another directory will reproduce the
 original file tree.
@@ -176,9 +175,8 @@ every single file.
 Rsync can detect and replicate hard links with option -H but that will NOT work
 with fpsync because rsync collects hard links' information on a per-run basis.
 
-So, as for directory metadata (see above), being able to propagate hard links
-with fpsync would require from fpart the guarantee that all related links belong
-to the same partition.
+Being able to propagate hard links with fpsync would require from fpart the
+guarantee that all related links belong to the same partition.
 
 Unfortunately, this is not something fpart can do because, in live mode (used by
 fpsync to start synchronization as soon as possible), it crawls the filesystem
