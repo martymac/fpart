@@ -4,10 +4,13 @@
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file
       (GH PR #44)
     - fpart: add option -P (add parent directories when closing intermediate
-      partitions). Useful for fixing directory dates when parallelizing cpio
-    - fpsync: enable fpart's option -P for cpio and tar tools. This finally
+      partitions). Useful for fixing directory dates when parallelizing cpio(1)
+      or tar(1)
+    - fpsync: enable fpart's option -P for 'cpio' and 'tar' tools. This finally
       enables keeping directory modification times intact when parallelizing
       cpio(1) and tar(1) jobs!
+    - fpart: fix 2 errors detected by Coverity Scan, see:
+      https://scan.coverity.com/projects/fpart
 ```
 # Current: 1.5.1
 ```nohighlight

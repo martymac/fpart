@@ -39,7 +39,9 @@ It has been successfully tested on :
 * NetBSD (amd64, alpha)
 * Mac OS X 10.6, 10.8, 11.2 (x86_64, arm64)
 
-and will probably work on other operating systems too !
+and passed Coverity Scan tests with success.
+
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/27316/badge.svg)](https://scan.coverity.com/projects/fpart)
 
 # Installing from a package
 
