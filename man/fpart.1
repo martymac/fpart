@@ -68,14 +68,14 @@ utility helps you sort file trees and pack them into bags
 (called "partitions").
 .Sh GENERAL OPTIONS
 .Bl -tag -width indent
-.It Fl h
+.It Fl h , Fl -help
 Print help
-.It Fl V
+.It Fl V , Fl -version
 Print version
 .El
 .Sh PARTITION CONTROL
 .Bl -tag -width indent
-.It Ic -n Ar num
+.It Fl n Ar num , Fl -parts Ar num
 Create exactly
 .Ar num
 partitions and try to generate partitions with the same size and number of
@@ -85,7 +85,7 @@ This option cannot be used in conjunction with
 .Fl s
 or
 .Fl L .
-.It Ic -f Ar files
+.It Fl f Ar files , Fl -files Ar files
 Create partitions containing at most
 .Ar files
 files or directories.
@@ -93,7 +93,7 @@ This option can be used in conjunction with
 .Fl s
 and
 .Fl L .
-.It Ic -s Ar size
+.It Fl s Ar size , Fl -size Ar size
 Create partitions with a maximum size of
 .Ar size
 bytes.
@@ -117,7 +117,7 @@ If
 is
 .Dq Li "-" ,
 then list is read from stdin.
-.It Fl a
+.It Fl a , Fl -arbitrary
 Input contains arbitrary values; just sort them (do not crawl filesystem).
 Input must follow the
 .Dq Li "size(blank)path"
@@ -191,7 +191,7 @@ when
 crawling finishes.
 Requires live mode (option
 .Fl L )
-.It Fl v
+.It Fl v , Fl -verbose
 Verbose mode (may be specified more than once).
 .El
 .Sh FILESYSTEM CRAWLING CONTROL
@@ -200,7 +200,7 @@ Verbose mode (may be specified more than once).
 Follow symbolic links (default: do not follow).
 .It Fl b
 Do not cross filesystem boundaries (default: cross).
-.It Ic -y Ar pattern
+.It Fl y Ar pattern , Fl -include Ar pattern
 Include files or directories matching
 .Ar pattern
 only (and discard all other files).
@@ -222,7 +222,7 @@ This option may not be available on your platform (at least
 .Fx
 and
 GNU/Linux support it, Solaris does not).
-.It Ic -x Ar pattern
+.It Fl x Ar pattern , Fl -exclude Ar pattern
 Exclude files or directories matching
 .Ar pattern .
 This option can be used in conjunction with
@@ -294,14 +294,14 @@ pack directories instead of files (directories themselves will be added to
 partitions, instead of their content).
 You can force a specific file to be packed anyway by listing it on the command
 line explicitly.
-.It Fl D
+.It Fl D , Fl -leaf-dirs
 Implies
 .Fl z .
 Pack leaf directories: if a directory contains files only, it will be packed as
 a single entry.
 You can force a specific file to be packed anyway by listing it on the command
 line explicitly.
-.It Fl E
+.It Fl E , Fl -dirs-only
 Implies
 .Fl D .
 Pack directories only (work on a per-directory basis): in that mode, no file
@@ -313,7 +313,7 @@ line explicitly.
 .El
 .Sh LIVE MODE
 .Bl -tag -width indent
-.It Fl L
+.It Fl L , Fl -live
 Live mode (default: disabled).
 When using this mode, partitions will be generated while crawling filesystem.
 This option saves time and memory but will never produce special partition 0
@@ -350,7 +350,7 @@ That option can only be used in Live mode (option
 ), when a maximum partition size has been given (option
 .Fl s
 ).
-.It Ic -w Ar cmd
+.It Fl w Ar cmd , Fl -pre-part-cmd Ar cmd
 When using live mode, execute
 .Ar cmd
 when starting a new partition (before having opened next output file, if any).
@@ -383,7 +383,7 @@ filesystem, so 1) avoid executing commands that take a long time to return as
 it slows down filesystem crawling and 2) do not presume cwd (PWD) is the one
 fpart has been started in, as it is regularly changed to speed up crawling (use
 absolute paths within hooks).
-.It Ic -W Ar cmd
+.It Fl W Ar cmd , Fl -post-part-cmd Ar cmd
 Same as
 .Fl w ,
 but executes

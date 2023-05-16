@@ -9,7 +9,6 @@ Global :
 - FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
-- Provide long options
 - chdir(2) to initial working directory before forking hooks ?
 - Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)

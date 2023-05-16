@@ -42,10 +42,42 @@
 /* fprintf(3), fopen(3), fclose(3), fgets(3), foef(3) */
 #include <stdio.h>
 
-/* getopt(3) */
+/* getopt(3) / getopt_long(3) */
 #include <unistd.h>
-#if !defined(__SunOS_5_9)
+#if defined(HAVE_GETOPT_H)
 #include <getopt.h>
+#endif
+
+/* Short options */
+#if defined(_HAS_FNM_CASEFOLD)
+#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:Y:x:X:zZd:DELSw:W:p:q:r:"
+#else
+#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:x:zZd:DELSw:W:p:q:r:"
+#endif
+
+/* Long options */
+#if defined(HAVE_GETOPT_LONG)
+#define GETOPT getopt_long
+static struct option long_options[] =
+{
+    { "help",           no_argument,        NULL, 'h' },
+    { "version",        no_argument,        NULL, 'V' },
+    { "parts",          required_argument,  NULL, 'n' },
+    { "files",          required_argument,  NULL, 'f' },
+    { "size",           required_argument,  NULL, 's' },
+    { "arbitrary",      no_argument,        NULL, 'a' },
+    { "verbose",        no_argument,        NULL, 'v' },
+    { "include",        required_argument,  NULL, 'y' },
+    { "exclude",        required_argument,  NULL, 'x' },
+    { "leaf-dirs",      no_argument,        NULL, 'D' },
+    { "dirs-only",      no_argument,        NULL, 'E' },
+    { "live",           no_argument,        NULL, 'L' },
+    { "pre-part-cmd",   required_argument,  NULL, 'w' },
+    { "post-part-cmd",  required_argument,  NULL, 'W' },
+    { NULL, 0, NULL, 0 }
+};
+#else
+#define GETOPT getopt
 #endif
 
 /* strlen(3) */
@@ -79,91 +111,117 @@ version(void)
 #else
     fprintf(stderr, "system\n");
 #endif
+    fprintf(stderr, "Long options are ");
+#if defined(HAVE_GETOPT_LONG)
+    fprintf(stderr, "supported\n");
+#else
+    fprintf(stderr, "not supported\n");
+#endif
 }
 
 /* Print usage */
 static void
 usage(void)
 {
+    fprintf(stderr, "fpart v" FPART_VERSION " - Sort and pack files into "
+        "partitions\n");
     fprintf(stderr, "Usage: fpart [OPTIONS] -n num | -f files | -s size "
         "[FILE or DIR...]\n");
-    fprintf(stderr, "Sort and pack files into partitions.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "General options:\n");
-    fprintf(stderr, "  -h\tthis help\n");
-    fprintf(stderr, "  -V\tprint version\n");
+    fprintf(stderr, "  -h, --help           print this help\n");
+    fprintf(stderr, "  -V, --version        print version\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Partition control:\n");
-    fprintf(stderr, "  -n\tpack files into <num> partitions\n");
-    fprintf(stderr, "  -f\tlimit partitions to <files> files or directories\n");
-    fprintf(stderr, "  -s\tlimit partitions to <size> bytes\n");
+    fprintf(stderr, "  -n, --parts          pack files into <num> "
+        "partitions\n");
+    fprintf(stderr, "  -f, --files          limit partitions to <files> files "
+        "or directories\n");
+    fprintf(stderr, "  -s, --size           limit partitions to <size> "
+        "bytes\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Input control:\n");
-    fprintf(stderr, "  -i\tread file list from <infile> "
+    fprintf(stderr, "  -i                   read file list from <infile> "
         "(stdin if '-' is specified)\n");
-    fprintf(stderr, "  -a\tinput contains arbitrary values "
+    fprintf(stderr, "  -a, --arbitrary      input contains arbitrary values "
         "(do not crawl filesystem)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Output control:\n");
-    fprintf(stderr, "  -o\toutput partitions to <outfile> template "
-        "(stdout if '-' is specified)\n");
-    fprintf(stderr, "  -0\tend filenames with a null (\\0) character when "
-        "using option -o\n");
-    fprintf(stderr, "  -e\tadd ending slash to directories\n");
-    fprintf(stderr, "  -P\tadd parent directories when closing intermediate "
-        "partitions (needs -L)\n");
-    fprintf(stderr, "  -v\tverbose mode (may be specified more than once to "
-        "increase verbosity)\n");
+    fprintf(stderr, "  -o                   output partitions to <outfile> "
+        "template (stdout if '-' is\n");
+    fprintf(stderr, "                       specified)\n");
+    fprintf(stderr, "  -0                   end filenames with a null (\\0) "
+        "character when using\n");
+    fprintf(stderr, "                       option -o\n");
+    fprintf(stderr, "  -e                   add ending slash to directories\n");
+    fprintf(stderr, "  -P                   add parent directories when "
+        "closing intermediate\n");
+    fprintf(stderr, "                       partitions (needs -L)\n");
+    fprintf(stderr, "  -v, --verbose        verbose mode (may be specified "
+        "more than once to increase\n");
+    fprintf(stderr, "                       verbosity)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Filesystem crawling control:\n");
-    fprintf(stderr, "  -l\tfollow symbolic links\n");
-    fprintf(stderr, "  -b\tdo not cross filesystem boundaries\n");
-    fprintf(stderr, "  -y\tinclude files matching <pattern> only (may be "
-        "specified more than once)\n");
+    fprintf(stderr, "  -l                   follow symbolic links\n");
+    fprintf(stderr, "  -b                   do not cross filesystem "
+        "boundaries\n");
+    fprintf(stderr, "  -y, --include        include files matching <pattern> "
+        "only (may be specified\n");
+    fprintf(stderr, "                       more than once)\n");
 #if defined(_HAS_FNM_CASEFOLD)
-    fprintf(stderr, "  -Y\tsame as -y, but ignore case\n");
+    fprintf(stderr, "  -Y                   same as -y, but ignore case\n");
 #endif
-    fprintf(stderr, "  -x\texclude files matching <pattern> (may be specified "
-        "more than once)\n");
+    fprintf(stderr, "  -x, --exclude        exclude files matching <pattern> "
+        "(may be specified more\n");
+    fprintf(stderr, "                       than once)\n");
 #if defined(_HAS_FNM_CASEFOLD)
-    fprintf(stderr, "  -X\tsame as -x, but ignore case\n");
+    fprintf(stderr, "  -X                   same as -x, but ignore case\n");
 #endif
     fprintf(stderr, "\n");
     fprintf(stderr, "Directory handling:\n");
-    fprintf(stderr, "  -z\tpack empty directories too "
+    fprintf(stderr, "  -z                   pack empty directories too "
         "(default: pack files only)\n");
-    fprintf(stderr, "  -zz\ttreat un-readable directories as empty\n");
-    fprintf(stderr, "  -zzz\tpack all directories (as empty)\n");
-    fprintf(stderr, "  -Z\tpack un-readable directories in separate "
-        "partitions\n");
-    fprintf(stderr, "  -d\tpack directories instead of files after a certain "
-        "<depth>\n");
-    fprintf(stderr, "  -D\tpack leaf directories (i.e. containing files only, "
-        "implies -z)\n");
-    fprintf(stderr, "  -E\tpack directories instead of files (implies -D)\n");
+    fprintf(stderr, "  -zz                  treat un-readable directories as "
+        "empty\n");
+    fprintf(stderr, "  -zzz                 pack all directories (as empty)\n");
+    fprintf(stderr, "  -Z                   pack un-readable directories in "
+        "separate partitions\n");
+    fprintf(stderr, "  -d                   pack directories instead of files "
+        "after a certain <depth>\n");
+    fprintf(stderr, "  -D, --leaf-dirs      pack leaf directories (i.e. "
+        "containing files only,\n");
+    fprintf(stderr, "                       implies -z)\n");
+    fprintf(stderr, "  -E, --dirs-only      pack directories instead of files "
+        "(implies -D)\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Live mode:\n");
-    fprintf(stderr, "  -L\tlive mode: generate partitions during filesystem "
-        "crawling\n");
-    fprintf(stderr, "  -S\tdo not pack files bigger than specified maximum "
-        "partition size\n");
-    fprintf(stderr, "    \tbut print them to stdout instead (needs -L and "
-        "-s)\n");
-    fprintf(stderr, "  -w\tpre-partition hook: execute <cmd> at partition "
-        "start\n");
-    fprintf(stderr, "  -W\tpost-partition hook: execute <cmd> at partition "
-        "end\n");
+    fprintf(stderr, "  -L, --live           live mode: generate partitions "
+        "during filesystem crawling\n");
+    fprintf(stderr, "  -S                   do not pack files bigger than "
+        "specified maximum partition\n");
+    fprintf(stderr, "                       size but print them to stdout "
+        "instead (needs -L and -s)\n");
+    fprintf(stderr, "  -w, --pre-part-cmd   pre-partition hook: execute <cmd> "
+        "at partition start\n");
+    fprintf(stderr, "  -W, --post-part-cmd  post-partition hook: execute <cmd> "
+        "at partition end\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Size handling:\n");
-    fprintf(stderr, "  -p\tpreload each partition with <num> bytes\n");
-    fprintf(stderr, "  -q\toverload each file with <num> bytes\n");
-    fprintf(stderr, "  -r\tround each file size up to next <num> bytes "
-        "multiple\n");
+    fprintf(stderr, "  -p                   preload each partition with <num> "
+        "bytes\n");
+    fprintf(stderr, "  -q                   overload each file with <num> "
+        "bytes\n");
+    fprintf(stderr, "  -r                   round each file size up to next "
+        "<num> bytes multiple\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Example: fpart -n 3 -o var-parts /var\n");
     fprintf(stderr, "\n");
+#if !defined(HAVE_GETOPT_LONG)
+    fprintf(stderr, "Note: Long options are not supported on this platform.\n");
+#endif
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
         "<ganael.laplanche@martymac.org>\n");
+    fprintf(stderr, "WWW: http://contribs.martymac.org\n");
     return;
 }
 
@@ -263,11 +321,9 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
     extern char *optarg;
     extern int optind;
     int ch;
-    while((ch = getopt(*argcp, *argvp,
-#if defined(_HAS_FNM_CASEFOLD)
-        "hVn:f:s:i:ao:0ePvlby:Y:x:X:zZd:DELSw:W:p:q:r:"
-#else
-        "hVn:f:s:i:ao:0ePvlby:x:zZd:DELSw:W:p:q:r:"
+    while((ch = GETOPT(*argcp, *argvp, OPTIONS
+#if defined(HAVE_GETOPT_LONG)
+        , long_options, NULL
 #endif
         )) != -1) {
         switch(ch) {

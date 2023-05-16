@@ -13,7 +13,7 @@ AC_PROG_INSTALL
 AC_CHECK_LIB(m, log10)
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h paths.h stdlib.h string.h strings.h sys/mount.h sys/param.h sys/statfs.h sys/statvfs.h sys/vfs.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h getopt.h paths.h stdlib.h string.h strings.h sys/mount.h sys/param.h sys/statfs.h sys/statvfs.h sys/vfs.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_PID_T
@@ -24,7 +24,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([bzero dirfd fchdir getcwd memmove memset strchr strerror strrchr strtol])
+AC_CHECK_FUNCS([bzero dirfd fchdir getcwd getopt_long memmove memset strchr strerror strrchr strtol])
 
 # OS detection
 AC_CANONICAL_HOST

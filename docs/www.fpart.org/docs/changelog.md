@@ -11,6 +11,7 @@
       cpio(1) and tar(1) jobs!
     - fpart: fix 2 errors detected by Coverity Scan, see:
       https://scan.coverity.com/projects/fpart
+    - fpart: provide long options (for the most important ones)
 ```
 # Current: 1.5.1
 ```nohighlight
