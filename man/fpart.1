@@ -109,7 +109,7 @@ You can use a human-friendly unit suffix here (k, m, g, t, p).
 .El
 .Sh INPUT CONTROL
 .Bl -tag -width indent
-.It Ic -i Ar infile
+.It Fl i Ar infile
 Read file list from
 .Ar infile .
 If
@@ -126,7 +126,7 @@ This option is incompatible with crawling-related options.
 .El
 .Sh OUTPUT CONTROL
 .Bl -tag -width indent
-.It Ic -o Ar outfile
+.It Fl o Ar outfile
 Output partitions' contents to
 .Ar outfile
 template.
@@ -214,7 +214,7 @@ Shell pattern matching characters
 .Dq Li \&? )
 may be used.
 Include patterns are ignored when computing size of directories.
-.It Ic -Y Ar pattern
+.It Fl Y Ar pattern
 Same as
 .Fl y
 but case insensitive.
@@ -240,7 +240,7 @@ Shell pattern matching characters
 .Dq Li \&? )
 may be used.
 Exclude patterns also apply when computing size of directories.
-.It Ic -X Ar pattern
+.It Fl X Ar pattern
 Same as
 .Fl x
 but case insensitive.
@@ -287,7 +287,7 @@ and option
 .Fl zz (
 or
 .Fl zzz )
-.It Ic -d Ar depth
+.It Fl d Ar depth
 After a certain
 .Ar depth ,
 pack directories instead of files (directories themselves will be added to
@@ -392,17 +392,17 @@ when finishing a partition (after having closed last output file, if any).
 .El
 .Sh SIZE HANDLING
 .Bl -tag -width indent
-.It Ic -p Ar num
+.It Fl p Ar num
 Preload each partition with
 .Ar num
 bytes.
 You can use a human-friendly unit suffix here (k, m, g, t, p).
-.It Ic -q Ar num
+.It Fl q Ar num
 Overload each file size with
 .Ar num
 bytes.
 You can use a human-friendly unit suffix here (k, m, g, t, p).
-.It Ic -r Ar num
+.It Fl r Ar num
 Round each file size up to next
 .Ar num
 bytes multiple.
