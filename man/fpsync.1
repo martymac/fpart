@@ -81,7 +81,7 @@ This makes
 a good tool for migrating large filesystems.
 .Sh COMMON OPTIONS
 .Bl -tag -width indent
-.It Ic -t Ar tmpdir
+.It Fl t Ar tmpdir
 Set
 .Nm
 temporary directory to
@@ -92,7 +92,7 @@ when using the
 option.
 Default:
 .Pa /tmp/fpsync
-.It Ic -d Ar shdir
+.It Fl d Ar shdir
 Set
 .Nm
 shared directory to
@@ -105,7 +105,7 @@ communications with SSH hosts (sharing partitions and log files) and, as a
 consequence, must be made available to all participating hosts (e.g. through a
 r/w NFS mount), including the master one running
 .Nm .
-.It Ic -M Ar mailaddr
+.It Fl M Ar mailaddr
 Send an e-mail to
 .Ar mailaddr
 after a run.
@@ -122,7 +122,7 @@ Print help
 .El
 .Sh SYNCHRONIZATION OPTIONS
 .Bl -tag -width indent
-.It Ic -m Ar tool
+.It Fl m Ar tool
 External copy
 .Ar tool
 used to synchronize files.
@@ -143,7 +143,7 @@ A second pass will fix them.
 Special tool
 .Sy tarify
 generates tarballs into destination directory.
-.It Ic -T Ar path
+.It Fl T Ar path
 Specify absolute
 .Ar path
 of copy tool (guessed by default).
@@ -155,7 +155,7 @@ on each worker.
 That
 .Ar path
 cannot be changed when resuming a run.
-.It Ic -f Ar files
+.It Fl f Ar files
 Transfer at most
 .Ar files
 files or directories per sync job.
@@ -163,7 +163,7 @@ files or directories per sync job.
 means unlimited but you must at least specify one file or size limit.
 Default:
 .Sy 2000
-.It Ic -s Ar size
+.It Fl s Ar size
 Transfer at most
 .Ar size
 bytes per sync job.
@@ -194,7 +194,7 @@ This advanced mode can be useful to try to overcome transcient errors such as
 Linux SMB client deferring
 .Fn opendir
 calls to support compound SMB requests.
-.It Ic -o Ar toolopts
+.It Fl o Ar toolopts
 Override default
 .Xr rsync 1 ,
 .Xr cpio 1
@@ -208,7 +208,7 @@ usage (e.g. rsync's
 Default for rsync:
 .Dq -lptgoD -v --numeric-ids .
 Empty for cpio, tar and tarify.
-.It Ic -O Ar fpartopts
+.It Fl O Ar fpartopts
 Override default
 .Xr fpart 1
 options with
@@ -235,13 +235,13 @@ All participating workers must be able to reach that target.
 .El
 .Sh JOB HANDLING AND DISPATCHING OPTIONS
 .Bl -tag -width indent
-.It Ic -n Ar jobs
+.It Fl n Ar jobs
 Start
 .Ar jobs
 concurrent sync jobs (either locally or remotely, see below) per run.
 Default:
 .Sy 2
-.It Ic -w Ar wrks
+.It Fl w Ar wrks
 Use remote SSH
 .Ar wrks
 to synchronize files.
@@ -264,7 +264,7 @@ That mode can be used to create a run that can then be resumed using option
 .Fl r .
 .It Fl l
 List previous runs and their status.
-.It Ic -r Ar runid
+.It Fl r Ar runid
 Resume run
 .Ar runid
 and restart synchronizing remaining partitions from a previous run.
@@ -296,7 +296,7 @@ That mode can be useful to skip filesystem crawling when you have to replay a
 final pass several times and you know directory structure has not changed in
 the meantime (you may miss files if you use replay mode with a standard,
 file-based, run).
-.It Ic -a Ar runid
+.It Fl a Ar runid
 Archive run
 .Ar runid
 (including partition files, logs, queue and work directories) to
@@ -305,7 +305,7 @@ That option requires the
 .Xr tar 1
 client to be installed on the master host running
 .Nm .
-.It Ic -D Ar runid
+.It Fl D Ar runid
 Delete run
 .Ar runid
 (including partition files, logs, queue and work directories).
