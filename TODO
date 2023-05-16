@@ -28,6 +28,7 @@ Fpart:
 Fpsync:
 - Show if dirsonly/aggressive mode is enabled in status
 - When waiting for sync jobs to complete, regularly show status
+  (as a progress bar ?)
 - Provide per-job pre- and post-xfer rc scripts
   (useful to perform tasks such as computing an
   additional src/ or dst/ prefix - to be added too)
