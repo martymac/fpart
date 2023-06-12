@@ -53,18 +53,28 @@ Documentation is available on :
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
-# Donation
+# Third-party code :
 
-If fpart is useful to you or your organization, you can make a donation here:
+fts(3) code originally comes from FreeBSD :
 
+    lib/libc/gen/fts.c -> src/fts.c
+    include/fts.h      -> src/fts.h
+
+It has been slightly modified for portability and is available under the BSD
+license.
+
+# Supporting fpart
+
+If fpart (or fpsync) is useful to you or your organization, do not hesitate to
+contribute back! You can follow ideas in the [TODO](https://github.com/martymac/fpart/blob/master/TODO)
+file or just fix a bug, any kind of help is always welcome!
+
+If you prefer, you can also make a donation on Paypal:
+
+<br>
+<center>
 [![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
+</center>
+<br>
 
 That will help me not running out of tea :)
-
-# Contributions
-
-Member of MacStadium's Open Source Developer Program (thanks to them for their support to OpenSource software !)
-
-<a href="https://www.macstadium.com/opensource-members">
-<img src="https://uploads-ssl.webflow.com/5ac3c046c82724970fc60918/5c019d917bba312af7553b49_MacStadium-developerlogo.png" alt="MacStadium" width="180"/>
-</a>

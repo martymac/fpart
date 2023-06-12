@@ -79,7 +79,7 @@
 [![AWS](img/ext-logos/Aws.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://aws.amazon.com/solutions/implementations/efs-to-efs-backup-solution/)
 [![Microsoft](img/ext-logos/Microsoft.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux)
 </center>
-<br/>
+<br>
 <center>
 [![Alibaba](img/ext-logos/AlibabaCloud.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.alibabacloud.com/help/doc-detail/128764.htm)
 [![Oracle](img/ext-logos/Oracle.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://docs.oracle.com/en-us/iaas/Content/File/Troubleshooting/transferring-windows-data-sms.htm)

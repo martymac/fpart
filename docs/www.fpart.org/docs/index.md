@@ -98,17 +98,9 @@ Documentation is available on :
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
-# Donation
+# Third-party code :
 
-If fpart (or fpsync) is useful to you or your organization, you can make a donation here:
-
-[![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
-
-That will help me not running out of tea :)
-
-# Contributions
-
-FTS code originally comes from FreeBSD :
+fts(3) code originally comes from FreeBSD :
 
     lib/libc/gen/fts.c -> src/fts.c
     include/fts.h      -> src/fts.h
@@ -116,5 +108,36 @@ FTS code originally comes from FreeBSD :
 It has been slightly modified for portability and is available under the BSD
 license.
 
-Also, big thanks to my beloved wife and daughters for their invaluable support
-and more particularly for the discussion we had about Fpart logo :)
+# Supporting fpart
+
+If fpart (or fpsync) is useful to you or your organization, do not hesitate to
+contribute back! You can follow ideas in the [TODO](https://github.com/martymac/fpart/blob/master/TODO)
+file or just fix a bug, any kind of help is always welcome!
+
+If you prefer, you can also make a donation on Paypal:
+
+<br>
+<center>
+[![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
+</center>
+<br>
+
+That will help me not running out of tea :)
+
+# Fpart supporters
+
+* Apple OSX support is eased by **MacStadium**'s Open Source Developer Program,
+  big thanks to them!
+* Many thanks to **HPE** for providing me the successor of my old server!
+  That's what I call OSS support :)
+
+<br>
+<center>
+[![MacStadium](img/ext-logos/MacStadium.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.macstadium.com/opensource/members)
+[![HPE](img/ext-logos/HPE.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.hpe.com/us/en/open-source.html)
+</center>
+<br>
+
+* Last but not least, big thanks to my **beloved wife and daughters** for their
+  invaluable support and more particularly for the discussion we had about
+  fpart logo :)
