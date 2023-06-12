@@ -71,10 +71,6 @@ file or just fix a bug, any kind of help is always welcome!
 
 If you prefer, you can also make a donation on Paypal:
 
-<br>
-<center>
 [![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
-</center>
-<br>
 
 That will help me not running out of tea :)
