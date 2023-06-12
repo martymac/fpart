@@ -53,7 +53,7 @@ Documentation is available on :
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
-# Third-party code :
+# Third-party code
 
 fts(3) code originally comes from FreeBSD :
 
