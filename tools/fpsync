@@ -892,9 +892,15 @@ sigint_handler () {
 # (hint: on FreeBSD, SIGINFO verbosity can be reduced by setting sysctl
 # 'kern.tty_info_kstacks' to 0)
 siginfo_handler () {
-    # Job counters
+    # Jobs to run
     local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l | awk '{print $1}')"
-    local _jobs_done="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
+    # Jobs run, including running ones
+    local _jobs_run="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
+    # Jobs currently running
+    local _jobs_running="${WORK_NUM}"
+    # Jobs fully performed so far, excluding running ones
+    local _jobs_done="$(( ${_jobs_run} - ${_jobs_running} ))"
+    # Jobs remaining, including running ones
     local _jobs_remaining="$(( ${_jobs_total} - ${_jobs_done} ))"
 
     local _jobs_percent="??"
@@ -911,10 +917,10 @@ siginfo_handler () {
     if [ ${_run_jobs_done} -ge 1 ]
     then
         _run_time_per_job="$(( ${_run_elapsed_time} / ${_run_jobs_done} ))"
-        _run_time_remaining="$(( (${_run_elapsed_time} * ${_jobs_remaining}) / ${_run_jobs_done} ))"
+        _run_time_remaining="$(( ${_run_time_per_job} * ${_jobs_remaining} ))"
     fi
 
-    echo "${_siginfo_ts} <=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+    echo "${_siginfo_ts} <=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)"
     echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
 }
 

@@ -12,6 +12,8 @@
     - fpart: fix 2 errors detected by Coverity Scan, see:
       https://scan.coverity.com/projects/fpart
     - fpart: provide long options (for the most important ones)
+    - fpsync: fix off-by-n error when calculating ETA in SIGINFO handler
+      (fixes GH issue #48)
 ```
 # Current: 1.5.1
 ```nohighlight
