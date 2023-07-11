@@ -1277,13 +1277,13 @@ else
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
     # - the work queue exists
-    # + For standard resume mode, strictly check if :
-    #   - the last fpart pass has completed
+    # + For resume mode, strictly check if :
+    #   - fpart pass has completed
     #     (the 'fp_done' flag has been created in job queue dir)
-    #   - the last fpsync pass has *not* completed
+    #   - fpsync run has *not* completed
     #     (the 'fp_done' flag is *still* present in job queue dir)
     # + For replay mode, we accept that :
-    #   - the last fpsync pass has completed
+    #   - fpsync run has completed
     #     (the 'fp_done' flag has been moved to the work queue dir)
     [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
         end_die "Specified run is not resumable ('info' flag missing)"
