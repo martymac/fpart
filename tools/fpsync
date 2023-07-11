@@ -769,10 +769,15 @@ work_list_push () {
 work_list_refresh () {
     local _WORK_LIST=""
     local _WORK_NUM=0
+    local _JOB_PID=""
+    local _JOB_PART=""
     for _JOB in ${WORK_LIST}
     do
+        # Extract job info
+        _JOB_PID="$(echo ${_JOB} | cut -d ':' -f 1)"
+        _JOB_PART="$(echo ${_JOB} | cut -d ':' -f 2)"
         # If the process is still alive, keep it
-        if ps "$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+        if ps "${_JOB_PID}" 1>/dev/null 2>&1
         then
             _WORK_LIST="${_WORK_LIST} ${_JOB}"
             _WORK_NUM="$((${_WORK_NUM} + 1))"
@@ -783,6 +788,22 @@ work_list_refresh () {
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 3)"
             fi
+            # Update status counters
+            _run_done_jobs=$(( ${_run_done_jobs} + 1 ))
+            _run_done_files=$(( \
+                ${_run_done_files} + $( \
+                    job_files=0 ; \
+                    . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                    echo "${job_files}" \
+                ) \
+            ))
+            _run_done_size=$(( \
+                ${_run_done_size} + $( \
+                    job_size=0 ; \
+                    . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                    echo "${job_size}" \
+                ) \
+            ))
         fi
     done
     WORK_LIST=${_WORK_LIST}
@@ -866,6 +887,94 @@ job_queue_sl_stop () {
     touch "${JOBS_QUEUEDIR}/sl_stop"
 }
 
+########## Status functions
+
+# Count total jobs to perform
+# FPART_PARTSDIR can host several types of file :
+# part.<job_number>: file listing for a sync job
+# part.<job_number>.meta: file listing meta-information (number of files, size)
+total_jobs_count () {
+    (cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep -v '\.meta$' | \
+         wc -l | awk '{print $1}')
+}
+
+# Count total files to transfer
+total_files_count () {
+    local _jobs_files=0
+    for _file in \
+        $(cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep '\.meta$')
+    do
+        _jobs_files=$(( \
+            ${_jobs_files} + $( \
+                job_files=0 ; \
+                . "${FPART_PARTSDIR}/${_file}" 2>/dev/null ; \
+                echo "${job_files}" \
+            ) \
+        ))
+    done
+    echo "${_jobs_files}"
+}
+
+## Count total bytes to transfer
+total_size_count () {
+    local _jobs_size=0
+    for _file in \
+        $(cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep '\.meta$')
+    do
+        _jobs_size=$(( \
+            ${_jobs_size} + $( \
+                job_size=0 ; \
+                . "${FPART_PARTSDIR}/${_file}" 2>/dev/null ; \
+                echo "${job_size}" \
+            ) \
+        ))
+    done
+    echo "${_jobs_size}"
+}
+
+# Count jobs performed in current run (including running ones)
+# JOBS_WORKDIR can host several types of file :
+# <job_number>: a sync job to perform
+# 'fp_done': present when every job has been synchronized (fpsync run is complete)
+work_jobs_count () {
+    (cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done' | \
+        wc -l | awk '{print $1}')
+}
+
+# Count files transferred in current run (including files from running jobs)
+work_files_count () {
+    local _jobs_files=0
+    for _file in \
+        $(cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done')
+    do
+        _jobs_files=$(( \
+            ${_jobs_files} + $( \
+                job_files=0 ; \
+                . "${FPART_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                echo "${job_files}" \
+            ) \
+        ))
+    done
+    echo "${_jobs_files}"
+}
+
+# Count bytes transferred in current run (including bytes from running jobs)
+work_size_count () {
+    local _jobs_size=0
+    for _file in \
+        $(cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done')
+    do
+        _jobs_size=$(( \
+            ${_jobs_size} + $( \
+                job_size=0 ; \
+                . "${FPART_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                echo "${job_size}" \
+            ) \
+        ))
+    done
+    echo "${_jobs_size}"
+}
+
 sigint_handler () {
     SIGINT_COUNT="$((${SIGINT_COUNT} + 1))"
 
@@ -892,25 +1001,37 @@ sigint_handler () {
 # (hint: on FreeBSD, SIGINFO verbosity can be reduced by setting sysctl
 # 'kern.tty_info_kstacks' to 0)
 siginfo_handler () {
-    # Jobs to run
-    local _jobs_total="$(cd "${FPART_PARTSDIR}" && ls -t1 | wc -l | awk '{print $1}')"
-    # Jobs run, including running ones
-    local _jobs_run="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
-    # Jobs currently running
+    #### Jobs
+    local _jobs_total="$(total_jobs_count)"
     local _jobs_running="${WORK_NUM}"
-    # Jobs fully performed so far, excluding running ones
-    local _jobs_done="$(( ${_jobs_run} - ${_jobs_running} ))"
+    local _jobs_done="${_run_done_jobs}"
     # Jobs remaining, including running ones
     local _jobs_remaining="$(( ${_jobs_total} - ${_jobs_done} ))"
-
     local _jobs_percent="??"
     [ ${_jobs_total} -ge 1 ] && \
         _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
+
+    #### Files
+    local _files_total="$(total_files_count)"
+    local _files_done="${_run_done_files}"
+    local _files_remaining="$(( ${_files_total} - ${_files_done} ))"
+    local _files_percent="??"
+    [ ${_files_total} -ge 1 ] && \
+        _files_percent="$(( (${_files_done} * 100) / ${_files_total} ))"
+
+    #### Size
+    local _size_total="$(total_size_count)"
+    local _size_done="${_run_done_size}"
+    local _size_remaining="$(( ${_size_total} - ${_size_done} ))"
+    local _size_percent="??"
+    [ ${_size_total} -ge 1 ] && \
+        _size_percent="$(( (${_size_done} * 100) / ${_size_total} ))"
 
     # Time counters, relative to the current run (resume-aware)
     local _siginfo_ts=$(date '+%s')
     local _run_elapsed_time="$(( ${_siginfo_ts} - ${_run_start_time} ))"
     local _run_jobs_done="$(( ${_jobs_done} - ${_run_start_jobs} ))"
+    local _run_size_done="$(( ${_size_done} - ${_run_start_size} ))"
 
     local _run_time_per_job="??"
     local _run_time_remaining="??"
@@ -920,8 +1041,16 @@ siginfo_handler () {
         _run_time_remaining="$(( ${_run_time_per_job} * ${_jobs_remaining} ))"
     fi
 
+    local _run_bytes_per_second="??"
+    if [ ${_run_elapsed_time} -ge 1 ]
+    then
+        _run_bytes_per_second="$(( ${_run_size_done} / ${_run_elapsed_time} ))"
+    fi
+
     echo "${_siginfo_ts} <=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)"
-    echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job)"
+    echo "${_siginfo_ts} <=== Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}"
+    echo "${_siginfo_ts} <=== Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}"
+    echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -1088,6 +1217,8 @@ FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "
 FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRESSIVE}"
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
+    printf '%s\n%s\n' job_size=\"\${FPART_PARTSIZE}\" job_files=\"\${FPART_PARTNUMFILES}\" > \
+    \"${FPART_PARTSTMPL}.\${FPART_PARTNUMBER}.meta\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
     echo \"\$(date '+%s') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
@@ -1181,7 +1312,7 @@ else
     # executed again. We consider the worst-case scenario and resume OPT_RJOBS
     # last jobs, some of them being partially finished.
     for _file in \
-        $(cd "${JOBS_WORKDIR}" && ls -t1 | head -n "${OPT_RJOBS}")
+        $(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | head -n "${OPT_RJOBS}")
     do
         mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
             end_die "Error resuming specified run (could not re-schedule jobs)"
@@ -1301,9 +1432,15 @@ fi
 # Record run information
 job_queue_info_dump
 
-# Record initial status, required by siginfo_handler()
-_run_start_jobs="$(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | wc -l | awk '{print $1}')"
+# Initial status, required by siginfo_handler()
 _run_start_time="$(date '+%s')"
+_run_start_jobs="$(work_jobs_count)"
+_run_start_files="$(work_files_count)"
+_run_start_size="$(work_size_count)"
+# Current status (incremented after each job is finished)
+_run_done_jobs="${_run_start_jobs}"
+_run_done_files="${_run_start_files}"
+_run_done_size="${_run_start_size}"
 
 # When not resuming a previous run, start fpart
 if [ -z "${OPT_RUNID}" ]

@@ -14,6 +14,8 @@
     - fpart: provide long options (for the most important ones)
     - fpsync: fix off-by-n error when calculating ETA in SIGINFO handler
       (fixes GH issue #48)
+    - fpsync: show transmitted files count / data size in final status
+      and SIGINFO handler (fixes GH issue #24)
 ```
 # Current: 1.5.1
 ```nohighlight

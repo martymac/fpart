@@ -4,39 +4,49 @@ $ fpsync -p /xxx/ /yyy/
 
 and its finalization through -r:
 
-$ fpsync -r 1616710085-80157
+$ fpsync -r 1689103660-37834
 
 It shows file movements within involved directories.
 
 --- /tmp/before.list
 +++ /tmp/after.list
-@@ -1,18 +1,25 @@
+@@ -1,6 +1,18 @@
  /tmp/fpsync
- /tmp/fpsync/queue
- /tmp/fpsync/queue/1616710085-80157
--/tmp/fpsync/queue/1616710085-80157/fp_done
- /tmp/fpsync/queue/1616710085-80157/info
--/tmp/fpsync/queue/1616710085-80157/0
--/tmp/fpsync/queue/1616710085-80157/2
--/tmp/fpsync/queue/1616710085-80157/1
-+/tmp/fpsync/queue/1616710085-80157/sl_done
- /tmp/fpsync/work
- /tmp/fpsync/work/1616710085-80157
-+/tmp/fpsync/work/1616710085-80157/0
-+/tmp/fpsync/work/1616710085-80157/1
-+/tmp/fpsync/work/1616710085-80157/fp_done
-+/tmp/fpsync/work/1616710085-80157/2
- /tmp/fpsync/parts
- /tmp/fpsync/parts/1616710085-80157
- /tmp/fpsync/parts/1616710085-80157/part.0
- /tmp/fpsync/parts/1616710085-80157/part.1
- /tmp/fpsync/parts/1616710085-80157/part.2
  /tmp/fpsync/log
- /tmp/fpsync/log/1616710085-80157
-+/tmp/fpsync/log/1616710085-80157/1.stderr
-+/tmp/fpsync/log/1616710085-80157/2.stdout
-+/tmp/fpsync/log/1616710085-80157/0.stdout
- /tmp/fpsync/log/1616710085-80157/fpart.log
-+/tmp/fpsync/log/1616710085-80157/1.stdout
-+/tmp/fpsync/log/1616710085-80157/0.stderr
-+/tmp/fpsync/log/1616710085-80157/2.stderr
+ /tmp/fpsync/log/1689103660-37834
++/tmp/fpsync/log/1689103660-37834/1.stderr
++/tmp/fpsync/log/1689103660-37834/1.stdout
++/tmp/fpsync/log/1689103660-37834/2.stderr
++/tmp/fpsync/log/1689103660-37834/2.stdout
++/tmp/fpsync/log/1689103660-37834/3.stderr
++/tmp/fpsync/log/1689103660-37834/3.stdout
++/tmp/fpsync/log/1689103660-37834/4.stderr
++/tmp/fpsync/log/1689103660-37834/4.stdout
++/tmp/fpsync/log/1689103660-37834/5.stderr
++/tmp/fpsync/log/1689103660-37834/5.stdout
++/tmp/fpsync/log/1689103660-37834/6.stderr
++/tmp/fpsync/log/1689103660-37834/6.stdout
+ /tmp/fpsync/log/1689103660-37834/fpart.log
+ /tmp/fpsync/parts
+ /tmp/fpsync/parts/1689103660-37834
+@@ -18,13 +30,13 @@
+ /tmp/fpsync/parts/1689103660-37834/part.6.meta
+ /tmp/fpsync/queue
+ /tmp/fpsync/queue/1689103660-37834
+-/tmp/fpsync/queue/1689103660-37834/1
+-/tmp/fpsync/queue/1689103660-37834/2
+-/tmp/fpsync/queue/1689103660-37834/3
+-/tmp/fpsync/queue/1689103660-37834/4
+-/tmp/fpsync/queue/1689103660-37834/5
+-/tmp/fpsync/queue/1689103660-37834/6
+-/tmp/fpsync/queue/1689103660-37834/fp_done
+ /tmp/fpsync/queue/1689103660-37834/info
+ /tmp/fpsync/work
+ /tmp/fpsync/work/1689103660-37834
++/tmp/fpsync/work/1689103660-37834/1
++/tmp/fpsync/work/1689103660-37834/2
++/tmp/fpsync/work/1689103660-37834/3
++/tmp/fpsync/work/1689103660-37834/4
++/tmp/fpsync/work/1689103660-37834/5
++/tmp/fpsync/work/1689103660-37834/6
++/tmp/fpsync/work/1689103660-37834/fp_done
