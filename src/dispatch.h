@@ -27,7 +27,7 @@
 #ifndef _DISPATCH_H
 #define _DISPATCH_H
 
-#include "types.h"
+#include "fpart.h"
 #include "partition.h"
 #include "file_entry.h"
 #include "options.h"
@@ -39,6 +39,6 @@ int dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
     struct partition *part_head, pnum_t num_parts);
 pnum_t dispatch_file_entries_by_limits(struct file_entry *head,
     struct partition **part_head, fnum_t max_entries, fsize_t max_size,
-    struct program_options *options);
+    struct program_options *options, struct program_status *status);
 
 #endif /* _DISPATCH_H */

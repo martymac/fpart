@@ -185,11 +185,12 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
 pnum_t
 dispatch_file_entries_by_limits(struct file_entry *head,
     struct partition **part_head, fnum_t max_entries, fsize_t max_size,
-    struct program_options *options)
+    struct program_options *options, struct program_status *status)
 {
     assert(head != NULL);
     assert((part_head != NULL) && (*part_head == NULL));
     assert(options != NULL);
+    assert(status != NULL);
 
     /* number of partitions created, our return value */
     pnum_t num_parts_created = 0;
@@ -197,7 +198,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
     /* when max_size is used, create a default partition (partition 0) 
        that will hold files that does not match criteria */
     if(max_size > 0) {
-        if(add_partitions(part_head, 1, options) != 0) {
+        if(add_partitions(part_head, 1, options, status) != 0) {
             fprintf(stderr, "%s(): cannot init default partition\n", __func__);
             return (num_parts_created);
         }
@@ -207,7 +208,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
     pnum_t default_partition_index = 0;
 
     /* create a first data partition and keep a pointer to it */
-    if(add_partitions(part_head, 1, options) != 0) {
+    if(add_partitions(part_head, 1, options, status) != 0) {
         fprintf(stderr, "%s(): cannot create partition\n", __func__);
         *part_head = default_partition;
         return (num_parts_created);
@@ -239,7 +240,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
                     ((max_size > 0) && (((*part_head)->size + head->size) > max_size))) {
                     /* and we reached last partition, chain a new one */
                     if((*part_head)->nextp == NULL) {
-                        if(add_partitions(part_head, 1, options) != 0) {
+                        if(add_partitions(part_head, 1, options, status) != 0) {
                             fprintf(stderr, "%s(): cannot create partition\n",
                                 __func__);
                             *part_head = start_partition;
@@ -289,7 +290,7 @@ dispatch_file_entries_by_limits(struct file_entry *head,
        has been populated, remove start_partition to avoid returning an
        additional -empty- partition */
     if((max_size > 0) && (start_partition->num_files == 0)) {
-        remove_partition(start_partition);
+        remove_partition(start_partition, options, status);
         start_partition = NULL;
         num_parts_created--;
         *part_head = default_partition;

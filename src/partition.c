@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  */
 
-#include "types.h"
+#include "fpart.h"
 #include "utils.h"
 #include "options.h"
 #include "partition.h"
@@ -48,11 +48,12 @@
    - returns with head set to the last element */
 int
 add_partitions(struct partition **head, pnum_t num_parts,
-    struct program_options *options)
+    struct program_options *options, struct program_status *status)
 {
     assert(head != NULL);
     assert(num_parts > 0);
     assert(options != NULL);
+    assert(status != NULL);
 
     struct partition **current = head; /* current partition pointer address */
     struct partition *previous = NULL; /* previous partition pointer */
@@ -79,6 +80,10 @@ add_partitions(struct partition **head, pnum_t num_parts,
         if(previous != NULL)
             previous->nextp = *current;
 
+        /* count part in */
+        status->total_size += options->preload_size;
+        status->total_num_parts++;
+
         i++;
     }
     return (0);
@@ -86,9 +91,14 @@ add_partitions(struct partition **head, pnum_t num_parts,
 
 /* Remove a specific partition from the chain */
 int
-remove_partition(struct partition *part)
+remove_partition(struct partition *part, struct program_options *options,
+    struct program_status *status)
 {
     assert(part != NULL);
+    assert(options != NULL);
+    assert(status != NULL);
+    assert(status->total_size >= options->preload_size);
+    assert(status->total_num_parts >= 1);
 
     /* unlink partition */
     if(part->prevp != NULL)
@@ -98,6 +108,10 @@ remove_partition(struct partition *part)
 
     /* free memory */
     free(part);
+
+    /* count part out */
+    status->total_size -= options->preload_size;
+    status->total_num_parts--;
 
     return (0);
 }

@@ -38,6 +38,7 @@
 struct program_status {
     fsize_t total_size;          /* total partitions size created so far */
     fnum_t total_num_files;      /* total number of files added so far */
+    pnum_t total_num_parts;      /* total number of partitions created so far */
 };
 
 #endif /* _FPART_H */

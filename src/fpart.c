@@ -668,7 +668,8 @@ int main(int argc, char **argv)
     /* Status */
     struct program_status main_status = {
         0,    /* total partitions size created so far */
-        0     /* total number of files added so far */
+        0,    /* total number of files added so far */
+        0     /* total number of partitions created so far */
     };
 
 /******************
@@ -777,7 +778,8 @@ int main(int argc, char **argv)
         uninit_file_entries(head, &options, &main_status);
         /* display final summary */
         if(options.verbose >= OPT_VERBOSE)
-            display_final_summary(main_status.total_size, main_status.total_num_files);
+            display_final_summary(main_status.total_num_parts,
+            main_status.total_size, main_status.total_num_files);
 
         uninit_options(&options);
         exit(EXIT_SUCCESS);
@@ -793,7 +795,6 @@ int main(int argc, char **argv)
 
     /* our list of partitions */
     struct partition *part_head = NULL;
-    pnum_t num_parts = options.num_parts;
 
     /* sort files with a fixed size of partitions */
     if(options.num_parts != DFLT_OPT_NUM_PARTS) {
@@ -815,7 +816,7 @@ int main(int argc, char **argv)
     
         /* create a double_linked list of partitions
            which will hold dispatched files */
-        if(add_partitions(&part_head, options.num_parts, &options) != 0) {
+        if(add_partitions(&part_head, options.num_parts, &options, &main_status) != 0) {
             fprintf(stderr, "%s(): cannot init list of partitions\n",
                 __func__);
             uninit_partitions(part_head);
@@ -862,9 +863,9 @@ int main(int argc, char **argv)
     /* sort files with a file number or size limit per-partitions.
        In this case, partitions are dynamically-created */
     else {
-        if((num_parts = dispatch_file_entries_by_limits
+        if(dispatch_file_entries_by_limits
             (head, &part_head, options.max_entries, options.max_size,
-            &options)) == 0) {
+            &options, &main_status) == 0) {
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
@@ -887,14 +888,15 @@ int main(int argc, char **argv)
 
     /* display final summary */
     if(options.verbose >= OPT_VERBOSE) {
-        display_final_summary(main_status.total_size, main_status.total_num_files);
+        display_final_summary(main_status.total_num_parts,
+            main_status.total_size, main_status.total_num_files);
     }
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Writing output lists...\n");
 
     /* print file entries */
-    print_file_entries(head, part_head, num_parts, &options);
+    print_file_entries(head, part_head, main_status.total_num_parts, &options);
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Cleaning up...\n");

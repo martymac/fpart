@@ -101,6 +101,7 @@ int valid_file(const FTSENT * const p, struct program_options *options,
     unsigned char exclude_only);
 char ** clone_env(void);
 int push_env(char *str, char ***env);
-void display_final_summary(const fsize_t total_size, const fnum_t total_num_files);
+void display_final_summary(const pnum_t total_num_parts,
+    const fsize_t total_size, const fnum_t total_num_files);
 
 #endif /* _UTILS_H */

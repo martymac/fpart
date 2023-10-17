@@ -27,7 +27,7 @@
 #ifndef _PARTITION_H
 #define _PARTITION_H
 
-#include "types.h"
+#include "fpart.h"
 #include "options.h"
 
 #include <sys/types.h>
@@ -43,8 +43,9 @@ struct partition {
 };
 
 int add_partitions(struct partition **head, pnum_t num_parts,
-    struct program_options *options);
-int remove_partition(struct partition *part);
+    struct program_options *options, struct program_status *status);
+int remove_partition(struct partition *part, struct program_options *options,
+    struct program_status *status);
 void uninit_partitions(struct partition *head);
 pnum_t find_smallest_partition_index(struct partition *head);
 struct partition * get_partition_at(struct partition *head, pnum_t index);

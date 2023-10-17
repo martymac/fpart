@@ -504,8 +504,13 @@ live_print_file_entry(char *path, fsize_t size, int entry_errno,
     if(live_status.partition_num_files == 0) {
 start_part:
         /* very first pass of first partition, preload first partition */
-        if(live_status.partition_index == 0)
+        if(live_status.partition_index == 0) {
             live_status.partition_size = options->preload_size;
+
+            /* count part in */
+            status->total_size += options->preload_size;
+            status->total_num_parts++;
+        }
 
         if(out_template != NULL) {
             /* compute live_status.filename "out_template.i\0" */
@@ -679,6 +684,10 @@ end_part:
         live_status.partition_size = options->preload_size;
         live_status.partition_num_files = 0;
         live_status.partition_errno = 0;
+
+        /* count part in */
+        status->total_size += options->preload_size;
+        status->total_num_parts++;
 
         /* create another partition with single entry */
         if (split == SPLIT_DO) {
