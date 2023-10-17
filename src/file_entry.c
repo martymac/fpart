@@ -444,6 +444,8 @@ cleanup:
         free(env_fpart_partnumfiles_string);
     if(env_fpart_totalnumfiles_string != NULL)
         free(env_fpart_totalnumfiles_string);
+    if(env_fpart_parterrno_string != NULL)
+        free(env_fpart_parterrno_string);
     if(env_fpart_pid_string != NULL)
         free(env_fpart_pid_string);
     return (retval);
