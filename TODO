@@ -10,6 +10,7 @@ Global :
 
 Fpart:
 - chdir(2) to initial working directory before forking hooks ?
+- Implement pre-run hooks ? (is that useful ?)
 - Implement option -zzzz to list directories only (0-sized) ?
 - -E should probably not imply -z (as empty dirs are part of parent dirs' file lists)
 - To minimize memory footprint in non-live mode, add a 'checkpoint' capability
@@ -25,6 +26,9 @@ Fpart:
 - Use queue(3) ?
 
 Fpsync:
+- Delete empty stdout and stderr by default
+  (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
+- Document job prepare/listing/resume/replay
 - Show if dirsonly/aggressive mode is enabled in status
 - When waiting for sync jobs to complete, regularly show status
   (as a progress bar ?)
@@ -32,7 +36,9 @@ Fpsync:
   (useful to perform tasks such as computing an
   additional src/ or dst/ prefix - to be added too)
 - Ability to replay one or more jobs within a specific run
+- Enable fpart's option -n for prepare mode only ?
 - Add "debug" pseudo-tool ?
+- Homogenize variable names ('_', MAJ, min)
 - Improve portability (egrep vs grep, ...)
 - Colorized / Improved output / Progressbar
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
