@@ -364,9 +364,13 @@ state of the program:
 .Ev FPART_PARTNUMBER
 (current partition number),
 .Ev FPART_PARTSIZE
-(current partition size),
+(current partition's size),
+.Ev FPART_TOTALSIZE
+(total partitions' size),
 .Ev FPART_PARTNUMFILES
-(number of files in current partition),
+(number of files packed in current partition),
+.Ev FPART_TOTALNUMFILES
+(total number of files packed so far),
 .Ev FPART_PARTERRNO
 (0 if every single partition's entry has been read without error, else last
 erroneous entry's errno.

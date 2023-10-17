@@ -50,8 +50,9 @@ struct file_entry {
 
 int fpart_hook(const char *cmd, const struct program_options *options,
     const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fnum_t *live_num_files,
-    const int partition_errno);
+    const fsize_t *live_partition_size, const fsize_t *live_total_size,
+    const fnum_t *live_partition_num_files, const fnum_t *live_total_num_files,
+    const int live_partition_errno);
 int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
     int entry_errno, struct program_options *options);
 /* display types */

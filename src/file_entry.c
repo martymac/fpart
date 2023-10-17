@@ -93,7 +93,9 @@ static struct {
     char *filename;              /* current output file name */
     pnum_t partition_index;      /* current partition number */
     fsize_t partition_size;      /* current partition size */
+    fsize_t total_size;          /* total partitions size created so far */
     fnum_t partition_num_files;  /* number of files in current partition */
+    fnum_t total_num_files;      /* total number of files added so far */
     int partition_errno;         /* 0 if every single entry has been fts_read()
                                     without error, else last entry's errno */
     int exit_summary;            /* 0 if every single hook exit()ed with 0,
@@ -103,6 +105,8 @@ static struct {
     NULL,
     STDOUT_FILENO,
     NULL,
+    0,
+    0,
     0,
     0,
     0,
@@ -132,12 +136,18 @@ kill_child(int sig)
 int
 fpart_hook(const char *cmd, const struct program_options *options,
     const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fnum_t *live_num_files,
-    const int partition_errno)
+    const fsize_t *live_partition_size, const fsize_t *live_total_size,
+    const fnum_t *live_partition_num_files, const fnum_t *live_total_num_files,
+    const int live_partition_errno)
 {
     assert(cmd != NULL);
     assert(options != NULL);
-    assert(partition_errno >= 0);
+    assert(live_partition_index != NULL);
+    assert(live_partition_size != NULL);
+    assert(live_total_size != NULL);
+    assert(live_partition_num_files != NULL);
+    assert(live_total_num_files != NULL);
+    assert(live_partition_errno >= 0);
 
     int retval = 0;
 
@@ -146,7 +156,9 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partfilename_name = "FPART_PARTFILENAME";
     char *env_fpart_partnumber_name = "FPART_PARTNUMBER";
     char *env_fpart_partsize_name = "FPART_PARTSIZE";
+    char *env_fpart_totalsize_name = "FPART_TOTALSIZE";
     char *env_fpart_partnumfiles_name = "FPART_PARTNUMFILES";
+    char *env_fpart_totalnumfiles_name = "FPART_TOTALNUMFILES";
     char *env_fpart_parterrno_name = "FPART_PARTERRNO";
     char *env_fpart_pid_name = "FPART_PID";
 
@@ -155,7 +167,9 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_partfilename_string = NULL;
     char *env_fpart_partnumber_string = NULL;
     char *env_fpart_partsize_string = NULL;
+    char *env_fpart_totalsize_string = NULL;
     char *env_fpart_partnumfiles_string = NULL;
+    char *env_fpart_totalnumfiles_string = NULL;
     char *env_fpart_parterrno_string = NULL;
     char *env_fpart_pid_string = NULL;
 
@@ -173,10 +187,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     /* determine the kind of hook we are in */
     if(cmd == options->pre_part_hook) {
-        assert(live_partition_index != NULL);
-        assert(live_partition_size != NULL);
-        assert(live_num_files != NULL);
-
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing pre-part #%ju hook: '%s'\n",
                 adapt_partition_index(*live_partition_index, options), cmd);
@@ -196,10 +206,6 @@ fpart_hook(const char *cmd, const struct program_options *options,
         }
     }
     else if(cmd == options->post_part_hook) {
-        assert(live_partition_index != NULL);
-        assert(live_partition_size != NULL);
-        assert(live_num_files != NULL);
-
         if(options->verbose >= OPT_VERBOSE)
             fprintf(stderr, "Executing post-part #%ju hook: '%s'\n",
                 adapt_partition_index(*live_partition_index, options), cmd);
@@ -267,17 +273,49 @@ fpart_hook(const char *cmd, const struct program_options *options,
         }
     }
 
+    /* FPART_TOTALSIZE */
+    if(live_total_size != NULL) {
+        malloc_size = strlen(env_fpart_totalsize_name) + 1 +
+            get_num_digits(*live_total_size) + 1;
+        if_not_malloc(env_fpart_totalsize_string, malloc_size,
+            retval = 1;
+            goto cleanup;
+        )
+        snprintf(env_fpart_totalsize_string, malloc_size, "%s=%ju",
+            env_fpart_totalsize_name, *live_total_size);
+        if(push_env(env_fpart_totalsize_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
+    }
+
     /* FPART_PARTNUMFILES */
-    if(live_num_files != NULL) {
+    if(live_partition_num_files != NULL) {
         malloc_size = strlen(env_fpart_partnumfiles_name) + 1 +
-            get_num_digits(*live_num_files) + 1;
+            get_num_digits(*live_partition_num_files) + 1;
         if_not_malloc(env_fpart_partnumfiles_string, malloc_size,
             retval = 1;
             goto cleanup;
         )
         snprintf(env_fpart_partnumfiles_string, malloc_size, "%s=%ju",
-            env_fpart_partnumfiles_name, *live_num_files);
+            env_fpart_partnumfiles_name, *live_partition_num_files);
         if(push_env(env_fpart_partnumfiles_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
+    }
+
+    /* FPART_TOTALNUMFILES */
+    if(live_total_num_files != NULL) {
+        malloc_size = strlen(env_fpart_totalnumfiles_name) + 1 +
+            get_num_digits(*live_total_num_files) + 1;
+        if_not_malloc(env_fpart_totalnumfiles_string, malloc_size,
+            retval = 1;
+            goto cleanup;
+        )
+        snprintf(env_fpart_totalnumfiles_string, malloc_size, "%s=%ju",
+            env_fpart_totalnumfiles_name, *live_total_num_files);
+        if(push_env(env_fpart_totalnumfiles_string, &envp) != 0) {
             retval = 1;
             goto cleanup;
         }
@@ -285,13 +323,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     /* FPART_PARTERRNO */
     malloc_size = strlen(env_fpart_parterrno_name) + 1 +
-        get_num_digits(partition_errno) + 1;
+        get_num_digits(live_partition_errno) + 1;
     if_not_malloc(env_fpart_parterrno_string, malloc_size,
         retval = 1;
         goto cleanup;
     )
     snprintf(env_fpart_parterrno_string, malloc_size, "%s=%d",
-        env_fpart_parterrno_name, partition_errno);
+        env_fpart_parterrno_name, live_partition_errno);
     if(push_env(env_fpart_parterrno_string, &envp) != 0) {
         retval = 1;
         goto cleanup;
@@ -387,8 +425,12 @@ cleanup:
         free(env_fpart_partnumber_string);
     if(env_fpart_partsize_string != NULL)
         free(env_fpart_partsize_string);
+    if(env_fpart_totalsize_string != NULL)
+        free(env_fpart_totalsize_string);
     if(env_fpart_partnumfiles_string != NULL)
         free(env_fpart_partnumfiles_string);
+    if(env_fpart_totalnumfiles_string != NULL)
+        free(env_fpart_totalnumfiles_string);
     if(env_fpart_pid_string != NULL)
         free(env_fpart_pid_string);
     return (retval);
@@ -486,7 +528,9 @@ start_part:
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
+                &live_status.total_size,
                 &live_status.partition_num_files,
+                &live_status.total_num_files,
                 0) != 0) /* partition_errno irrelevant here */
                 live_status.exit_summary = 1;
         }
@@ -517,9 +561,12 @@ start_part:
     }
 
     /* count file in */
-    live_status.partition_size +=
-        round_num(size + options->overload_size, options->round_size);
+    fsize_t rounded_size = round_num(size + options->overload_size,
+                               options->round_size);
+    live_status.partition_size += rounded_size;
+    live_status.total_size += rounded_size;
     live_status.partition_num_files++;
+    live_status.total_num_files++;
     if(entry_errno != 0)
         live_status.partition_errno = entry_errno;
 
@@ -622,7 +669,9 @@ end_part:
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
+                &live_status.total_size,
                 &live_status.partition_num_files,
+                &live_status.total_num_files,
                 live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }
@@ -1148,7 +1197,9 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
+                &live_status.total_size,
                 &live_status.partition_num_files,
+                &live_status.total_num_files,
                 live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }

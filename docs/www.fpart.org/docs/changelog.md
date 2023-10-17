@@ -16,6 +16,7 @@
       (fixes GH issue #48)
     - fpsync: show transmitted files count / data size in final status
       and SIGINFO handler (fixes GH issue #24)
+    - fpart: add two new hook variables: FPART_TOTALSIZE and FPART_TOTALNUMFILES
 ```
 # Current: 1.5.1
 ```nohighlight
