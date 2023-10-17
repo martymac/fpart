@@ -85,7 +85,7 @@ static void kill_child(int)  __attribute__((__noreturn__));
  Live-mode related functions 
  ****************************/
 
-/* Status */
+/* Live status (complements main_status) */
 static struct {
     char *entry_path;            /* current fts(3) entry path */
     int fd;                      /* current output file descriptor
@@ -93,9 +93,7 @@ static struct {
     char *filename;              /* current output file name */
     pnum_t partition_index;      /* current partition number */
     fsize_t partition_size;      /* current partition size */
-    fsize_t total_size;          /* total partitions size created so far */
     fnum_t partition_num_files;  /* number of files in current partition */
-    fnum_t total_num_files;      /* total number of files added so far */
     int partition_errno;         /* 0 if every single entry has been fts_read()
                                     without error, else last entry's errno */
     int exit_summary;            /* 0 if every single hook exit()ed with 0,
@@ -105,8 +103,6 @@ static struct {
     NULL,
     STDOUT_FILENO,
     NULL,
-    0,
-    0,
     0,
     0,
     0,
@@ -135,18 +131,16 @@ kill_child(int sig)
      else returns 1 */
 int
 fpart_hook(const char *cmd, const struct program_options *options,
-    const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fsize_t *live_total_size,
-    const fnum_t *live_partition_num_files, const fnum_t *live_total_num_files,
-    const int live_partition_errno)
+    const struct program_status *status, const char *live_filename,
+    const pnum_t *live_partition_index, const fsize_t *live_partition_size,
+    const fnum_t *live_partition_num_files, const int live_partition_errno)
 {
     assert(cmd != NULL);
     assert(options != NULL);
+    assert(status != NULL);
     assert(live_partition_index != NULL);
     assert(live_partition_size != NULL);
-    assert(live_total_size != NULL);
     assert(live_partition_num_files != NULL);
-    assert(live_total_num_files != NULL);
     assert(live_partition_errno >= 0);
 
     int retval = 0;
@@ -274,19 +268,17 @@ fpart_hook(const char *cmd, const struct program_options *options,
     }
 
     /* FPART_TOTALSIZE */
-    if(live_total_size != NULL) {
-        malloc_size = strlen(env_fpart_totalsize_name) + 1 +
-            get_num_digits(*live_total_size) + 1;
-        if_not_malloc(env_fpart_totalsize_string, malloc_size,
-            retval = 1;
-            goto cleanup;
-        )
-        snprintf(env_fpart_totalsize_string, malloc_size, "%s=%ju",
-            env_fpart_totalsize_name, *live_total_size);
-        if(push_env(env_fpart_totalsize_string, &envp) != 0) {
-            retval = 1;
-            goto cleanup;
-        }
+    malloc_size = strlen(env_fpart_totalsize_name) + 1 +
+        get_num_digits(status->total_size) + 1;
+    if_not_malloc(env_fpart_totalsize_string, malloc_size,
+        retval = 1;
+        goto cleanup;
+    )
+    snprintf(env_fpart_totalsize_string, malloc_size, "%s=%ju",
+        env_fpart_totalsize_name, status->total_size);
+    if(push_env(env_fpart_totalsize_string, &envp) != 0) {
+        retval = 1;
+        goto cleanup;
     }
 
     /* FPART_PARTNUMFILES */
@@ -306,19 +298,17 @@ fpart_hook(const char *cmd, const struct program_options *options,
     }
 
     /* FPART_TOTALNUMFILES */
-    if(live_total_num_files != NULL) {
-        malloc_size = strlen(env_fpart_totalnumfiles_name) + 1 +
-            get_num_digits(*live_total_num_files) + 1;
-        if_not_malloc(env_fpart_totalnumfiles_string, malloc_size,
-            retval = 1;
-            goto cleanup;
-        )
-        snprintf(env_fpart_totalnumfiles_string, malloc_size, "%s=%ju",
-            env_fpart_totalnumfiles_name, *live_total_num_files);
-        if(push_env(env_fpart_totalnumfiles_string, &envp) != 0) {
-            retval = 1;
-            goto cleanup;
-        }
+    malloc_size = strlen(env_fpart_totalnumfiles_name) + 1 +
+        get_num_digits(status->total_num_files) + 1;
+    if_not_malloc(env_fpart_totalnumfiles_string, malloc_size,
+        retval = 1;
+        goto cleanup;
+    )
+    snprintf(env_fpart_totalnumfiles_string, malloc_size, "%s=%ju",
+        env_fpart_totalnumfiles_name, status->total_num_files);
+    if(push_env(env_fpart_totalnumfiles_string, &envp) != 0) {
+        retval = 1;
+        goto cleanup;
     }
 
     /* FPART_PARTERRNO */
@@ -442,16 +432,21 @@ cleanup:
    - returns (-1) if error */
 int
 handle_file_entry(struct file_entry **head, char *path, fsize_t size,
-    int entry_errno, struct program_options *options)
+    int entry_errno, struct program_options *options,
+    struct program_status *status)
 {
     assert(options != NULL);
+    assert(status != NULL);
     assert(entry_errno >= 0);
 
+    /* overload and round size */
+    size = round_num(size + options->overload_size, options->round_size);
+
     if(options->live_mode == OPT_LIVEMODE)
-        return (live_print_file_entry(path, size, entry_errno, options));
+        return (live_print_file_entry(path, size, entry_errno, options, status));
     else
         /* XXX propagate (and exploit) entry_errno in non-live mode too ? */
-        return (add_file_entry(head, path, size, options));
+        return (add_file_entry(head, path, size, options, status));
 }
 
 /* Display a single entry line */
@@ -475,7 +470,7 @@ display_file_entry(pnum_t partition_index, const fsize_t entry_size,
    - returns (-1) if error */
 int
 live_print_file_entry(char *path, fsize_t size, int entry_errno,
-    struct program_options *options)
+    struct program_options *options, struct program_status *status)
 {
 /* split states */
 #define SPLIT_NONE 0
@@ -483,9 +478,10 @@ live_print_file_entry(char *path, fsize_t size, int entry_errno,
 #define SPLIT_END  2
 
     assert(path != NULL);
+    assert(entry_errno >= 0);
     assert(options != NULL);
     assert(options->live_mode == OPT_LIVEMODE);
-    assert(entry_errno >= 0);
+    assert(status != NULL);
 
     char *out_template = options->out_filename;
     char *ln_term = (options->out_zero == OPT_OUT0) ? "\0" : "\n";
@@ -493,12 +489,12 @@ live_print_file_entry(char *path, fsize_t size, int entry_errno,
 
     /* option -S: skip files bigger than maximum partition size (option -s)
        and print them to stdout in hardcoded pseudo-partition 'S' ('S'kipped).
-       Preloading and overloading are used here too */
+       Preloading and overloading are already done at that step */
     if(options->skip_big == OPT_SKIPBIG) {
-        fsize_t needed_part_size = options->preload_size +
-            round_num(size + options->overload_size, options->round_size);
+        fsize_t needed_part_size = options->preload_size + size;
         if(needed_part_size > options->max_size) {
-            display_file_entry(0, size, path, ENTRY_DISPLAY_TYPE_SKIPPED); /* partition_index irrelevant here */
+            /* partition_index irrelevant here */
+            display_file_entry(0, size, path, ENTRY_DISPLAY_TYPE_SKIPPED);
             fflush(stdout);
             return (1);
         }
@@ -524,13 +520,11 @@ start_part:
 
         /* execute pre-partition hook */
         if(options->pre_part_hook != NULL) {
-            if(fpart_hook(options->pre_part_hook, options,
+            if(fpart_hook(options->pre_part_hook, options, status,
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
-                &live_status.total_size,
                 &live_status.partition_num_files,
-                &live_status.total_num_files,
                 0) != 0) /* partition_errno irrelevant here */
                 live_status.exit_summary = 1;
         }
@@ -561,12 +555,13 @@ start_part:
     }
 
     /* count file in */
-    fsize_t rounded_size = round_num(size + options->overload_size,
-                               options->round_size);
-    live_status.partition_size += rounded_size;
-    live_status.total_size += rounded_size;
+    live_status.partition_size += size;
     live_status.partition_num_files++;
-    live_status.total_num_files++;
+    /* in live mode, global counters are not updated from handle_file_entry(),
+       because that would make them updated *after* hook calls, rendering
+       FPART_TOTALSIZE and FPART_TOTALNUMFILES variables erroneous */
+    status->total_size += size;
+    status->total_num_files++;
     if(entry_errno != 0)
         live_status.partition_errno = entry_errno;
 
@@ -665,13 +660,11 @@ end_part:
 
         /* execute post-partition hook */
         if(options->post_part_hook != NULL) {
-            if(fpart_hook(options->post_part_hook, options,
+            if(fpart_hook(options->post_part_hook, options, status,
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
-                &live_status.total_size,
                 &live_status.partition_num_files,
-                &live_status.total_num_files,
                 live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }
@@ -704,17 +697,19 @@ end_part:
 /* Add a file entry to a double-linked list of file_entries
    - if head is NULL, creates a new file entry ; if not, chains a new file
      entry to it
+   - increments *status counters
    - returns (0) if entry has been added
    - returns (-1) if error
    - returns with head set to the newly added element */
 int
 add_file_entry(struct file_entry **head, char *path, fsize_t size,
-    struct program_options *options)
+    struct program_options *options, struct program_status *status)
 {
     assert(head != NULL);
     assert(path != NULL);
     assert(options != NULL);
     assert(options->live_mode == OPT_NOLIVEMODE);
+    assert(status != NULL);
 
     struct file_entry **current = head; /* current file_entry pointer address */
     struct file_entry *previous = NULL; /* previous file_entry pointer */
@@ -739,8 +734,7 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
         return (-1);
     )
     snprintf((*current)->path, malloc_size, "%s", path);
-    (*current)->size = size + options->overload_size;
-    (*current)->size = round_num((*current)->size, options->round_size);
+    (*current)->size = size;
 
     /* set current file entry's index and pointers */
     (*current)->partition_index = 0;    /* set during dispatch */
@@ -750,6 +744,10 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
     /* set previous' nextp pointer */
     if(previous != NULL)
         previous->nextp = *current;
+
+    /* count file in */
+    status->total_size += size;
+    status->total_num_files++;
 
     /* display added filename */
     if(options->verbose >= OPT_VVERBOSE)
@@ -794,17 +792,17 @@ fts_dirsfirst(const FTSENT * const *a, const FTSENT * const *b)
 /* Initialize a double-linked list of file_entries from a path
    - file_path may be a file or directory
    - if head is NULL, creates a new list ; if not, chains a new list to it
-   - increments *count with the number of files found
+   - increments *status counters
    - returns != 0 if critical error
    - returns with head set to the last element added */
 int
-init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
-    struct program_options *options)
+init_file_entries(char *file_path, struct file_entry **head,
+	struct program_options *options, struct program_status *status)
 {
     assert(file_path != NULL);
     assert(head != NULL);
-    assert(count != NULL);
     assert(options != NULL);
+    assert(status != NULL);
 
     /* prepare fts */
     FTS *ftsp = NULL;
@@ -1015,11 +1013,8 @@ add_directory:
                     /* else, trust curdir_size and leave it untouched. */
 
                     /* add or display it */
-                    int handled = handle_file_entry(head, curdir_entry_path,
-                        curdir_size, fts_read_errno, options);
-                    if(handled == 0)
-                        (*count)++;
-                    else if(handled < 0) {
+                    if(handle_file_entry(head, curdir_entry_path, curdir_size,
+                        fts_read_errno, options, status) < 0) {
                         fprintf(stderr, "%s(): cannot add file entry\n",
                             __func__);
                         free(curdir_entry_path);
@@ -1127,12 +1122,9 @@ two-pass check to handle include and exclude options properly. */
                     continue;
 
                 /* add or display it */
-                int handled = handle_file_entry(head, p->fts_path,
-                    curfile_size, 0, options); /* fts_read_errno is always 0
-                                                  here, so harcode it */
-                if(handled == 0)
-                    (*count)++;
-                else if(handled < 0) {
+                if(handle_file_entry(head, p->fts_path,
+                       curfile_size, 0 /* fts_read_errno is always 0 here,
+                       so hardcode it */, options, status) < 0) {
                     fprintf(stderr, "%s(): cannot add file entry\n", __func__);
                     fts_close(ftsp);
                     return (1);
@@ -1156,9 +1148,11 @@ two-pass check to handle include and exclude options properly. */
 
 /* Un-initialize a double-linked list of file_entries */
 void
-uninit_file_entries(struct file_entry *head, struct program_options *options)
+uninit_file_entries(struct file_entry *head, struct program_options *options,
+    struct program_status *status)
 {
     assert(options != NULL);
+    assert(status != NULL);
 
     /* be sure to start from last file entry */
     fastfw_list(head);
@@ -1193,13 +1187,11 @@ uninit_file_entries(struct file_entry *head, struct program_options *options)
         /* execute last post-partition hook */
         if((options->post_part_hook != NULL) &&
             (live_status.partition_num_files > 0)) {
-            if(fpart_hook(options->post_part_hook, options,
+            if(fpart_hook(options->post_part_hook, options, status,
                 live_status.filename,
                 &live_status.partition_index,
                 &live_status.partition_size,
-                &live_status.total_size,
                 &live_status.partition_num_files,
-                &live_status.total_num_files,
                 live_status.partition_errno) != 0)
                 live_status.exit_summary = 1;
         }

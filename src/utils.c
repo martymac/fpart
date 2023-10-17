@@ -665,3 +665,13 @@ push_env(char *str, char ***env)
 
     return (0);
 }
+
+/* Display final summary */
+void
+display_final_summary(const fsize_t total_size, const fnum_t total_num_files)
+{
+    fprintf(stderr, "Total: size = %ju, files = %ju\n",
+        total_size, total_num_files);
+
+    return;
+}

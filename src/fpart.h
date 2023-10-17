@@ -27,9 +27,17 @@
 #ifndef _FPART_H
 #define _FPART_H
 
+#include "types.h"
+
 #define FPART_VERSION "1.5.2"
 
 /* maximum input line length, including '\n' and '\0' */
 #define MAX_LINE_LENGTH 2048
+
+/* Main program status */
+struct program_status {
+    fsize_t total_size;          /* total partitions size created so far */
+    fnum_t total_num_files;      /* total number of files added so far */
+};
 
 #endif /* _FPART_H */

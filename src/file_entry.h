@@ -27,7 +27,7 @@
 #ifndef _FILE_ENTRY_H
 #define _FILE_ENTRY_H
 
-#include "types.h"
+#include "fpart.h"
 #include "options.h"
 
 #include <sys/types.h>
@@ -49,25 +49,26 @@ struct file_entry {
 };
 
 int fpart_hook(const char *cmd, const struct program_options *options,
-    const char *live_filename, const pnum_t *live_partition_index,
-    const fsize_t *live_partition_size, const fsize_t *live_total_size,
-    const fnum_t *live_partition_num_files, const fnum_t *live_total_num_files,
-    const int live_partition_errno);
+    const struct program_status *status, const char *live_filename,
+    const pnum_t *live_partition_index, const fsize_t *live_partition_size,
+    const fnum_t *live_partition_num_files, const int live_partition_errno);
 int handle_file_entry(struct file_entry **head, char *path, fsize_t size,
-    int entry_errno, struct program_options *options);
+    int entry_errno, struct program_options *options,
+    struct program_status *status);
+
 /* display types */
 #define ENTRY_DISPLAY_TYPE_STANDARD 0
 #define ENTRY_DISPLAY_TYPE_SKIPPED  1
 void display_file_entry(pnum_t partition_index, const fsize_t entry_size,
     const char * const entry_path, const unsigned char entry_display_type);
 int live_print_file_entry(char *path, fsize_t size, int entry_errno,
-    struct program_options *options);
+    struct program_options *options, struct program_status *status);
 int add_file_entry(struct file_entry **head, char *path, fsize_t size,
-    struct program_options *options);
-int init_file_entries(char *file_path, struct file_entry **head, fnum_t *count,
-    struct program_options *options);
+    struct program_options *options, struct program_status *status);
+int init_file_entries(char *file_path, struct file_entry **head,
+    struct program_options *options, struct program_status *status);
 void uninit_file_entries(struct file_entry *head,
-    struct program_options *options);
+    struct program_options *options, struct program_status *status);
 int print_file_entries(struct file_entry *head, struct partition *part_head,
     pnum_t num_parts, struct program_options *options);
 void init_file_entry_p(struct file_entry **file_entry_p, fnum_t num_entries,

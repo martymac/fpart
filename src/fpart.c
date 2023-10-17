@@ -229,15 +229,16 @@ usage(void)
    value) and update file entries (head)
    - returns != 0 if a critical error occurred
    - returns with head set to the last element added
-   - updates totalfiles with the number of elements added */
+   - updates main_status.total_size and main_status.total_num_files with
+     the number of elements added */
 static int
-handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
-    struct program_options *options)
+handle_argument(char *argument, struct file_entry **head,
+    struct program_options *options, struct program_status *status)
 {
     assert(argument != NULL);
-    assert(totalfiles != NULL);
     assert(head != NULL);
     assert(options != NULL);
+    assert(status != NULL);
 
     if(options->arbitrary_values == OPT_ARBITRARYVALUES) {
     /* handle arbitrary values */
@@ -248,11 +249,8 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
         )
 
         if(sscanf(argument, "%ju %[^\n]", &input_size, input_path) == 2) {
-            int handled = handle_file_entry(head, input_path, input_size,
-                0, options); /* entry_errno irrelevant here */
-            if(handled == 0)
-                (*totalfiles)++;
-            else if(handled < 0) {
+            if(handle_file_entry(head, input_path, input_size,
+                   0, options, status) /* entry_errno irrelevant here */ < 0) {
                 fprintf(stderr, "%s(): cannot add file entry\n", __func__);
                 free(input_path);
                 return (1);
@@ -283,7 +281,7 @@ handle_argument(char *argument, fnum_t *totalfiles, struct file_entry **head,
             fprintf(stderr, "init_file_entries(): examining %s\n",
                 input_path);
 #endif
-            if(init_file_entries(input_path, head, totalfiles, options) != 0) {
+            if(init_file_entries(input_path, head, options, status) != 0) {
                 fprintf(stderr, "%s(): cannot initialize file entries\n",
                     __func__);
                 free(input_path);
@@ -667,7 +665,11 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
 
 int main(int argc, char **argv)
 {
-    fnum_t totalfiles = 0;
+    /* Status */
+    struct program_status main_status = {
+        0,    /* total partitions size created so far */
+        0     /* total number of files added so far */
+    };
 
 /******************
   Handle options
@@ -730,8 +732,8 @@ int main(int argc, char **argv)
             if((line_end_p = strchr(line, '\n')) != NULL)
                 *line_end_p = '\0';
 
-            if(handle_argument(line, &totalfiles, &head, &options) != 0) {
-                uninit_file_entries(head, &options);
+            if(handle_argument(line, &head, &options, &main_status) != 0) {
+                uninit_file_entries(head, &options, &main_status);
                 uninit_options(&options);
                 exit(EXIT_FAILURE);
             }
@@ -756,39 +758,38 @@ int main(int argc, char **argv)
     /* now, work on each path provided as arguments */
     int i;
     for(i = 0 ; i < argc ; i++) {
-        if(handle_argument(argv[i], &totalfiles, &head, &options) != 0) {
-            uninit_file_entries(head, &options);
+        if(handle_argument(argv[i], &head, &options, &main_status) != 0) {
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         }
     }
 
+    /* come back to the first element */
+    rewind_list(head);
+
 /****************
   Display status
 *****************/
 
-    /* come back to the first element */
-    rewind_list(head);
-
     /* no file found or live mode */
-    if((totalfiles == 0) || (options.live_mode == OPT_LIVEMODE)) {
-        uninit_file_entries(head, &options);
-        /* display status */
+    if((main_status.total_num_files == 0) || (options.live_mode == OPT_LIVEMODE)) {
+        uninit_file_entries(head, &options, &main_status);
+        /* display final summary */
         if(options.verbose >= OPT_VERBOSE)
-            fprintf(stderr, "%ju file(s) found.\n", totalfiles);
+            display_final_summary(main_status.total_size, main_status.total_num_files);
+
         uninit_options(&options);
         exit(EXIT_SUCCESS);
-    }
-
-    /* display status */
-    if(options.verbose >= OPT_VERBOSE) {
-        fprintf(stderr, "%ju file(s) found.\n", totalfiles);
-        fprintf(stderr, "Sorting entries...\n");
     }
 
 /************************************************
   Sort entries with a fixed number of partitions
 *************************************************/
+
+    if(options.verbose >= OPT_VERBOSE) {
+        fprintf(stderr, "Sorting entries...\n");
+    }
 
     /* our list of partitions */
     struct partition *part_head = NULL;
@@ -799,17 +800,17 @@ int main(int argc, char **argv)
         /* create a fixed-size array of pointers to sort */
         struct file_entry **file_entry_p = NULL;
 
-        if_not_malloc(file_entry_p, sizeof(struct file_entry *) * totalfiles,
-            uninit_file_entries(head, &options);
+        if_not_malloc(file_entry_p, sizeof(struct file_entry *) * main_status.total_num_files,
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         )
 
         /* initialize array */
-        init_file_entry_p(file_entry_p, totalfiles, head);
+        init_file_entry_p(file_entry_p, main_status.total_num_files, head);
     
         /* sort array */
-        qsort(&file_entry_p[0], totalfiles, sizeof(struct file_entry *),
+        qsort(&file_entry_p[0], main_status.total_num_files, sizeof(struct file_entry *),
             &sort_file_entry_p);
     
         /* create a double_linked list of partitions
@@ -819,7 +820,7 @@ int main(int argc, char **argv)
                 __func__);
             uninit_partitions(part_head);
             free(file_entry_p);
-            uninit_file_entries(head, &options);
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         }
@@ -828,24 +829,24 @@ int main(int argc, char **argv)
     
         /* dispatch files */
         if(dispatch_file_entry_p_by_size
-            (file_entry_p, totalfiles, part_head, options.num_parts) != 0) {
+            (file_entry_p, main_status.total_num_files, part_head, options.num_parts) != 0) {
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
             free(file_entry_p);
-            uninit_file_entries(head, &options);
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         }
     
         /* re-dispatch empty files */
         if(dispatch_empty_file_entries
-            (head, totalfiles, part_head, options.num_parts) != 0) {
+            (head, main_status.total_num_files, part_head, options.num_parts) != 0) {
             fprintf(stderr, "%s(): unable to dispatch empty file entries\n",
                 __func__);
             uninit_partitions(part_head);
             free(file_entry_p);
-            uninit_file_entries(head, &options);
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         }
@@ -867,7 +868,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s(): unable to dispatch file entries\n",
                 __func__);
             uninit_partitions(part_head);
-            uninit_file_entries(head, &options);
+            uninit_file_entries(head, &options, &main_status);
             uninit_options(&options);
             exit(EXIT_FAILURE);
         }
@@ -881,8 +882,13 @@ int main(int argc, char **argv)
   Print result and exit
 ************************/
 
-    /* print result summary */
+    /* print partitions summary */
     print_partitions(part_head, &options);
+
+    /* display final summary */
+    if(options.verbose >= OPT_VERBOSE) {
+        display_final_summary(main_status.total_size, main_status.total_num_files);
+    }
 
     if(options.verbose >= OPT_VERBOSE)
         fprintf(stderr, "Writing output lists...\n");
@@ -895,7 +901,7 @@ int main(int argc, char **argv)
 
     /* free stuff */
     uninit_partitions(part_head);
-    uninit_file_entries(head, &options);
+    uninit_file_entries(head, &options, &main_status);
     uninit_options(&options);
     exit(EXIT_SUCCESS);
 }
