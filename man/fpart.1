@@ -57,6 +57,7 @@
 .Op Fl S
 .Op Fl w Ar cmd
 .Op Fl W Ar cmd
+.Op Fl R Ar cmd
 .Op Fl p Ar num
 .Op Fl q Ar num
 .Op Fl r Ar num
@@ -358,7 +359,7 @@ when starting a new partition (before having opened next output file, if any).
 is run in a specific environment that provides several variables describing the
 state of the program:
 .Ev FPART_HOOKTYPE
-("pre-part" or "post-part"),
+("pre-part", "post-part" or "post-run"),
 .Ev FPART_PARTFILENAME
 (current partition's output file name),
 .Ev FPART_PARTNUMBER
@@ -393,6 +394,16 @@ Same as
 but executes
 .Ar cmd
 when finishing a partition (after having closed last output file, if any).
+.It Fl R Ar cmd , Fl -post-run-cmd Ar cmd
+Same as
+.Fl w
+and
+.Fl W
+but executes
+.Ar cmd
+just once before exiting.
+Note that only FPART_TOTALSIZE and FPART_TOTALNUMFILES environment variables
+are available in post-run hooks.
 .El
 .Sh SIZE HANDLING
 .Bl -tag -width indent

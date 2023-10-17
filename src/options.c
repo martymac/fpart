@@ -109,6 +109,7 @@ init_options(struct program_options *options)
     options->skip_big = DFLT_OPT_SKIPBIG;
     options->pre_part_hook = NULL;
     options->post_part_hook = NULL;
+    options->post_run_hook = NULL;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->round_size = DFLT_OPT_ROUND_SIZE;
@@ -121,6 +122,8 @@ uninit_options(struct program_options *options)
     options->round_size = DFLT_OPT_ROUND_SIZE;
     options->overload_size = DFLT_OPT_OVERLOAD_SIZE;
     options->preload_size = DFLT_OPT_PRELOAD_SIZE;
+    if(options->post_run_hook != NULL)
+        free(options->post_run_hook);
     if(options->post_part_hook != NULL)
         free(options->post_part_hook);
     if(options->pre_part_hook != NULL)

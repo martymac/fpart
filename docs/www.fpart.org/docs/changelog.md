@@ -19,6 +19,7 @@
     - fpart: add two new hook variables: FPART_TOTALSIZE and FPART_TOTALNUMFILES
     - fpart: final summary now shows total number of parts created, as well as
       total number of files packed and total resulting size
+    - fpart: add post-run hook (option -R), triggered before program exits
 ```
 # Current: 1.5.1
 ```nohighlight

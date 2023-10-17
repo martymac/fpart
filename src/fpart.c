@@ -50,9 +50,9 @@
 
 /* Short options */
 #if defined(_HAS_FNM_CASEFOLD)
-#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:Y:x:X:zZd:DELSw:W:p:q:r:"
+#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:Y:x:X:zZd:DELSw:W:R:p:q:r:"
 #else
-#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:x:zZd:DELSw:W:p:q:r:"
+#define OPTIONS "+hVn:f:s:i:ao:0ePvlby:x:zZd:DELSw:W:R:p:q:r:"
 #endif
 
 /* Long options */
@@ -74,6 +74,7 @@ static struct option long_options[] =
     { "live",           no_argument,        NULL, 'L' },
     { "pre-part-cmd",   required_argument,  NULL, 'w' },
     { "post-part-cmd",  required_argument,  NULL, 'W' },
+    { "post-run-cmd",  required_argument,  NULL, 'R' },
     { NULL, 0, NULL, 0 }
 };
 #else
@@ -205,6 +206,8 @@ usage(void)
         "at partition start\n");
     fprintf(stderr, "  -W, --post-part-cmd  post-partition hook: execute <cmd> "
         "at partition end\n");
+    fprintf(stderr, "  -R, --post-run-cmd   post-run hook: execute <cmd> "
+        "before exiting\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Size handling:\n");
     fprintf(stderr, "  -p                   preload each partition with <num> "
@@ -516,6 +519,21 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
                 snprintf(options->post_part_hook, malloc_size, "%s", optarg);
                 break;
             }
+            case 'R':
+            {
+                /* check for empty argument */
+                size_t malloc_size = strlen(optarg) + 1;
+                if(malloc_size <= 1)
+                    break;
+                /* replace previous hook if '-R' specified multiple times */
+                if(options->post_run_hook != NULL)
+                    free(options->post_run_hook);
+                if_not_malloc(options->post_run_hook, malloc_size,
+                    return (FPART_OPTS_NOK | FPART_OPTS_EXIT);
+                )
+                snprintf(options->post_run_hook, malloc_size, "%s", optarg);
+                break;
+            }
             case 'p':
             {
                 uintmax_t preload_size = str_to_uintmax(optarg, 1);
@@ -626,7 +644,8 @@ handle_options(struct program_options *options, int *argcp, char ***argvp)
 
     if((options->live_mode == OPT_NOLIVEMODE) &&
         ((options->pre_part_hook != NULL) ||
-        (options->post_part_hook != NULL))) {
+        (options->post_part_hook != NULL) ||
+        (options->post_run_hook != NULL))) {
         fprintf(stderr,
             "Hooks can only be used with option -L.\n");
         return (FPART_OPTS_USAGE | FPART_OPTS_NOK | FPART_OPTS_EXIT);

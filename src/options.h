@@ -139,6 +139,8 @@ struct program_options {
     char *pre_part_hook;
 /* post-partition hook (option -W) */
     char *post_part_hook;
+/* post-run hook (option -R) */
+    char *post_run_hook;
 /* preload partitions (option -p) */
 #define DFLT_OPT_PRELOAD_SIZE       0
     fsize_t preload_size;

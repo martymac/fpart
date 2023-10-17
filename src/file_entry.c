@@ -138,10 +138,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
     assert(cmd != NULL);
     assert(options != NULL);
     assert(status != NULL);
-    assert(live_partition_index != NULL);
-    assert(live_partition_size != NULL);
-    assert(live_partition_num_files != NULL);
-    assert(live_partition_errno >= 0);
+    if(cmd != options->post_run_hook) {
+        /* those arguments are only relevant in *-part hooks */
+        assert(live_partition_index != NULL);
+        assert(live_partition_size != NULL);
+        assert(live_partition_num_files != NULL);
+        assert(live_partition_errno >= 0);
+    }
 
     int retval = 0;
 
@@ -213,6 +216,24 @@ fpart_hook(const char *cmd, const struct program_options *options,
         )
         snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
             env_fpart_hooktype_name, "post-part");
+        if(push_env(env_fpart_hooktype_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
+    }
+    else /* cmd == options->post_run_hook */ {
+        if(options->verbose >= OPT_VERBOSE)
+            fprintf(stderr, "Executing post-run hook: '%s'\n", cmd);
+
+        /* FPART_HOOKTYPE (post-run) */
+        malloc_size = strlen(env_fpart_hooktype_name) + 1 +
+            strlen("post-run") + 1;
+        if_not_malloc(env_fpart_hooktype_string, malloc_size,
+            retval = 1;
+            goto cleanup;
+        )
+        snprintf(env_fpart_hooktype_string, malloc_size, "%s=%s",
+            env_fpart_hooktype_name, "post-run");
         if(push_env(env_fpart_hooktype_string, &envp) != 0) {
             retval = 1;
             goto cleanup;
@@ -312,17 +333,19 @@ fpart_hook(const char *cmd, const struct program_options *options,
     }
 
     /* FPART_PARTERRNO */
-    malloc_size = strlen(env_fpart_parterrno_name) + 1 +
-        get_num_digits(live_partition_errno) + 1;
-    if_not_malloc(env_fpart_parterrno_string, malloc_size,
-        retval = 1;
-        goto cleanup;
-    )
-    snprintf(env_fpart_parterrno_string, malloc_size, "%s=%d",
-        env_fpart_parterrno_name, live_partition_errno);
-    if(push_env(env_fpart_parterrno_string, &envp) != 0) {
-        retval = 1;
-        goto cleanup;
+    if(cmd != options->post_run_hook) {
+        malloc_size = strlen(env_fpart_parterrno_name) + 1 +
+            get_num_digits(live_partition_errno) + 1;
+        if_not_malloc(env_fpart_parterrno_string, malloc_size,
+            retval = 1;
+            goto cleanup;
+        )
+        snprintf(env_fpart_parterrno_string, malloc_size, "%s=%d",
+            env_fpart_parterrno_name, live_partition_errno);
+        if(push_env(env_fpart_parterrno_string, &envp) != 0) {
+            retval = 1;
+            goto cleanup;
+        }
     }
 
     /* FPART_PID */
@@ -1213,6 +1236,17 @@ uninit_file_entries(struct file_entry *head, struct program_options *options,
         if(live_status.entry_path != NULL) {
             free(live_status.entry_path);
             live_status.entry_path = NULL;
+        }
+
+        /* execute post-run hook */
+        if(options->post_run_hook != NULL) {
+            if(fpart_hook(options->post_run_hook, options, status,
+                NULL,   /* remaining arguments are irrelevant here */
+                NULL,
+                NULL,
+                NULL,
+                0) != 0)
+                live_status.exit_summary = 1;
         }
 
         /* print hooks' exit codes summary */
