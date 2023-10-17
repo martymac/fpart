@@ -380,14 +380,18 @@ embedded
 .Xr fts 3
 library, depending on the version shipped with your OS),
 .Ev FPART_PID
-(PID of fpart).
-Note that variables may or may not be defined, depending on requested options
-and current partition's state when the hook is triggered.
-Also, note that hooks are executed in a synchronous way while crawling
-filesystem, so 1) avoid executing commands that take a long time to return as
-it slows down filesystem crawling and 2) do not presume cwd (PWD) is the one
-fpart has been started in, as it is regularly changed to speed up crawling (use
-absolute paths within hooks).
+(PID of fpart),
+.Ev FPART_TOTALNUMPARTS
+(total number of partitions generated so far).
+Variables may or may not be defined, depending on requested options and current
+partition's state when the hook is triggered.
+Hooks are executed in a synchronous way while crawling filesystem, so 1) avoid
+executing commands that take a long time to return as it slows down filesystem
+crawling and 2) do not presume cwd (PWD) is the one fpart has been started in,
+as it is regularly changed to speed up crawling (i.e. use absolute paths within
+hooks).
+Size-related variables are affected by preloading, overloading and rounding
+options.
 .It Fl W Ar cmd , Fl -post-part-cmd Ar cmd
 Same as
 .Fl w ,

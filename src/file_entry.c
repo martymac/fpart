@@ -158,6 +158,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_totalnumfiles_name = "FPART_TOTALNUMFILES";
     char *env_fpart_parterrno_name = "FPART_PARTERRNO";
     char *env_fpart_pid_name = "FPART_PID";
+    char *env_fpart_totalnumparts_name = "FPART_TOTALNUMPARTS";
 
     /* env variables' values */
     char *env_fpart_hooktype_string = NULL;
@@ -169,6 +170,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
     char *env_fpart_totalnumfiles_string = NULL;
     char *env_fpart_parterrno_string = NULL;
     char *env_fpart_pid_string = NULL;
+    char *env_fpart_totalnumparts_string = NULL;
 
     /* XXX As setenv(3)/unsetenv(3) are not available on all platforms, and there does not
     seem to be a standard way of unsetting variables through putenv(3), clone current
@@ -363,6 +365,20 @@ fpart_hook(const char *cmd, const struct program_options *options,
         goto cleanup;
     }
 
+    /* FPART_TOTALNUMPARTS */
+    malloc_size = strlen(env_fpart_totalnumparts_name) + 1 +
+        get_num_digits(status->total_num_parts) + 1;
+    if_not_malloc(env_fpart_totalnumparts_string, malloc_size,
+        retval = 1;
+        goto cleanup;
+    )
+    snprintf(env_fpart_totalnumparts_string, malloc_size, "%s=%ju",
+        env_fpart_totalnumparts_name, status->total_num_parts);
+    if(push_env(env_fpart_totalnumparts_string, &envp) != 0) {
+        retval = 1;
+        goto cleanup;
+    }
+
     /* fork child process */
     int child_status = 0;
     switch(live_status.child_pid = fork()) {
@@ -448,6 +464,8 @@ cleanup:
         free(env_fpart_parterrno_string);
     if(env_fpart_pid_string != NULL)
         free(env_fpart_pid_string);
+    if(env_fpart_totalnumparts_string != NULL)
+        free(env_fpart_totalnumparts_string);
     return (retval);
 }
 

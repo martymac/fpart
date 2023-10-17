@@ -16,10 +16,11 @@
       (fixes GH issue #48)
     - fpsync: show transmitted files count / data size in final status
       and SIGINFO handler (fixes GH issue #24)
-    - fpart: add two new hook variables: FPART_TOTALSIZE and FPART_TOTALNUMFILES
     - fpart: final summary now shows total number of parts created, as well as
       total number of files packed and total resulting size
-    - fpart: add post-run hook (option -R), triggered before program exits
+    - fpart: add new hook variables: FPART_TOTALSIZE, FPART_TOTALNUMFILES and
+      FPART_TOTALNUMPARTS
+    - fpart: add post-run hook (option -R), triggered just before program exits
 ```
 # Current: 1.5.1
 ```nohighlight
