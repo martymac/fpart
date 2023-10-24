@@ -892,44 +892,32 @@ job_queue_sl_stop () {
 # Count total jobs to perform
 # FPART_PARTSDIR can host several types of file :
 # part.<job_number>: file listing for a sync job
-# part.<job_number>.meta: file listing meta-information (number of files, size)
+# part.<job_number>.meta: job meta-information (number of files, size)
+# run.meta: run meta-information (number of jobs, files, size)
 total_jobs_count () {
-    (cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep -v '\.meta$' | \
-         wc -l | awk '{print $1}')
+    (
+        total_num_parts=0 ; \
+        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        echo "${total_num_parts}"
+    )
 }
 
 # Count total files to transfer
 total_files_count () {
-    local _jobs_files=0
-    for _file in \
-        $(cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep '\.meta$')
-    do
-        _jobs_files=$(( \
-            ${_jobs_files} + $( \
-                job_files=0 ; \
-                . "${FPART_PARTSDIR}/${_file}" 2>/dev/null ; \
-                echo "${job_files}" \
-            ) \
-        ))
-    done
-    echo "${_jobs_files}"
+    (
+        total_num_files=0 ; \
+        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        echo "${total_num_files}"
+    )
 }
 
 ## Count total bytes to transfer
 total_size_count () {
-    local _jobs_size=0
-    for _file in \
-        $(cd "${FPART_PARTSDIR}" && ls -1 2>/dev/null | grep '\.meta$')
-    do
-        _jobs_size=$(( \
-            ${_jobs_size} + $( \
-                job_size=0 ; \
-                . "${FPART_PARTSDIR}/${_file}" 2>/dev/null ; \
-                echo "${job_size}" \
-            ) \
-        ))
-    done
-    echo "${_jobs_size}"
+    (
+        total_size=0 ; \
+        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        echo "${total_size}"
+    )
 }
 
 # Count jobs performed in current run (including running ones)
@@ -1219,6 +1207,8 @@ FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     printf '%s\n%s\n' job_size=\"\${FPART_PARTSIZE}\" job_files=\"\${FPART_PARTNUMFILES}\" > \
     \"${FPART_PARTSTMPL}.\${FPART_PARTNUMBER}.meta\" && \
+    printf '%s\n%s\n%s\n' total_num_parts=\"\${FPART_TOTALNUMPARTS}\" total_size=\"\${FPART_TOTALSIZE}\" total_num_files=\"\${FPART_TOTALNUMFILES}\" > \
+    \"${FPART_PARTSDIR}/run.meta\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
     echo \"\$(date '+%s') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
