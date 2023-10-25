@@ -33,11 +33,11 @@ Fpart is primarily developed on FreeBSD.
 
 It has been successfully tested on :
 
-* FreeBSD (i386, amd64)
+* FreeBSD 13, 14 (i386, amd64)
 * GNU/Linux (x86_64, arm)
 * Solaris 9, 10 (Sparc, i386)
 * OpenIndiana (i386)
-* NetBSD (amd64, alpha)
+* NetBSD 9.3 (amd64)
 * Mac OS X 10.6, 10.8, 11.2 (x86_64, arm64)
 
 and passed Coverity Scan tests with success.
@@ -63,7 +63,7 @@ so you can use your favourite package manager to get ready.
 If a pre-compiled package is not available for your favourite operating system,
 installing from sources is simple. First, get the source files :
 
-    $ git clone "https://github.com/martymac/fpart.git"
+    $ git clone https://github.com/martymac/fpart.git
     $ cd fpart
 
 Then, if there is no 'configure' script in
