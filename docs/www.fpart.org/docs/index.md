@@ -54,6 +54,7 @@ Packages are already available for many operating systems :
 * [CentOS/Fedora](https://src.fedoraproject.org/rpms/fpart)
 * [NixOS](https://search.nixos.org/packages?query=fpart)
 * [MacOS (Homebrew)](https://formulae.brew.sh/formula/fpart)
+* [Spack](https://packages.spack.io/package.html?name=fpart)
 
 so you can use your favourite package manager to get ready.
 

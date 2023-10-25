@@ -52,7 +52,7 @@
 
 * Fpart is proudly referenced in the [French Government's 'SILL'](https://sill.etalab.gouv.fr/software?name=fpart)
 
-# Fpsync users (Cloud providers)
+# Fpsync users (Storage / Cloud providers)
 
 * [Intel](http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
   has written a white paper about data migration, presenting fpart and fpsync
@@ -68,10 +68,14 @@
   suggests using fpart and fpsync to speed-up file transfers
 
 * [Alibaba (Aliyun)](https://www.alibabacloud.com/help/doc-detail/128764.htm)
-  has the same advice
 
 * [Oracle](https://docs.oracle.com/en-us/iaas/Content/File/Troubleshooting/transferring-windows-data-sms.htm)
-  too
+
+* [cunoFS](https://cuno-cunofs.readthedocs-hosted.com/en/stable/user-guide-tips-for-apps.html#fpsync)
+
+* [Nutanix](https://portal.nutanix.com/page/documents/solutions/details?targetId=TN-2016-Nutanix-Files-Migration-Guide:fpsync-for-nfs.html)
+
+* [Huawei Latin America cloud](https://github.com/huaweicloud-latam/migration-tool-map/tree/main/02-014-fpsync)
 
 <br>
 <center>
@@ -83,4 +87,10 @@
 <center>
 [![Alibaba](img/ext-logos/AlibabaCloud.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.alibabacloud.com/help/doc-detail/128764.htm)
 [![Oracle](img/ext-logos/Oracle.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://docs.oracle.com/en-us/iaas/Content/File/Troubleshooting/transferring-windows-data-sms.htm)
+[![cunoFS](img/ext-logos/cunoFS.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://cuno-cunofs.readthedocs-hosted.com/en/stable/user-guide-tips-for-apps.html#fpsync)
+</center>
+<br>
+<center>
+[![Nutanix](img/ext-logos/Nutanix.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://portal.nutanix.com/page/documents/solutions/details?targetId=TN-2016-Nutanix-Files-Migration-Guide:fpsync-for-nfs.html)
+[![Huawei](img/ext-logos/Huawei.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://github.com/huaweicloud-latam/migration-tool-map/tree/main/02-014-fpsync)
 </center>
