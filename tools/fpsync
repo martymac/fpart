@@ -1483,6 +1483,7 @@ then
             # Tell job_queue_loop that crawling has finished
             job_queue_fp_done
             echo_log "1" "<=== Fpart crawling finished"
+            echo_log "1" "<=== Generated $(total_jobs_count) parts ($(total_size_count)B, $(total_files_count) files)"
         fi
 
         # Remove FIFO (once tee exits and closes its fd)
