@@ -261,7 +261,7 @@ tool_supports_aggressive () {
 # $1 = tool name
 tool_get_base_opts () {
     [ "$1" = "rsync" ] &&
-        printf '%s\n' '-lptgoD -v --numeric-ids'
+        printf '%s\n' '-q -lptgoD --numeric-ids'
 }
 
 # Get mode-specific complementary tool-related options
@@ -804,6 +804,11 @@ work_list_refresh () {
                     echo "${job_size}" \
                 ) \
             ))
+            # Remove (useless) empty log files
+            [ -s "${FPART_LOGDIR}/${_JOB_PART}.stdout" ] || \
+                rm -f "${FPART_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
+            [ -s "${FPART_LOGDIR}/${_JOB_PART}.stderr" ] || \
+                rm -f "${FPART_LOGDIR}/${_JOB_PART}.stderr" 2>/dev/null
         fi
     done
     WORK_LIST=${_WORK_LIST}

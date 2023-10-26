@@ -21,6 +21,8 @@
     - fpart: add new hook variables: FPART_TOTALSIZE, FPART_TOTALNUMFILES and
       FPART_TOTALNUMPARTS
     - fpart: add post-run hook (option -R), triggered just before program exits
+    - fpsync: Limit useless log generation by removing empty log files
+      (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
 ```
 # Current: 1.5.1
 ```nohighlight
