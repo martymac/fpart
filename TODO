@@ -27,6 +27,9 @@ Fpart:
 
 Fpsync:
 - Delete empty stdout and stderr by default
+- Add an option to specify run ID name and set default run ID scheme to YYYYDDMM-HHMMSS
+- Modify 'fpsync -l' output to display run status (with erroneous jobs detailed)
+- Ability to replay one or more jobs within a specific run
   (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
 - Document job prepare/listing/resume/replay
 - Show if dirsonly/aggressive mode is enabled in status
@@ -35,7 +38,6 @@ Fpsync:
 - Provide per-job pre- and post-xfer rc scripts
   (useful to perform tasks such as computing an
   additional src/ or dst/ prefix - to be added too)
-- Ability to replay one or more jobs within a specific run
 - Enable fpart's option -n for prepare mode only ?
 - Add "debug" pseudo-tool ?
 - Homogenize variable names ('_', MAJ, min)
