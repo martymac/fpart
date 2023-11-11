@@ -902,7 +902,8 @@ job_queue_sl_stop () {
 total_jobs_count () {
     (
         total_num_parts=0 ; \
-        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
+            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_num_parts}"
     )
 }
@@ -911,7 +912,8 @@ total_jobs_count () {
 total_files_count () {
     (
         total_num_files=0 ; \
-        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
+            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_num_files}"
     )
 }
@@ -920,7 +922,8 @@ total_files_count () {
 total_size_count () {
     (
         total_size=0 ; \
-        . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
+            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_size}"
     )
 }
