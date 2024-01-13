@@ -69,8 +69,10 @@ If fpart (or fpsync) is useful to you or your organization, do not hesitate to
 contribute back! You can follow ideas in the [TODO](https://github.com/martymac/fpart/blob/master/TODO)
 file or just fix a bug, any kind of help is always welcome!
 
-If you prefer, you can also make a donation on Paypal:
+You can also make a donation via Paypal:
 
-[![paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
+[![Paypal](https://www.paypalobjects.com/en_US/FR/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HSL25ZED2PS62&source=url)
+
+or [Github](https://github.com/sponsors/martymac?o=esb).
 
 That will help me not running out of tea :)
