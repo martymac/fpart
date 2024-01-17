@@ -9,6 +9,7 @@ Global :
 - FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
+- Enable hooks in non-live mode (would help automating GH discussion #55) ?
 - chdir(2) to initial working directory before forking hooks ?
 - Implement pre-run hooks ? (is that useful ?)
 - Implement option -zzzz to list directories only (0-sized) ?
@@ -19,7 +20,6 @@ Fpart:
   not be split but treated as a file entry
 - Add constraints, e.g. : force hardlinks to belong to the same partition
 - Improve sort by using, e.g. : http://en.wikipedia.org/wiki/External_sorting
-- Display total size in final status
 - Rework error code (errx(3), perror(3), ...)
 - Rework verbose and debug messages
 - Split fpart_hook() in two parts : fpart_hook_init_env() + forking code
