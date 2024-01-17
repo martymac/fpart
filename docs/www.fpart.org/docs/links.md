@@ -54,17 +54,17 @@
 
 # Fpsync users (Storage / Cloud providers)
 
-* [Intel](http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
+* [Intel](https://web.archive.org/web/20230314023512/http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
   has written a white paper about data migration, presenting fpart and fpsync
 
-* [Amazon](https://aws.amazon.com/solutions/implementations/efs-to-efs-backup-solution/)
+* [Amazon](https://s3.amazonaws.com/solutions-reference/efs-backup/latest/efs-to-efs-backup.pdf)
   uses fpart and fpsync in their EFS-to-EFS backup solution. See also their
   [Amazon Elastic File System (Amazon EFS) for File Storage](https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage) presentation
   (AWS Storage Days, New York, September 6-8, 2017) and the
   [Amazon EFS performance tutorial](https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance),
   both presenting fpart and fpsync capabilities
 
-* [Microsoft](https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux)
+* [Microsoft](https://learn.microsoft.com/en-us/azure/storage/files/storage-files-migration-nfs)
   suggests using fpart and fpsync to speed-up file transfers
 
 * [Alibaba (Aliyun)](https://www.alibabacloud.com/help/doc-detail/128764.htm)
@@ -79,9 +79,9 @@
 
 <br>
 <center>
-[![Intel](img/ext-logos/Intel.png){: style="width:175px;margin-right:75px;margin-down:75px"}](http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
-[![AWS](img/ext-logos/Aws.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://aws.amazon.com/solutions/implementations/efs-to-efs-backup-solution/)
-[![Microsoft](img/ext-logos/Microsoft.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://docs.microsoft.com/en-us/azure/storage/files/storage-troubleshoot-linux-file-connection-problems#slow-file-copying-to-and-from-azure-files-in-linux)
+[![Intel](img/ext-logos/Intel.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://web.archive.org/web/20230314023512/http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
+[![AWS](img/ext-logos/Aws.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://s3.amazonaws.com/solutions-reference/efs-backup/latest/efs-to-efs-backup.pdf)
+[![Microsoft](img/ext-logos/Microsoft.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://learn.microsoft.com/en-us/azure/storage/files/storage-files-migration-nfs)
 </center>
 <br>
 <center>
