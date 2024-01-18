@@ -1095,11 +1095,15 @@ parse_opts "$@"
 
 ## Paths to 3rd party binaries
 
+# Tar version to use for 'tar' and 'tarify' tools
+# Use 'gtar' on Solaris-based OS
+TAR_NAME="tar"
+
 # Paths to executables that must exist locally
 FPART_BIN="$(command -v fpart)"
 SSH_BIN="$(command -v ssh)"
 MAIL_BIN="$(command -v mail)"
-TAR_BIN="$(command -v tar)"
+TAR_BIN="$(command -v ${TAR_NAME})"
 
 # Paths to executables that must exist both locally and remotely
 SUDO_BIN="$(command -v sudo)"
@@ -1119,12 +1123,14 @@ then
     TOOL_BIN="${OPT_TOOL_PATH}"
 else
     # Provide defaults regarding tool name
-    if [ "${OPT_TOOL_NAME}" = "tarify" ]
-    then
-        TOOL_BIN=$(command -v "tar")
-    else
+    case "${OPT_TOOL_NAME}" in
+    "tar"|"tarify")
+        TOOL_BIN="${TAR_BIN}"
+        ;;
+    *)
         TOOL_BIN=$(command -v "${OPT_TOOL_NAME}")
-    fi
+        ;;
+    esac
     # Set this for job_queue_info_dump and job_queue_info_load to work correctly
     OPT_TOOL_PATH="${TOOL_BIN}"
 fi

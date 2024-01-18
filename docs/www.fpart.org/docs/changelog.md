@@ -1,6 +1,6 @@
-# Next: 1.5.2
+# Next: 1.6.0
 ```nohighlight
-    2023/??/??, 1.5.2 ('???') :
+    2024/??/??, 1.6.0 ('???') :
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file
       (GH PR #44)
     - fpart: add option -P (add parent directories when closing intermediate
@@ -23,6 +23,7 @@
     - fpart: add post-run hook (option -R), triggered just before program exits
     - fpsync: Limit useless log generation by removing empty log files
       (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
+    - fpsync: Facilitate tar tool change on Solaris-based OS
 ```
 # Current: 1.5.1
 ```nohighlight
