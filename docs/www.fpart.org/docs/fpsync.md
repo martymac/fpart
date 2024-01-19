@@ -148,6 +148,19 @@ partition) into the specified destination directory.
 Extracting (merging) those tarball to a another directory will reproduce the
 original file tree.
 
+# Notes about Debian Almquist shell (dash)
+
+Debian Almquist shell (/bin/sh on Debian since Squeeze / 6.0) does not support
+enabling job control without a tty in non-interactive mode (i.e. one cannot run
+'dash fpsync ... &' or just 'fpsync ... &').
+
+This is a known problem that has been discussed [here](https://lore.kernel.org/dash/7091680.J8PY2HnTC3@home.martymac.org/T/#u)
+and led to the following [patch](https://patchwork.kernel.org/project/dash/patch/dedaa3fa370ea9c4aeb1771b5568a7bef4065b04.1675113321.git.steffen@sdaoden.eu/)
+waiting for inclusion.
+
+Meanwhile, if you need to run fpsync in the background, just change its shebang
+to use another Bourne shell (bash for example).
+
 # Notes about GNU cpio
 
 Developments have been made with BSD cpio (FreeBSD version). Fpsync will work
