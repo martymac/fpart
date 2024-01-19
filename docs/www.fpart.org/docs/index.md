@@ -136,7 +136,7 @@ That will help me not running out of tea :)
 
 <br>
 <center>
-[![MacStadium](img/ext-logos/MacStadium.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.macstadium.com/opensource/members)
+[![MacStadium](img/ext-logos/MacStadium.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.macstadium.com/company/opensource)
 [![HPE](img/ext-logos/HPE.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.hpe.com/us/en/open-source.html)
 </center>
 <br>
