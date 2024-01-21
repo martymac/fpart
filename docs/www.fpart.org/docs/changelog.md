@@ -1,6 +1,6 @@
-# Next: 1.6.0
+# Current: 1.6.0
 ```nohighlight
-    2024/??/??, 1.6.0 ('???') :
+    2024/01/21, 1.6.0 ('College years') :
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file
       (GH PR #44)
     - fpart: add option -P (add parent directories when closing intermediate
@@ -25,7 +25,7 @@
       (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
     - fpsync: Facilitate tar tool change on Solaris-based OS
 ```
-# Current: 1.5.1
+# 1.5.1
 ```nohighlight
     2022/06/22, 1.5.1 ('Feel the light') :
     - fpsync: add source, destination and total elapsed time to the email
