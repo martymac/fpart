@@ -1,7 +1,7 @@
 
 ![Fpsync](img/Fpsync.png)
 
-# What is Fpsync ?
+# What is fpsync ?
 
 To demonstrate fpart possibilities, a program called 'fpsync' is provided within
 the tools/ directory. This tool is a shell script that wraps fpart(1) and
