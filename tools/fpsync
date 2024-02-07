@@ -28,7 +28,7 @@
 # It uses fpart and a copy tool to spawn multiple instances to migrate data from
 # src_dir/ to dst_url/. Jobs can execute either locally or over SSH.
 
-FPSYNC_VERSION="1.6.0"
+FPSYNC_VERSION="1.6.1"
 
 ########## Default values for options
 
@@ -1250,6 +1250,12 @@ WORK_FREEWORKERS="" # Free workers' list
     end_die "Mail is missing locally, check your configuration"
 [ -n "${OPT_SUDO}" ] && [ ! -x "${SUDO}" ] && \
     end_die "Sudo is missing locally, check your configuration"
+# Check for common commands/tools (we accept builtins here)
+for _tool in 'ps' 'grep' 'printf' 'head' 'cut' 'awk' 'sed' 'wc'
+do
+    [ -z "$(command -v ${_tool})" ] && \
+        end_die "'${_tool}' is missing locally, check your configuration"
+done
 
 # Create / check for fpart shared directories
 if [ -z "${OPT_RUNID}" ]

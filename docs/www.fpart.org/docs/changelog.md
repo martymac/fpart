@@ -1,3 +1,9 @@
+# Next: 1.6.1
+```nohighlight
+    2024/??/??, 1.6.1 ('???') :
+    - fpsync: check for common commands/tools presence
+      (discussed in GH issue #47)
+```
 # Current: 1.6.0
 ```nohighlight
     2024/01/21, 1.6.0 ('College years') :
