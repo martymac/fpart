@@ -26,6 +26,10 @@ such as rsync's --delete.
 As a demonstration of fpart possibilities, a tool called fpsync is provided in
 the tools/ directory (see related documentation for more details).
 
+# Does it modify my data ?
+
+No. Fpart does *NOT* split or modify your data in any way. It only crawls your filesystem and produces file (or directory) lists. Those lists are called "partitions" because they are a subset of an entire file tree. Fpart only reads your data, never modifies it.
+
 # Examples
 
 The following will produce 3 partitions, with (approximatively) the same size
@@ -152,7 +156,7 @@ option.
 
 # Limitations
 
-* Fpart will *NOT* modify data, it will *NOT* split your files !
+* Again, Fpart will *NOT* modify data, it will *NOT* split your files !
 
     As a consequence, if you have a directory containing several small files
     and a huge one, it will be unable to produce partitions with the same size.
