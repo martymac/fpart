@@ -4,6 +4,7 @@
     - fpsync: check for common commands/tools presence
       (discussed in GH issue #47)
     - fpsync: add support for pax copy tool (option -m)
+      Note for packagers: adds a new dependency to pax(1)
 ```
 # Current: 1.6.0
 ```nohighlight

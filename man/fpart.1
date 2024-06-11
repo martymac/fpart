@@ -158,7 +158,8 @@ That option can be used in conjunction with
 to produce partitions that can be synchronized
 .Sy in parallel
 with tools such as
-.Xr cpio 1
+.Xr cpio 1 ,
+.Xr pax 1
 or
 .Xr tar 1 .
 Adding parent directories at the end of each partition ensures that
@@ -274,7 +275,8 @@ children have already been packed.
 .It Fl zzz
 Pack all directories (as empty).
 Useful when 3rd party tools need directory entries to update them (e.g.
-.Xr cpio 1
+.Xr cpio 1 ,
+.Xr pax 1
 or
 .Xr tar 1 ).
 .It Fl Z

@@ -64,7 +64,8 @@ tool synchronizes directories in parallel using
 .Xr fpart 1
 and
 .Xr rsync 1 ,
-.Xr cpio 1
+.Xr cpio 1 ,
+.Xr pax 1
 or
 .Xr tar 1 .
 It computes subsets of
@@ -129,17 +130,12 @@ used to synchronize files.
 Currently supported tools are:
 .Sy rsync ,
 .Sy cpio ,
+.Sy pax ,
 .Sy tar ,
 and
 .Sy tarify .
 Default:
 .Sy rsync .
-When using
-.Sy cpio
-or
-.Sy tar
-and more than one worker, directory timestamps may not be replicated.
-A second pass will fix them.
 Special tool
 .Sy tarify
 generates tarballs into destination directory.
@@ -197,7 +193,8 @@ calls to support compound SMB requests.
 .It Fl o Ar toolopts
 Override default
 .Xr rsync 1 ,
-.Xr cpio 1
+.Xr cpio 1 ,
+.Xr pax 1
 or
 .Xr tar 1
 options with
@@ -207,7 +204,7 @@ usage (e.g. rsync's
 .Cm --delete ) .
 Default for rsync:
 .Dq -lptgoD -v --numeric-ids .
-Empty for cpio, tar and tarify.
+Empty for cpio, pax, tar and tarify.
 .It Fl O Ar fpartopts
 Override default
 .Xr fpart 1
@@ -451,6 +448,7 @@ to the whole process group, suspending fpsync execution.
 .Xr cpio 1 ,
 .Xr fpart 1 ,
 .Xr mail 1 ,
+.Xr pax 1 ,
 .Xr rsync 1 ,
 .Xr tar 1 ,
 .Xr sudo 8
