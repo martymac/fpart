@@ -1543,8 +1543,10 @@ then
                     (
                         /bin/sh "${JOBS_WORKDIR}/${_next_job}"
                     ) &
-                    work_list_push "$!:${_next_job}:local"
+                    _next_pid="$!"
+                    work_list_push "${_next_pid}:${_next_job}:local"
                     set +m
+                    echo_log "3" "=> [QMGR] Job ${_next_job} started, PID: ${_next_pid} (${_next_pid}:${_next_job}:local)"
                 else
                     _next_host="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
@@ -1554,8 +1556,10 @@ then
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
                             < "${JOBS_WORKDIR}/${_next_job}"
                     ) &
-                    work_list_push "$!:${_next_job}:${_next_host}"
+                    _next_pid="$!"
+                    work_list_push "${_next_pid}:${_next_job}:${_next_host}"
                     set +m
+                    echo_log "3" "=> [QMGR] Job ${_next_job} started, PID: ${_next_pid} (${_next_pid}:${_next_job}:${_next_host})"
                 fi
             fi
         else
