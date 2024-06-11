@@ -222,7 +222,7 @@ is_runid () {
 # Chek if a tool is supported
 # $1 = tool name
 tool_is_supported () {
-    echo "$1" | grep -qE '^(rsync|cpio|tar|tarify)$'
+    echo "$1" | grep -qE '^(rsync|cpio|pax|tar|tarify)$'
 }
 
 # Chek if TAR_BIN is GNU tar
@@ -234,7 +234,7 @@ tar_is_GNU_tar () {
 
 # Print supported tools in a friendly manner
 tool_print_supported () {
-    echo "'rsync', 'cpio', 'tar' or 'tarify'"
+    echo "'rsync', 'cpio', 'pax', 'tar' or 'tarify'"
 }
 
 # Check if a tool supports a URL as sync target
@@ -279,7 +279,12 @@ tool_get_tool_mode_opts () {
             printf '%s\n' '-d'
             ;;
         "cpio")
+            # Passthrough mode, create directories, preserve modification time
             printf '%s\n' '-pdm'
+            ;;
+        "pax")
+            # Read/Write mode, do not copy directories recursively, preserve everything
+            printf '%s\n' '-r -w -d -p e'
             ;;
         "tar"|"tarify")
             printf '%s\n' '--no-recursion'
@@ -334,6 +339,20 @@ tool_get_tool_mode_opts_recursive () {
         printf '%s\n' '-r'
 }
 
+# Get file list separator option for fpart
+# $1 = tool name
+tool_get_fpart_separator_opt () {
+    case "$1" in
+    "pax")
+        printf '%s\n' ''
+        ;;
+    *)
+        # Every other tool supports a null-separated list of files
+        printf '%s\n' '-0'
+        ;;
+    esac
+}
+
 # Get mode-specific fpart options
 # $1 = tool name
 # $2 = dirs only mode (if string not empty)
@@ -346,7 +365,7 @@ tool_get_fpart_mode_opts () {
         "rsync")
             printf '%s\n' '-zz'
             ;;
-        "cpio"|"tar"|"tarify")
+        "cpio"|"pax"|"tar"|"tarify")
             # We want empty directory entries with those tools
             # and fix parent dirs' timestamps with option -P
             # to re-apply correct metadata
@@ -436,6 +455,16 @@ tool_init_fpart_job_command () {
         FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
+            \\\"${OPT_DSTURL}/\\\"' \
+            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+        ;;
+    "pax")
+        # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
+        # XXX Exec whole shell cmd as root, because we need to cwd first
+        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
+            cat \\\"\${FPART_PARTFILENAME}\\\" | \
+            ${TOOL_BIN} ${OPT_TOOL} ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
             1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
@@ -1215,6 +1244,7 @@ FPART_LOGFIFO="${FPART_LOGDIR}/.fpart.log.fifo"
 TOOL_MODEOPTS=$(tool_get_tool_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
 TOOL_MODEOPTS_2=$(tool_get_tool_mode_opts_2 "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}")
 TOOL_MODEOPTS_R=$(tool_get_tool_mode_opts_recursive "${OPT_TOOL_NAME}")
+FPART_SEPARATOROPT=$(tool_get_fpart_separator_opt "${OPT_TOOL_NAME}")
 FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "${OPT_AGGRESSIVE}")
 FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRESSIVE}"
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
@@ -1492,7 +1522,7 @@ then
             ${SUDO} "${FPART_BIN}" \
             $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && printf '%s\n' "-f ${OPT_FPMAXPARTFILES}") \
             $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && printf '%s\n' "-s ${OPT_FPMAXPARTSIZE}") \
-            -o "${FPART_PARTSTMPL}" -0 -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
+            -o "${FPART_PARTSTMPL}" ${FPART_SEPARATOROPT} -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
             -W "${FPART_POSTHOOK}" . 1>"${FPART_LOGFIFO}" 2>&1
 
         if [ $? -ne 0 ]

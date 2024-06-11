@@ -3,6 +3,7 @@
     2024/??/??, 1.6.1 ('???') :
     - fpsync: check for common commands/tools presence
       (discussed in GH issue #47)
+    - fpsync: add support for pax copy tool (option -m)
 ```
 # Current: 1.6.0
 ```nohighlight
