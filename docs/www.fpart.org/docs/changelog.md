@@ -5,6 +5,7 @@
       (discussed in GH issue #47)
     - fpsync: add support for pax copy tool (option -m)
       Note for packagers: adds a new dependency to pax(1)
+      On FreeBSD, depends on the following fix: https://cgit.freebsd.org/src/commit/?id=681fd2bed8eaba88693867ba928a1c03a5b152cc
 ```
 # Current: 1.6.0
 ```nohighlight

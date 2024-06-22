@@ -26,7 +26,6 @@ Fpart:
 - Use queue(3) ?
 
 Fpsync:
-- Add support for pax(1) tool ?
 - Add an option to specify run ID name and set default run ID scheme to YYYYDDMM-HHMMSS
 - Modify 'fpsync -l' output to display run status (with erroneous jobs detailed)
 - Ability to replay one or more jobs within a specific run
