@@ -50,6 +50,9 @@
 * [National Energy Research Scientific Computing Center](https://www.spectrumscaleug.org/wp-content/uploads/2019/10/HPCXXL19-NERSC-Site-update.pdf)
   (NERSC) writes about fpsync
 
+* [Utah's CHPC](https://www.chpc.utah.edu/documentation/data_services.php#ptt)
+  suggests fpart to transfer data in and out of CHPC resources
+
 * Fpart is proudly referenced in the [French Government's 'SILL'](https://code.gouv.fr/sill/detail?name=fpart)
 
 # Fpsync users (Storage / Cloud providers)
