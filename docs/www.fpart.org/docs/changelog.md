@@ -6,6 +6,11 @@
     - fpsync: add support for pax copy tool (option -m)
       Note for packagers: adds a new dependency to pax(1)
       On FreeBSD, depends on the following fix: https://cgit.freebsd.org/src/commit/?id=681fd2bed8eaba88693867ba928a1c03a5b152cc
+    - fpsync: rework return code handling
+      Use jobs' return codes to compute final status. Before that change,
+      fpsync returned an error when a message was printed to stderr by a job.
+      It now returns an error when a job does not return 0
+      (fixes GH issue #61)
 ```
 # Current: 1.6.0
 ```nohighlight

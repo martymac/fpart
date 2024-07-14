@@ -217,6 +217,24 @@ is_runid () {
     echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
 }
 
+########## Results handling
+
+# Check if log file $1 contains something
+is_log_file_not_empty () {
+    [ -s "$1" ]
+}
+
+# List remaining log files in "${FPART_LOGDIR}/"
+list_log_files_by_ext () {
+    [ -n "$1" ] && \
+        find "${FPART_LOGDIR}/" -name "*.${1}" ! -size 0 2>/dev/null
+}
+
+# Check if return file $1 contains a non-error return code
+is_ret_file_success () {
+    grep -q '^0$' "$1" 2>/dev/null
+}
+
 ########## Tool handling
 
 # Chek if a tool is supported
@@ -833,11 +851,13 @@ work_list_refresh () {
                     echo "${job_size}" \
                 ) \
             ))
-            # Remove (useless) empty log files
-            [ -s "${FPART_LOGDIR}/${_JOB_PART}.stdout" ] || \
+            # Remove useless log and result files
+            is_log_file_not_empty "${FPART_LOGDIR}/${_JOB_PART}.stdout" || \
                 rm -f "${FPART_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
-            [ -s "${FPART_LOGDIR}/${_JOB_PART}.stderr" ] || \
+            is_log_file_not_empty "${FPART_LOGDIR}/${_JOB_PART}.stderr" || \
                 rm -f "${FPART_LOGDIR}/${_JOB_PART}.stderr" 2>/dev/null
+            is_ret_file_success "${FPART_LOGDIR}/${_JOB_PART}.ret" && \
+                rm -f "${FPART_LOGDIR}/${_JOB_PART}.ret" 2>/dev/null
         fi
     done
     WORK_LIST=${_WORK_LIST}
@@ -1572,6 +1592,7 @@ then
                     set -m
                     (
                         /bin/sh "${JOBS_WORKDIR}/${_next_job}"
+                        echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:local"
@@ -1585,6 +1606,7 @@ then
                     (
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
                             < "${JOBS_WORKDIR}/${_next_job}"
+                        echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:${_next_host}"
@@ -1638,13 +1660,14 @@ fi
 
 _ts_now=$(date '+%s')
 _total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
-_report_logs=$(find "${FPART_LOGDIR}/" -name "*.stderr" ! -size 0)
-_report_body=$( { [ -z "${_report_logs}" ] && echo "Fpsync completed without error in ${_total_run_elapsed_time}s." ;} || \
-    { echo "Fpsync completed with errors in ${_total_run_elapsed_time}s, see logs:" && echo "${_report_logs}" ;} )
+_report_logs_stderr=$(list_log_files_by_ext "stderr")
+_report_logs_ret=$(list_log_files_by_ext "ret")
+_report_body=$( { [ -z "${_report_logs_ret}" ] && echo "Fpsync completed without error in ${_total_run_elapsed_time}s." ;} || \
+    { echo "Fpsync completed with errors in ${_total_run_elapsed_time}s, see logs:" && echo "${_report_logs_stderr}" ;} )
 echo_log "1" "<=== ${_report_body}"
 echo_log "2" "<=== End time: $(date)"
 [ -n "${OPT_MAIL}" ] && \
     printf "Sync ${OPT_SRCDIR} => ${OPT_DSTURL}\n\n${_report_body}\n" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
 
-[ -n "${_report_logs}" ] && end_die
+[ -n "${_report_logs_ret}" ] && end_die
 end_ok
