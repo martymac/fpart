@@ -222,7 +222,7 @@ is_runid () {
 # Get files from "${FPART_LOGDIR}/" by extension
 logfiles_get_list_by_ext () {
     [ -n "$1" ] && \
-        find "${FPART_LOGDIR}/" -name "*.${1}" ! -size 0 2>/dev/null
+        find "${FPART_LOGDIR}/" -type f -name "*.${1}" ! -size 0 2>/dev/null
 }
 
 # Check if file $1 exists and contains something
@@ -249,6 +249,19 @@ logfiles_filter_ret_to_stderr () {
         *.ret)
             logfile_is_not_empty "${_line%.ret}.stderr" && \
                 echo "${_line%.ret}.stderr"
+            ;;
+        esac
+    done
+}
+
+# Return .ret files containing an error return code from .ret file list
+logfiles_filter_ret_with_errors () {
+    while read _line
+    do
+        case "${_line}" in
+        *.ret)
+            retfile_is_error "${_line}" && \
+                echo "${_line}"
             ;;
         esac
     done
@@ -1695,7 +1708,7 @@ else
 fi
 _ts_now=$(date '+%s')
 _total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
-_report_logs_fatal=$(logfiles_get_list_by_ext "ret")
+_report_logs_fatal=$(logfiles_get_list_by_ext "ret" | logfiles_filter_ret_with_errors)
 _report_logs_fatal_stderr=$(echo "${_report_logs_fatal}" | logfiles_filter_ret_to_stderr)
 _report_logs_additional_stderr=$(logfiles_get_list_by_ext "stderr" | logfiles_filter_stderr_without_ret)
 _report_body=$(
