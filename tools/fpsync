@@ -503,7 +503,8 @@ tool_init_fpart_job_command () {
         # (not supported on Solaris), see:
         # http://pubs.opengroup.org/onlinepubs/7908799/xcu/cpio.html
         # XXX Exec whole shell cmd as root, because we need to cwd first
-        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
+        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'set -o pipefail ; \
+            cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
@@ -513,7 +514,8 @@ tool_init_fpart_job_command () {
     "pax")
         # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
         # XXX Exec whole shell cmd as root, because we need to cwd first
-        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'cd \\\"${OPT_SRCDIR}/\\\" && \
+        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'set -o pipefail ; \
+            cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
@@ -521,7 +523,8 @@ tool_init_fpart_job_command () {
             2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "tar")
-        FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} cf - \
+        FPART_JOBCOMMAND="/bin/sh -c 'set -o pipefail ; \
+            ${SUDO} ${TOOL_BIN} cf - \
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
             ${SUDO} ${TOOL_BIN} xpf - \
