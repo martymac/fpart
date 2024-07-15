@@ -10,43 +10,30 @@ It shows file movements within involved directories.
 
 --- /tmp/before.list
 +++ /tmp/after.list
-@@ -1,6 +1,18 @@
- /tmp/fpsync
- /tmp/fpsync/log
- /tmp/fpsync/log/1689103660-37834
-+/tmp/fpsync/log/1689103660-37834/1.stderr
-+/tmp/fpsync/log/1689103660-37834/1.stdout
+@@ -1,13 +1,22 @@
++/tmp/fpsync/log/1689103660-37834/1.ret          # If job 1's return code != 0
++/tmp/fpsync/log/1689103660-37834/1.stderr       # If job 1 wrote something to stderr
++/tmp/fpsync/log/1689103660-37834/1.stdout       # If job 1 wrote something to stdout
++/tmp/fpsync/log/1689103660-37834/2.ret
 +/tmp/fpsync/log/1689103660-37834/2.stderr
 +/tmp/fpsync/log/1689103660-37834/2.stdout
++/tmp/fpsync/log/1689103660-37834/3.ret
 +/tmp/fpsync/log/1689103660-37834/3.stderr
 +/tmp/fpsync/log/1689103660-37834/3.stdout
-+/tmp/fpsync/log/1689103660-37834/4.stderr
-+/tmp/fpsync/log/1689103660-37834/4.stdout
-+/tmp/fpsync/log/1689103660-37834/5.stderr
-+/tmp/fpsync/log/1689103660-37834/5.stdout
-+/tmp/fpsync/log/1689103660-37834/6.stderr
-+/tmp/fpsync/log/1689103660-37834/6.stdout
- /tmp/fpsync/log/1689103660-37834/fpart.log
- /tmp/fpsync/parts
- /tmp/fpsync/parts/1689103660-37834
-@@ -18,13 +30,13 @@
- /tmp/fpsync/parts/1689103660-37834/part.6.meta
- /tmp/fpsync/queue
- /tmp/fpsync/queue/1689103660-37834
--/tmp/fpsync/queue/1689103660-37834/1
+ /tmp/fpsync/log/1689103660-37834/fpsync.log     # Main fpsync logs (contains fpart pass logs)
+ /tmp/fpsync/parts/1689103660-37834/part.1       # File listing for job 1 (i.e. partition 1)
+ /tmp/fpsync/parts/1689103660-37834/part.1.meta  # Meta-information (number of files, size) for job 1
+ /tmp/fpsync/parts/1689103660-37834/part.2
+ /tmp/fpsync/parts/1689103660-37834/part.2.meta
+ /tmp/fpsync/parts/1689103660-37834/part.3
+ /tmp/fpsync/parts/1689103660-37834/part.3.meta
+ /tmp/fpsync/parts/1689103660-37834/run.meta     # Run meta-information (number of jobs, files, size)
+-/tmp/fpsync/queue/1689103660-37834/1            # Job 1's script to be run
 -/tmp/fpsync/queue/1689103660-37834/2
 -/tmp/fpsync/queue/1689103660-37834/3
--/tmp/fpsync/queue/1689103660-37834/4
--/tmp/fpsync/queue/1689103660-37834/5
--/tmp/fpsync/queue/1689103660-37834/6
 -/tmp/fpsync/queue/1689103660-37834/fp_done
  /tmp/fpsync/queue/1689103660-37834/info
- /tmp/fpsync/work
- /tmp/fpsync/work/1689103660-37834
-+/tmp/fpsync/work/1689103660-37834/1
++/tmp/fpsync/work/1689103660-37834/1             # Job 1's script once run
 +/tmp/fpsync/work/1689103660-37834/2
 +/tmp/fpsync/work/1689103660-37834/3
-+/tmp/fpsync/work/1689103660-37834/4
-+/tmp/fpsync/work/1689103660-37834/5
-+/tmp/fpsync/work/1689103660-37834/6
 +/tmp/fpsync/work/1689103660-37834/fp_done

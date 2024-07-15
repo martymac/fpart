@@ -1305,8 +1305,8 @@ JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_RUNID}"   # Currently syncing jobs' dir
 FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_RUNID}"
 FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
 FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_RUNID}"
-FPART_LOGFILE="${FPART_LOGDIR}/fpart.log"
-FPART_LOGFIFO="${FPART_LOGDIR}/.fpart.log.fifo"
+FPART_LOGFILE="${FPART_LOGDIR}/fpsync.log"
+FPART_LOGFIFO="${FPART_LOGDIR}/.fpsync.log.fifo"
 
 # Prepare mode-specific tool and fpart options
 # used when starting a new run (only)

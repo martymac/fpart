@@ -13,6 +13,7 @@
       additional information regarding jobs that did return 0 but wrote
       something to stderr (fixes GH issue #61)
     - fpsync: fix failure detection for piped tools (tar, cpio, pax)
+    - fpsync: rename main log file to fpsync.log
 ```
 # Current: 1.6.0
 ```nohighlight
