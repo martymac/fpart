@@ -13,6 +13,7 @@ Package: fpart
 Architecture: any
 Depends: bsd-mailx | mailx,
          cpio,
+         pax,
          rsync,
          sudo,
          ${misc:Depends},
@@ -30,6 +31,7 @@ Description: sort file trees and pack them into bags
  .
  Fpart also includes a live mode, which allows it to crawl very large
  filesystems and produce partitions in live. Hooks are available to act on
- those partitions  (e.g. immediately start a transfer using rsync(1), cpio(1)
- or tar(1)) without having to wait for the filesystem traversal job to be
- finished. Used this way, fpart can be seen as a powerful data migration tool.
+ those partitions  (e.g. immediately start a transfer using rsync(1), cpio(1),
+ pax(1) or tar(1)) without having to wait for the filesystem traversal job to
+ be finished. Used this way, fpart can be seen as a powerful data migration
+ tool.
