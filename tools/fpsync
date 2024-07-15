@@ -1369,6 +1369,17 @@ else
     if [ ! -d "${FPART_PARTSDIR}" ] || [ ! -d "${FPART_LOGDIR}" ]
     then
         end_die "Could not find specified run's 'parts' and 'log' directories"
+    else
+        # When replaying a run, cleanup previous logs to avoid leftovers
+        # if replay gets canceled. Keep fpsync.log file to retain fpart
+        # pass logs. Replay/rerun logs wil be appended to that file.
+        if [ -n "${OPT_REPLAYRUN}" ]
+        then
+            find "${FPART_LOGDIR}/" -type f -a '(' \
+                    -name '*.ret' -o -name '*.stdout' -o -name '*.stderr' \
+                ')' -exec rm {} \; 2>/dev/null || \
+                    end_die "Error replaying specified run (could not cleanup previous logs)"
+        fi
     fi
 fi
 

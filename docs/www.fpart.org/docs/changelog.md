@@ -15,6 +15,7 @@
     - fpsync: fix failure detection for piped tools (tar, cpio, pax)
     - fpsync: rename main log file to fpsync.log
     - fpsync: improve startup logs
+    - fpsync: cleanup logs when replaying a run
 ```
 # Current: 1.6.0
 ```nohighlight
