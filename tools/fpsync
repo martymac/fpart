@@ -1518,8 +1518,9 @@ fi
 work_list_free_workers_init
 
 # Let's rock !
-echo_log "2" "Info: [$$] Syncing ${OPT_SRCDIR} => ${OPT_DSTURL}"
-echo_log "1" "Info: Run ID: ${FPART_RUNID}$([ -n "${OPT_RUNID}" ] && echo ' (resumed)')"
+echo_log "4" "----"
+echo_log "1" "Info: Fpsync start (syncing ${OPT_SRCDIR} => ${OPT_DSTURL}, pid: $$)"
+echo_log "1" "Info: Run ID: ${FPART_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})"
 echo_log "2" "Info: Start time: $(date)"
 echo_log "2" "Info: Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "Info: Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
