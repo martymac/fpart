@@ -1092,8 +1092,8 @@ sigint_handler () {
 }
 
 # Handle ^T: print info about queue status
-# (hint: on FreeBSD, SIGINFO verbosity can be reduced by setting sysctl
-# 'kern.tty_info_kstacks' to 0)
+# (hint: on FreeBSD, SIGINFO verbosity can be reduced
+# by setting sysctl 'kern.tty_info_kstacks' to 0)
 siginfo_handler () {
     #### Jobs
     local _jobs_total="$(total_jobs_count)"
@@ -1445,7 +1445,7 @@ else
         for _file in \
             $(cd "${JOBS_WORKDIR}" && ls -1)
         do
-            mv -f "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
+            mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
                 end_die "Error replaying specified run (could not re-schedule jobs)"
         done
     fi
