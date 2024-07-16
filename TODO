@@ -30,7 +30,7 @@ Fpsync:
 - Modify 'fpsync -l' output to display run status (with erroneous jobs detailed)
 - Ability to replay one or more jobs within a specific run
   (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
-- Document job prepare/listing/resume/replay
+- Document job prepare/listing/resume/replay + log location
 - Show if dirsonly/aggressive mode is enabled in status
 - When waiting for sync jobs to complete, regularly show status
   (as a progress bar ?)
