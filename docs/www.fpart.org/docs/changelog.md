@@ -16,6 +16,7 @@
     - fpsync: rename main log file to fpsync.log
     - fpsync: improve startup logs
     - fpsync: cleanup logs when replaying a run
+    - fpsync: fix wrong jobs rescheduled when resuming a run (option -r)
 ```
 # Current: 1.6.0
 ```nohighlight

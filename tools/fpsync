@@ -877,6 +877,8 @@ work_list_refresh () {
         then
             _WORK_LIST="${_WORK_LIST} ${_JOB}"
             _WORK_NUM="$((${_WORK_NUM} + 1))"
+            # Update job's timestamps to reflect its activity
+            touch -c "${JOBS_WORKDIR}/${_JOB_PART}"
         # If not, put its worker to the free list
         else
             echo_log "2" "<= [QMGR] Job ${_JOB} finished"
@@ -1163,6 +1165,8 @@ job_queue_next () {
         _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' | head -n 1)
         if [ -n "${_next}" ]
         then
+            # Update job's timestamps to reflect its activity
+            touch -c "${JOBS_QUEUEDIR}/${_next}"
             mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
                 end_die "Cannot dequeue next job"
             echo "${_next}"
@@ -1449,6 +1453,10 @@ else
                 end_die "Error replaying specified run (could not re-schedule jobs)"
         done
     fi
+
+    # Finally, ensure fp_done file is the latest file in queue dir
+    # as rescheduled job files' timestamps have been updated since
+    job_queue_fp_done
 fi
 
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones
@@ -1652,6 +1660,8 @@ then
                     # prevent SIGINT propagation
                     set -m
                     (
+                        # Update job's timestamps to reflect its activity
+                        touch -c "${JOBS_WORKDIR}/${_next_job}"
                         /bin/sh "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
                     ) &
@@ -1665,6 +1675,8 @@ then
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} -> ${_next_host}"
                     set -m
                     (
+                        # Update job's timestamps to reflect its activity
+                        touch -c "${JOBS_WORKDIR}/${_next_job}"
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
                             < "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
