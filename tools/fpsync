@@ -873,7 +873,7 @@ work_list_refresh () {
         _JOB_PID="$(echo ${_JOB} | cut -d ':' -f 1)"
         _JOB_PART="$(echo ${_JOB} | cut -d ':' -f 2)"
         # If the process is still alive, keep it
-        if ps "${_JOB_PID}" 1>/dev/null 2>&1
+        if ps -p "${_JOB_PID}" 1>/dev/null 2>&1
         then
             _WORK_LIST="${_WORK_LIST} ${_JOB}"
             _WORK_NUM="$((${_WORK_NUM} + 1))"
