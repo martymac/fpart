@@ -1148,11 +1148,13 @@ sigint_handler () {
     # Handle subsequent ^C:
     # kill sync processes to fast-unlock the main process
     else
-        echo_log "1" "===> Interrupted again, killing remaining jobs"
+        [ ${SIGINT_COUNT} -le 2 ] && \
+            echo_log "1" "===> Interrupted again, killing remaining jobs"
         for _JOB in ${WORK_LIST}
         do
+            [ ${SIGINT_COUNT} -le 2 ] && \
+                echo_log "3" "=> [QMGR] Killing job ${_JOB}"
             kill -s INT -- "-$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
-            echo_log "2" "<= [QMGR] Job ${_JOB} killed"
         done
     fi
 }
