@@ -447,7 +447,7 @@ tool_get_fpart_mode_opts () {
                 # Regular mode
                 #
                 # We do *not* want fpart option -zz in regular dirs-only mode
-                # because un-readable directories will be created when sync'ing
+                # because unreadable directories will be created when sync'ing
                 # the parent
                 printf '%s\n' '-E'
             else
@@ -490,7 +490,7 @@ tool_init_fpart_job_command () {
             # Aggressive mode: enable recursivity for erroneous partitions
             # (i.e. where: (errno != 0) && (errno != EACCESS))
             # Also, skip sync for errno==EACCESS as this is a legitimate error:
-            # un-accessible dirs will be re-created by parents, anyway
+            # unaccessible dirs will be re-created by parents, anyway
             FPART_JOBCOMMAND="/bin/sh -c ' \
                 FPART_PARTERRNO=\\\"\${FPART_PARTERRNO}\\\"; \
                 TOOL_MODEOPTS_R=; \
