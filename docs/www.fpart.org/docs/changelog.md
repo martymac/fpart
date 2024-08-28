@@ -17,6 +17,7 @@
     - fpsync: improve startup logs
     - fpsync: cleanup logs when replaying a run
     - fpsync: fix wrong jobs rescheduled when resuming a run (option -r)
+    - fpsync: fix wrong counters erroneously including killed jobs
 ```
 # Current: 1.6.0
 ```nohighlight

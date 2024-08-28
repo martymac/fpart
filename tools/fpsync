@@ -877,31 +877,46 @@ work_list_refresh () {
         then
             _WORK_LIST="${_WORK_LIST} ${_JOB}"
             _WORK_NUM="$((${_WORK_NUM} + 1))"
-            # Update job's timestamps to reflect its activity
-            touch -c "${JOBS_WORKDIR}/${_JOB_PART}"
-        # If not, put its worker to the free list
+        # else, update workers list and counters
         else
-            echo_log "2" "<= [QMGR] Job ${_JOB} finished"
             if [ -n "${OPT_WRKRS}" ]
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 3)"
             fi
-            # Update status counters
-            _run_done_jobs=$(( ${_run_done_jobs} + 1 ))
-            _run_done_files=$(( \
-                ${_run_done_files} + $( \
-                    job_files=0 ; \
-                    . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
-                    echo "${job_files}" \
-                ) \
-            ))
-            _run_done_size=$(( \
-                ${_run_done_size} + $( \
-                    job_size=0 ; \
-                    . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
-                    echo "${job_size}" \
-                ) \
-            ))
+
+            if [ ${SIGINT_COUNT} -le 1 ]
+            then
+                # Job exited (either normally or killed through external command)
+                # XXX Externally-killed jobs will not be rescheduled when
+                # resuming run. User will have to perform a full replay in that
+                # case.
+                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited"
+
+                # Update status counters
+                _run_done_jobs=$(( ${_run_done_jobs} + 1 ))
+                _run_done_files=$(( \
+                    ${_run_done_files} + $( \
+                        job_files=0 ; \
+                        . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                        echo "${job_files}" \
+                    ) \
+                ))
+                _run_done_size=$(( \
+                    ${_run_done_size} + $( \
+                        job_size=0 ; \
+                        . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                        echo "${job_size}" \
+                    ) \
+                ))
+                # Reset job's timestamps to reflect its inactivity
+                touch -c -r "${FPART_PARTSDIR}/part.1" \
+                    "${JOBS_WORKDIR}/${_JOB_PART}"
+            else
+                # Job killed through fpsync, do *not* mark the job as done
+                # to make the run resumable
+                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed by user)"
+            fi
+
             # Remove useless log and result files
             logfile_is_not_empty "${FPART_LOGDIR}/${_JOB_PART}.stdout" || \
                 rm -f "${FPART_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
@@ -1028,10 +1043,59 @@ total_size_count () {
     )
 }
 
-# Count jobs performed in current run (including running ones)
+# Check if specified run is resumable
+# $1 = run ID
+run_is_resumable () {
+    [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || \
+        { [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ] && \
+          [ $(run_incomplete_jobs_count "${1}") -gt 0 ] ;}
+}
+
+# Check if specified run is replayable
+# $1 = run ID
+run_is_replayable () {
+    [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || \
+        [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ]
+}
+
+# Print a specific run's status to stdout
+# $1 = run ID
+run_status_print () {
+    if run_is_resumable "${1}"
+    then
+        echo "resumable (synchronization not complete, use -r to resume)"
+    else
+        if run_is_replayable "${1}"
+        then
+            echo "replayable (use -R to replay)"
+        else
+            echo "not resumable (fpart pass not complete)"
+        fi
+    fi
+}
+
+# List incomplete jobs in specified run
+# Incomplete jobs are those having timestamps newer than their partition 1's.
+# $1 = run ID
 # JOBS_WORKDIR can host several types of file :
 # <job_number>: a sync job to perform
-# 'fp_done': present when every job has been synchronized (fpsync run is complete)
+# 'fp_done': present when every job has been scheduled
+run_incomplete_jobs_list () {
+    [ -n "${1}" ] && \
+      find "${OPT_TMPDIR}/work/${1}" \
+          -type f -a \
+          '(' ! -name 'fp_done' ')' -a \
+          -newer "${OPT_FPSHDIR}/parts/${1}/part.1" \
+              -exec basename {} \; 2>/dev/null
+}
+
+# Count incomplete jobs in specified run
+# $1 = run ID
+run_incomplete_jobs_count () {
+    run_incomplete_jobs_list "${1}" | wc -l | awk '{print $1}'
+}
+
+# Count jobs performed in current run (including running ones)
 work_jobs_count () {
     (cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done' | \
         wc -l | awk '{print $1}')
@@ -1166,26 +1230,12 @@ job_queue_next () {
         if [ -n "${_next}" ]
         then
             # Update job's timestamps to reflect its activity
+            # An active job is a job that is in "${JOBS_WORKDIR}" and whose
+            # timestamps are newer than its partition 1's.
             touch -c "${JOBS_QUEUEDIR}/${_next}"
             mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
                 end_die "Cannot dequeue next job"
             echo "${_next}"
-        fi
-    fi
-}
-
-# Print a specific run's status to stdout
-# $1 = runid
-run_status_print () {
-    if [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ]
-    then
-        echo "resumable (synchronization not complete, use -r to resume)"
-    else
-        if [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ]
-        then
-            echo "replayable (synchronization complete, use -R to replay)"
-        else
-            echo "not resumable (fpart pass not complete)"
         fi
     fi
 }
@@ -1403,26 +1453,32 @@ else
     # - the work queue exists
     # + For resume mode, strictly check if :
     #   - fpart pass has completed
-    #     (the 'fp_done' flag has been created in job queue dir)
+    #     (the 'fp_done' flag has been created in the job queue dir)
     #   - fpsync run has *not* completed
-    #     (the 'fp_done' flag is *still* present in job queue dir)
-    # + For replay mode, we accept that :
-    #   - fpsync run has completed
-    #     (the 'fp_done' flag has been moved to the work queue dir)
+    #     (the 'fp_done' flag is *still* present in the job queue dir, or
+    #      the 'fp_done' flag is present in the work queue dir and jobs remain
+    #      incomplete because of a crash or kill)
+    # + For replay mode, we only check that :
+    #   - fpart pass has completed
+    #     (the 'fp_done' flag is present either in the job queue dir or
+    #      in the work queue dir)
     [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
         end_die "Specified run is not resumable ('info' flag missing)"
     [ ! -d "${JOBS_WORKDIR}" ] && \
         end_die "Specified run is not resumable (work queue missing)"
 
-    # Check for presence of 'fp_done' flag:
-    # - strictly in JOBS_QUEUEDIR for standard resume mode
-    # - optionally in JOBS_WORKDIR for replay mode
-    # and throw an error if 'fp_done' not found at all
-    if [ ! -f "${JOBS_QUEUEDIR}/fp_done" ]
+    # Simple resume
+    if [ -z "${OPT_REPLAYRUN}" ]
     then
-        if [ -z "${OPT_REPLAYRUN}" ] || [ ! -f "${JOBS_WORKDIR}/fp_done" ]
+        if ! run_is_resumable "${OPT_RUNID}"
         then
             end_die "Specified run is not resumable (try -R to replay ?)"
+        fi
+    # Full replay (option -R used)
+    else
+        if ! run_is_replayable "${OPT_RUNID}"
+        then
+            end_die "Specified run is not replayable (fpart pass not complete)"
         fi
     fi
 
@@ -1432,31 +1488,36 @@ else
     # Remove the "sl_stop" flag, if any
     rm -f "${JOBS_QUEUEDIR}/sl_stop" 2>/dev/null
 
-    # Move potentially-incomplete jobs to the jobs queue so that they can be
-    # executed again. We consider the worst-case scenario and resume OPT_RJOBS
-    # last jobs, some of them being partially finished.
-    for _file in \
-        $(cd "${JOBS_WORKDIR}" && ls -t1 | grep -v 'fp_done' | head -n "${OPT_RJOBS}")
+    # Move the 'fp_done' flag (if any) to the jobs queue
+    mv "${JOBS_WORKDIR}/fp_done" "${JOBS_QUEUEDIR}" 2>/dev/null
+
+    # Move potentially-incomplete jobs to the jobs queue
+    for _file in $(run_incomplete_jobs_list "${FPART_RUNID}")
     do
+        echo_log "3" "=> [QMGR] Rescheduling job ${_file} (incomplete)"
         mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
             end_die "Error resuming specified run (could not re-schedule jobs)"
     done
-    # When performing a replay:
-    # - reschedule already done jobs to the jobs queue
-    # - move 'fp_done' flag (implicit, with other files) to the jobs queue
+
+    # When replaying, also reschedule already done jobs to the jobs queue
     if [ -n "${OPT_REPLAYRUN}" ]
     then
         for _file in \
             $(cd "${JOBS_WORKDIR}" && ls -1)
         do
+            echo_log "3" "=> [QMGR] Rescheduling job ${_file}"
             mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
                 end_die "Error replaying specified run (could not re-schedule jobs)"
         done
     fi
 
-    # Finally, ensure fp_done file is the latest file in queue dir
-    # as rescheduled job files' timestamps have been updated since
-    job_queue_fp_done
+    # Finally, reset jobs' original timestamps in the jobs queue
+    # to restore their original execution order
+    for _file in \
+        $(cd "${JOBS_QUEUEDIR}" && ls -1 | grep -v -e 'fp_done' -e 'info')
+    do
+        touch -c -r "${FPART_PARTSDIR}/part.${_file}" "${JOBS_QUEUEDIR}/${_file}"
+    done
 fi
 
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones
@@ -1660,8 +1721,6 @@ then
                     # prevent SIGINT propagation
                     set -m
                     (
-                        # Update job's timestamps to reflect its activity
-                        touch -c "${JOBS_WORKDIR}/${_next_job}"
                         /bin/sh "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
                     ) &
@@ -1675,8 +1734,6 @@ then
                     echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} -> ${_next_host}"
                     set -m
                     (
-                        # Update job's timestamps to reflect its activity
-                        touch -c "${JOBS_WORKDIR}/${_next_job}"
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
                             < "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
