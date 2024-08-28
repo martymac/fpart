@@ -53,8 +53,8 @@ OPT_DIRSONLY=""
 OPT_AGGRESSIVE=""
 # SSH workers (execute jobs locally if not defined, -w)
 OPT_WRKRS=""
-# Fpart shared dir (must be shared amongst all workers, -d)
-OPT_FPSHDIR=""
+# Shared dir (must be shared amongst all workers, -d)
+OPT_SHDIR=""
 # Temporary dir (local, used for queue management, -t)
 OPT_TMPDIR="/tmp/fpsync"
 # E-mail report option (-M)
@@ -177,7 +177,7 @@ echo_log () {
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
         echo "${_log_ts} $2"
     [ -n "$2" ] && \
-        echo "${_log_ts} $2" >> "${FPART_LOGFILE}"
+        echo "${_log_ts} $2" >> "${FPSYNC_LOGFILE}"
 }
 
 # Check if $1 is an absolute path
@@ -219,10 +219,10 @@ is_runid () {
 
 ########## Results handling
 
-# Get files from "${FPART_LOGDIR}/" by extension
+# Get files from "${FPSYNC_LOGDIR}/" by extension
 logfiles_get_list_by_ext () {
     [ -n "$1" ] && \
-        find "${FPART_LOGDIR}/" -type f -name "*.${1}" ! -size 0 2>/dev/null
+        find "${FPSYNC_LOGDIR}/" -type f -name "*.${1}" ! -size 0 2>/dev/null
 }
 
 # Check if file $1 exists and contains something
@@ -484,8 +484,8 @@ tool_init_fpart_job_command () {
                 ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
                 \\\"${OPT_SRCDIR}/\\\" \
                 \\\"${OPT_DSTURL}/\\\"' \
-                1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-                2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+                1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+                2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         else
             # Aggressive mode: enable recursivity for erroneous partitions
             # (i.e. where: (errno != 0) && (errno != EACCESS))
@@ -507,8 +507,8 @@ tool_init_fpart_job_command () {
                 \\\${TOOL_MODEOPTS_R} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
                 \\\"${OPT_SRCDIR}/\\\" \
                 \\\"${OPT_DSTURL}/\\\"' \
-                1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-                2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+                1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+                2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         fi
         ;;
     "cpio")
@@ -521,8 +521,8 @@ tool_init_fpart_job_command () {
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
-            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+            1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "pax")
         # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
@@ -532,8 +532,8 @@ tool_init_fpart_job_command () {
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} ${TOOL_MODEOPTS} \
             \\\"${OPT_DSTURL}/\\\"' \
-            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+            1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "tar")
         FPART_JOBCOMMAND="/bin/sh -c 'set -o pipefail ; \
@@ -542,16 +542,16 @@ tool_init_fpart_job_command () {
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
             ${SUDO} ${TOOL_BIN} xpf - \
             ${OPT_TOOL} -C \\\"${OPT_DSTURL}/\\\" ${TOOL_MODEOPTS_2}' \
-            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+            1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "tarify")
         FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} c \
             -f \\\"${OPT_DSTURL}/\${FPART_PARTNUMBER}.tar\\\" \
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\"' \
-            1>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
-            2>\"${FPART_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
+            1>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stdout\" \
+            2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     *)
         ;;
@@ -641,7 +641,7 @@ parse_opts () {
         "d")
             if is_abs_path "${OPTARG}"
             then
-                OPT_FPSHDIR="${OPTARG}"
+                OPT_SHDIR="${OPTARG}"
             else
                 end_die "Please supply an absolute path for shared dir"
             fi
@@ -729,15 +729,15 @@ parse_opts () {
     done
     shift $((${OPTIND} - 1))
 
-    # Validate OPT_FPSHDIR (shared directory)
+    # Validate OPT_SHDIR (shared directory)
     if [ -z "${OPT_WRKRS}" ]
     then
         # For local jobs, set shared directory to temporary directory
-        [ -z "${OPT_FPSHDIR}" ] && \
-            OPT_FPSHDIR="${OPT_TMPDIR}"
+        [ -z "${OPT_SHDIR}" ] && \
+            OPT_SHDIR="${OPT_TMPDIR}"
     else
         # For remote ones, specifying a shared directory is mandatory
-        [ -z "${OPT_FPSHDIR}" ] && \
+        [ -z "${OPT_SHDIR}" ] && \
             end_die "Please supply a shared dir when specifying workers"
     fi
 
@@ -897,19 +897,19 @@ work_list_refresh () {
                 _run_done_files=$(( \
                     ${_run_done_files} + $( \
                         job_files=0 ; \
-                        . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                        . "${FPSYNC_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
                         echo "${job_files}" \
                     ) \
                 ))
                 _run_done_size=$(( \
                     ${_run_done_size} + $( \
                         job_size=0 ; \
-                        . "${FPART_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
+                        . "${FPSYNC_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
                         echo "${job_size}" \
                     ) \
                 ))
                 # Reset job's timestamps to reflect its inactivity
-                touch -c -r "${FPART_PARTSDIR}/part.1" \
+                touch -c -r "${FPSYNC_PARTSDIR}/part.1" \
                     "${JOBS_WORKDIR}/${_JOB_PART}"
             else
                 # Job killed through fpsync, do *not* mark the job as done
@@ -918,12 +918,12 @@ work_list_refresh () {
             fi
 
             # Remove useless log and result files
-            logfile_is_not_empty "${FPART_LOGDIR}/${_JOB_PART}.stdout" || \
-                rm -f "${FPART_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
-            logfile_is_not_empty "${FPART_LOGDIR}/${_JOB_PART}.stderr" || \
-                rm -f "${FPART_LOGDIR}/${_JOB_PART}.stderr" 2>/dev/null
-            retfile_is_success "${FPART_LOGDIR}/${_JOB_PART}.ret" && \
-                rm -f "${FPART_LOGDIR}/${_JOB_PART}.ret" 2>/dev/null
+            logfile_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stdout" || \
+                rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
+            logfile_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
+                rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" 2>/dev/null
+            retfile_is_success "${FPSYNC_LOGDIR}/${_JOB_PART}.ret" && \
+                rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.ret" 2>/dev/null
         fi
     done
     WORK_LIST=${_WORK_LIST}
@@ -1010,15 +1010,15 @@ job_queue_sl_stop () {
 ########## Status functions
 
 # Count total jobs to perform
-# FPART_PARTSDIR can host several types of file :
+# FPSYNC_PARTSDIR can host several types of file :
 # part.<job_number>: file listing for a sync job
 # part.<job_number>.meta: job meta-information (number of files, size)
 # run.meta: run meta-information (number of jobs, files, size)
 total_jobs_count () {
     (
         total_num_parts=0 ; \
-        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
-            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_num_parts}"
     )
 }
@@ -1027,8 +1027,8 @@ total_jobs_count () {
 total_files_count () {
     (
         total_num_files=0 ; \
-        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
-            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_num_files}"
     )
 }
@@ -1037,8 +1037,8 @@ total_files_count () {
 total_size_count () {
     (
         total_size=0 ; \
-        [ -f "${FPART_PARTSDIR}/run.meta" ] && \
-            . "${FPART_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
         echo "${total_size}"
     )
 }
@@ -1085,7 +1085,7 @@ run_incomplete_jobs_list () {
       find "${OPT_TMPDIR}/work/${1}" \
           -type f -a \
           '(' ! -name 'fp_done' ')' -a \
-          -newer "${OPT_FPSHDIR}/parts/${1}/part.1" \
+          -newer "${OPT_SHDIR}/parts/${1}/part.1" \
               -exec basename {} \; 2>/dev/null
 }
 
@@ -1110,7 +1110,7 @@ work_files_count () {
         _jobs_files=$(( \
             ${_jobs_files} + $( \
                 job_files=0 ; \
-                . "${FPART_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                . "${FPSYNC_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
                 echo "${job_files}" \
             ) \
         ))
@@ -1127,7 +1127,7 @@ work_size_count () {
         _jobs_size=$(( \
             ${_jobs_size} + $( \
                 job_size=0 ; \
-                . "${FPART_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                . "${FPSYNC_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
                 echo "${job_size}" \
             ) \
         ))
@@ -1289,14 +1289,14 @@ else
     OPT_TOOL_PATH="${TOOL_BIN}"
 fi
 
-## Simple run-related -independent- actions, not requiring FPART_RUNID
+## Simple run-related -independent- actions, not requiring FPSYNC_RUNID
 
 # List runs and exit
 if [ -n "${OPT_LISTRUNS}" ]
 then
     echo "<=== Listing runs"
     for _run in \
-        $(cd "${OPT_FPSHDIR}/parts" 2>/dev/null && ls -1)
+        $(cd "${OPT_SHDIR}/parts" 2>/dev/null && ls -1)
     do
         echo "===> Run: ID: ${_run}, status: $(run_status_print "${_run}")"
     done
@@ -1306,9 +1306,9 @@ fi
 # Delete run and exit
 if [ -n "${OPT_DELETERUN}" ]
 then
-    { [ -d "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" ] && \
-        rm -rf "${OPT_FPSHDIR}/parts/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_FPSHDIR}/log/${OPT_DELETERUN}" && \
+    { [ -d "${OPT_SHDIR}/parts/${OPT_DELETERUN}" ] && \
+        rm -rf "${OPT_SHDIR}/parts/${OPT_DELETERUN}" && \
+        rm -rf "${OPT_SHDIR}/log/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/queue/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/work/${OPT_DELETERUN}" && \
         end_ok "Successfully deleted run ${OPT_DELETERUN}" ;} || \
@@ -1321,11 +1321,11 @@ then
     [ ! -x "${TAR_BIN}" ] && \
         end_die "Tar is missing locally, check your configuration"
 
-    { [ -d "${OPT_FPSHDIR}/parts/${OPT_ARCHIVERUN}" ] && \
+    { [ -d "${OPT_SHDIR}/parts/${OPT_ARCHIVERUN}" ] && \
         ( cd "${OPT_TMPDIR}" 2>/dev/null && \
             "${TAR_BIN}" czf fpsync-run-${OPT_ARCHIVERUN}.tgz \
-                "${OPT_FPSHDIR}/parts/${OPT_ARCHIVERUN}" \
-                "${OPT_FPSHDIR}/log/${OPT_ARCHIVERUN}" \
+                "${OPT_SHDIR}/parts/${OPT_ARCHIVERUN}" \
+                "${OPT_SHDIR}/log/${OPT_ARCHIVERUN}" \
                 "${OPT_TMPDIR}/queue/${OPT_ARCHIVERUN}" \
                 "${OPT_TMPDIR}/work/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
             end_ok "Successfully created ${OPT_TMPDIR}/fpsync-run-${OPT_ARCHIVERUN}.tgz" ;} || \
@@ -1341,28 +1341,28 @@ then
     if [ -d "${OPT_TMPDIR}/queue/${OPT_RUNID}" ] && \
         [ -d "${OPT_TMPDIR}/work/${OPT_RUNID}" ]
     then
-        FPART_RUNID="${OPT_RUNID}"
+        FPSYNC_RUNID="${OPT_RUNID}"
     else
         end_die "Could not find specified run's queue and work directories"
     fi
 else
     # Generate a unique run ID. This run ID *must* remain
     # unique from one run to another.
-    FPART_RUNID="$(date '+%s')-$$"
+    FPSYNC_RUNID="$(date '+%s')-$$"
 fi
 
 # Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPART_RUNID}" # Sync jobs' queue dir
-JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPART_RUNID}"   # Currently syncing jobs' dir
+JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPSYNC_RUNID}" # Sync jobs' queue dir
+JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPSYNC_RUNID}"   # Currently syncing jobs' dir
 
-# Fpart paths. Those ones must be shared amongst all nodes when using SSH
+# Shared paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
-FPART_PARTSDIR="${OPT_FPSHDIR}/parts/${FPART_RUNID}"
-FPART_PARTSTMPL="${FPART_PARTSDIR}/part"
-FPART_LOGDIR="${OPT_FPSHDIR}/log/${FPART_RUNID}"
-FPART_LOGFILE="${FPART_LOGDIR}/fpsync.log"
-FPART_LOGFIFO="${FPART_LOGDIR}/.fpsync.log.fifo"
+FPSYNC_PARTSDIR="${OPT_SHDIR}/parts/${FPSYNC_RUNID}"
+FPSYNC_PARTSTMPL="${FPSYNC_PARTSDIR}/part"
+FPSYNC_LOGDIR="${OPT_SHDIR}/log/${FPSYNC_RUNID}"
+FPSYNC_LOGFILE="${FPSYNC_LOGDIR}/fpsync.log"
+FPSYNC_LOGFIFO="${FPSYNC_LOGDIR}/.fpsync.log.fifo"
 
 # Prepare mode-specific tool and fpart options
 # used when starting a new run (only)
@@ -1375,9 +1375,9 @@ FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRES
 FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
     printf '%s\n%s\n' job_size=\"\${FPART_PARTSIZE}\" job_files=\"\${FPART_PARTNUMFILES}\" > \
-    \"${FPART_PARTSTMPL}.\${FPART_PARTNUMBER}.meta\" && \
+    \"${FPSYNC_PARTSTMPL}.\${FPART_PARTNUMBER}.meta\" && \
     printf '%s\n%s\n%s\n' total_num_parts=\"\${FPART_TOTALNUMPARTS}\" total_size=\"\${FPART_TOTALSIZE}\" total_num_files=\"\${FPART_TOTALNUMFILES}\" > \
-    \"${FPART_PARTSDIR}/run.meta\" && \
+    \"${FPSYNC_PARTSDIR}/run.meta\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
     echo \"\$(date '+%s') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
@@ -1416,13 +1416,13 @@ done
 if [ -z "${OPT_RUNID}" ]
 then
     # For a new run, create those directories
-    mkdir -p "${FPART_PARTSDIR}" 2>/dev/null || \
-        end_die "Cannot create partitions' output directory: ${FPART_PARTSDIR}"
-    mkdir -p "${FPART_LOGDIR}" 2>/dev/null || \
-        end_die "Cannot create log directory: ${FPART_LOGDIR}"
+    mkdir -p "${FPSYNC_PARTSDIR}" 2>/dev/null || \
+        end_die "Cannot create partitions' output directory: ${FPSYNC_PARTSDIR}"
+    mkdir -p "${FPSYNC_LOGDIR}" 2>/dev/null || \
+        end_die "Cannot create log directory: ${FPSYNC_LOGDIR}"
 else
-    # In resume mode, FPART_PARTSDIR and FPART_LOGDIR must already exist
-    if [ ! -d "${FPART_PARTSDIR}" ] || [ ! -d "${FPART_LOGDIR}" ]
+    # In resume mode, FPSYNC_PARTSDIR and FPSYNC_LOGDIR must already exist
+    if [ ! -d "${FPSYNC_PARTSDIR}" ] || [ ! -d "${FPSYNC_LOGDIR}" ]
     then
         end_die "Could not find specified run's 'parts' and 'log' directories"
     else
@@ -1431,7 +1431,7 @@ else
         # pass logs. Replay/rerun logs wil be appended to that file.
         if [ -n "${OPT_REPLAYRUN}" ]
         then
-            find "${FPART_LOGDIR}/" -type f -a '(' \
+            find "${FPSYNC_LOGDIR}/" -type f -a '(' \
                     -name '*.ret' -o -name '*.stdout' -o -name '*.stderr' \
                 ')' -exec rm {} \; 2>/dev/null || \
                     end_die "Error replaying specified run (could not cleanup previous logs)"
@@ -1440,8 +1440,8 @@ else
 fi
 
 # Create or update log file
-touch "${FPART_LOGFILE}" 2>/dev/null || \
-    end_die "Cannot create log file: ${FPART_LOGFILE}"
+touch "${FPSYNC_LOGFILE}" 2>/dev/null || \
+    end_die "Cannot create log file: ${FPSYNC_LOGFILE}"
 
 # Create / check for run's queue and work dirs
 if [ -z "${OPT_RUNID}" ]
@@ -1494,7 +1494,7 @@ else
     mv "${JOBS_WORKDIR}/fp_done" "${JOBS_QUEUEDIR}" 2>/dev/null
 
     # Move potentially-incomplete jobs to the jobs queue
-    for _file in $(run_incomplete_jobs_list "${FPART_RUNID}")
+    for _file in $(run_incomplete_jobs_list "${FPSYNC_RUNID}")
     do
         echo_log "3" "=> [QMGR] Rescheduling job ${_file} (incomplete)"
         mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
@@ -1518,7 +1518,7 @@ else
     for _file in \
         $(cd "${JOBS_QUEUEDIR}" && ls -1 | grep -v -e 'fp_done' -e 'info')
     do
-        touch -c -r "${FPART_PARTSDIR}/part.${_file}" "${JOBS_QUEUEDIR}/${_file}"
+        touch -c -r "${FPSYNC_PARTSDIR}/part.${_file}" "${JOBS_QUEUEDIR}/${_file}"
     done
 fi
 
@@ -1556,7 +1556,7 @@ then
             # area *should* be mounted but isn't, for any reason).
             [ "${_host}" = "${_FIRST_HOST}" ] && \
                 "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTURL}\" && \
-                    ${SUDO} touch \"${OPT_DSTURL}/${FPART_RUNID}\"' 2>/dev/null"
+                    ${SUDO} touch \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
         fi
 
         # Check for src_dir/ presence
@@ -1566,7 +1566,7 @@ then
         # Check for dst_url/ presence (witness file)
         if is_abs_path "${OPT_DSTURL}"
         then
-            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPART_RUNID}\" ]'" || \
+            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\" ]'" || \
                 end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTURL}"
         fi
 
@@ -1581,7 +1581,7 @@ then
     if is_abs_path "${OPT_DSTURL}"
     then
         "${SSH_BIN}" "${_FIRST_HOST}" \
-            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPART_RUNID}\"' 2>/dev/null"
+            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
     fi
 
     unset _FIRST_HOST
@@ -1602,11 +1602,11 @@ work_list_free_workers_init
 # Let's rock !
 echo_log "4" "----"
 echo_log "1" "Info: Fpsync start (syncing ${OPT_SRCDIR} => ${OPT_DSTURL}, pid: $$)"
-echo_log "1" "Info: Run ID: ${FPART_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})"
+echo_log "1" "Info: Run ID: ${FPSYNC_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})"
 echo_log "2" "Info: Start time: $(date)"
 echo_log "2" "Info: Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "Info: Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
-echo_log "2" "Info: Shared dir: ${OPT_FPSHDIR}"
+echo_log "2" "Info: Shared dir: ${OPT_SHDIR}"
 echo_log "2" "Info: Temp dir: ${OPT_TMPDIR}"
 # The following two options are just a recall to the user
 # (they are technically ignored when resuming a run)
@@ -1643,9 +1643,9 @@ then
     trap '' 29
 
     # Prepare logger for sub-shell below
-    rm -f "${FPART_LOGFIFO}" 2>/dev/null
-    mkfifo "${FPART_LOGFIFO}" || \
-        end_die "Cannot create named pipe: ${FPART_LOGFIFO}"
+    rm -f "${FPSYNC_LOGFIFO}" 2>/dev/null
+    mkfifo "${FPSYNC_LOGFIFO}" || \
+        end_die "Cannot create named pipe: ${FPSYNC_LOGFIFO}"
 
     echo_log "2" "===> Starting Fpart"
     # Fpart process is forked in the same process group as its parent
@@ -1659,7 +1659,7 @@ then
         # We use a FIFO for logging to avoid a pipe because we would need
         # a 'pipefail' option from the shell, which is not always available
         # (Debian dash does not support it, for example)
-        tee -a "${FPART_LOGFILE}" < "${FPART_LOGFIFO}" &
+        tee -a "${FPSYNC_LOGFILE}" < "${FPSYNC_LOGFIFO}" &
 
         # Allow passing special characters within fpart sub-options
         # (OPT_FPART, FPART_MODEOPTS)
@@ -1674,8 +1674,8 @@ then
             ${SUDO} "${FPART_BIN}" \
             $([ ${OPT_FPMAXPARTFILES} -gt 0 ] && printf '%s\n' "-f ${OPT_FPMAXPARTFILES}") \
             $({ { is_num "${OPT_FPMAXPARTSIZE}" && [ ${OPT_FPMAXPARTSIZE} -gt 0 ] ;} || is_size "${OPT_FPMAXPARTSIZE}" ;} && printf '%s\n' "-s ${OPT_FPMAXPARTSIZE}") \
-            -o "${FPART_PARTSTMPL}" ${FPART_SEPARATOROPT} -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
-            -W "${FPART_POSTHOOK}" . 1>"${FPART_LOGFIFO}" 2>&1
+            -o "${FPSYNC_PARTSTMPL}" ${FPART_SEPARATOROPT} -e ${OPT_FPART} ${FPART_MODEOPTS} -L \
+            -W "${FPART_POSTHOOK}" . 1>"${FPSYNC_LOGFIFO}" 2>&1
 
         if [ $? -ne 0 ]
         then
@@ -1689,7 +1689,7 @@ then
         fi
 
         # Remove FIFO (once tee exits and closes its fd)
-        rm -f "${FPART_LOGFIFO}"
+        rm -f "${FPSYNC_LOGFIFO}"
     ) &
     echo_log "2" "<=== Fpart started (from sub-shell pid=$!)"
 fi
@@ -1724,7 +1724,7 @@ then
                     set -m
                     (
                         /bin/sh "${JOBS_WORKDIR}/${_next_job}"
-                        echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
+                        echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:local"
@@ -1738,7 +1738,7 @@ then
                     (
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
                             < "${JOBS_WORKDIR}/${_next_job}"
-                        echo "$?" > "${FPART_LOGDIR}/${_next_job}.ret"
+                        echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:${_next_host}"
@@ -1784,10 +1784,10 @@ fi
 # Examine results and prepare report
 if [ -n "${OPT_PREPARERUN}" ]
 then
-    echo_log "0" "<=== Successfully prepared run: ${FPART_RUNID}"
-    _report_subj="Fpsync run ${FPART_RUNID} (prepared)"
+    echo_log "0" "<=== Successfully prepared run: ${FPSYNC_RUNID}"
+    _report_subj="Fpsync run ${FPSYNC_RUNID} (prepared)"
 else
-    _report_subj="Fpsync run ${FPART_RUNID}"
+    _report_subj="Fpsync run ${FPSYNC_RUNID}"
 fi
 _ts_now=$(date '+%s')
 _total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
