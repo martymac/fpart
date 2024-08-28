@@ -1718,7 +1718,7 @@ then
             then
                 if [ -z "${OPT_WRKRS}" ]
                 then
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} (local)"
+                    echo_log "2" "=> [QMGR] Starting job ${_next_job} locally (${JOBS_WORKDIR}/${_next_job})"
                     # We want a new process group for each sync process to
                     # prevent SIGINT propagation
                     set -m
@@ -1729,11 +1729,11 @@ then
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:local"
                     set +m
-                    echo_log "3" "=> [QMGR] Job ${_next_job} started, PID: ${_next_pid} (${_next_pid}:${_next_job}:local)"
+                    echo_log "3" "=> [QMGR] Job ${_next_job} (${_next_pid}:${_next_job}:local) started, PID: ${_next_pid}"
                 else
                     _next_host="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
-                    echo_log "2" "=> [QMGR] Starting job ${JOBS_WORKDIR}/${_next_job} -> ${_next_host}"
+                    echo_log "2" "=> [QMGR] Starting job ${_next_job} on ${_next_host} (${JOBS_WORKDIR}/${_next_job})"
                     set -m
                     (
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
@@ -1743,7 +1743,7 @@ then
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:${_next_host}"
                     set +m
-                    echo_log "3" "=> [QMGR] Job ${_next_job} started, PID: ${_next_pid} (${_next_pid}:${_next_job}:${_next_host})"
+                    echo_log "3" "=> [QMGR] Job ${_next_job} (${_next_pid}:${_next_job}:${_next_host}) started, PID: ${_next_pid}"
                 fi
             fi
         else
