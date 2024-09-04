@@ -4,7 +4,7 @@
   and [fpsync(1)](https://www.freebsd.org/cgi/man.cgi?query=fpsync&apropos=0&sektion=0&manpath=FreeBSD+12.2-RELEASE+and+Ports&arch=default&format=html) for more details.
 
 * Article about data migration using fpart and rsync (GNU Linux Magazine #164 - October 2013, french) :
-  [Parallélisez vos transferts de fichiers](http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers)
+  [Parallélisez vos transferts de fichiers](https://connect.ed-diamond.com/GNU-Linux-Magazine/glmf-164/parallelisez-vos-transferts-de-fichiers)
 
 * [Steve French](https://lwn.net/Articles/789623/)
   mentioned fpart and fpsync at 2019 Linux Storage, Filesystem, and Memory-Management Summit (LSFMM)

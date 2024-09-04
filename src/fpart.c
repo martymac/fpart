@@ -100,7 +100,7 @@ version(void)
     fprintf(stderr, "fpart v" FPART_VERSION "\n"
         "Copyright (c) 2011-2025 "
         "Ganael LAPLANCHE <ganael.laplanche@martymac.org>\n"
-        "WWW: http://contribs.martymac.org\n");
+        "WWW: https://www.fpart.org, https://contribs.martymac.org\n");
     fprintf(stderr, "Build options: debug=");
 #if defined(DEBUG)
     fprintf(stderr, "yes, fts=");
@@ -224,7 +224,8 @@ usage(void)
 #endif
     fprintf(stderr, "Please report bugs to Ganael LAPLANCHE "
         "<ganael.laplanche@martymac.org>\n");
-    fprintf(stderr, "WWW: http://contribs.martymac.org\n");
+    fprintf(stderr, "WWW: https://www.fpart.org, "
+        "https://contribs.martymac.org\n");
     return;
 }
 

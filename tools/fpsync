@@ -121,7 +121,7 @@ version () {
     cat << EOF
 fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart
 Copyright (c) 2014-2025 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
-WWW: http://contribs.martymac.org
+WWW: https://www.fpart.org, https://contribs.martymac.org
 EOF
 }
 

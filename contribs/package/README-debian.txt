@@ -13,7 +13,7 @@ $ cd fpart
 3) Checkout desired tag :
 
 $ git checkout fpart-1.1.0
-$ curl 'http://contribs.martymac.org/fpart/fpart-1.1.0.tar.gz' > ../fpart_1.1.0.orig.tar.gz
+$ curl 'https://contribs.martymac.org/fpart/fpart-1.1.0.tar.gz' > ../fpart_1.1.0.orig.tar.gz
 
 4) Get latest package files from master branch :
 

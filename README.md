@@ -15,7 +15,7 @@ under the BSD license.
 
 Fpsync, a powerful file-migration tool is also provided.
 
-See the [documentation](http://www.fpart.org) for more details and examples.
+See the [documentation](https://www.fpart.org) for more details and examples.
 
 # Key features
 
@@ -43,13 +43,13 @@ and is available under the BSD license (see COPYING for details).
 
 Source code is hosted on :
 
-* [Martymac.org](http://contribs.martymac.org)
+* [Martymac.org](https://contribs.martymac.org)
 * [Github](https://github.com/martymac/fpart)
-* [Sourceforge](http://www.sourceforge.net/projects/fpart)
+* [Sourceforge](https://www.sourceforge.net/projects/fpart)
 
 Documentation is available on :
 
-* [Fpart.org](http://www.fpart.org)
+* [Fpart.org](https://www.fpart.org)
 
 Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
