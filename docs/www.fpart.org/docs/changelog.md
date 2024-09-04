@@ -10,6 +10,7 @@
       (see GH issue #78)
     - fpsync: add option -Z to prefix logs with human-readable dates instead of
       timestamps (see GH issue #79)
+    - fpsync: pretty-print sizes in a human-readable form
 ```
 # Current: 1.7.0
 ```nohighlight

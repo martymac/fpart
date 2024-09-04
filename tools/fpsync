@@ -273,6 +273,29 @@ is_size () {
     echo "$1" | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
 }
 
+# Convert $1 (in bytes) to a human-readable size
+bytes_to_human_size () {
+    if ! is_num "$1"
+    then
+        echo "$1"
+        return
+    fi
+
+    local _result=$(echo "$1" | bc 2>/dev/null) # Remove leading 0s
+    local _sufx="B,KiB,MiB,GiB,TiB,PiB"
+    local _round_max=$(( $(echo ${_sufx} | tr -cd ',' | \
+        wc -c | awk '{print $1}') + 1 ))
+
+    local _round=1
+    while [ "${_round}" -lt "${_round_max}" ] && \
+        [ $(echo "${_result} >= 1024" | bc 2>/dev/null) -eq 1 ]
+    do
+        _result=$(echo "scale=2; ${_result} / 1024" | bc 2>/dev/null)
+        _round=$(( ${_round} + 1 ))
+    done
+    echo "${_result}$(echo ${_sufx} | cut -d ',' -f ${_round} 2>/dev/null)"
+}
+
 # Check if $1 contains (at least) a valid e-mail address
 is_mailaddr () {
     echo "$1" | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
@@ -1364,8 +1387,8 @@ siginfo_handler () {
     local _log_ts=$(date "${OPT_DATEFORMAT}")
     printf '%s\n' "${_log_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
     printf '%s\n' "${_log_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
-    printf '%s\n' "${_log_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
-    printf '%s\n' "${_log_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Bytes done: $(bytes_to_human_size ${_size_done})/$(bytes_to_human_size ${_size_total}) (${_size_percent}%), remaining: $(bytes_to_human_size ${_size_remaining})${_color_stop}"
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~$(bytes_to_human_size ${_run_bytes_per_second})/sec)${_color_stop}"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -1592,7 +1615,7 @@ WORK_FREEWORKERS="" # Free workers' list
 [ -n "${OPT_SUDO}" ] && [ ! -x "${SUDO}" ] && \
     end_die "Sudo is missing locally, check your configuration"
 # Check for common commands/tools (we accept builtins here)
-for _tool in 'ps' 'grep' 'printf' 'head' 'cut' 'awk' 'sed' 'wc'
+for _tool in 'ps' 'grep' 'printf' 'head' 'cut' 'awk' 'sed' 'wc' 'bc' 'tr'
 do
     [ -z "$(command -v ${_tool})" ] && \
         end_die "'${_tool}' is missing locally, check your configuration"
@@ -1870,7 +1893,7 @@ then
             # Tell job_queue_loop that crawling has finished
             job_queue_fp_done
             echo_log "1" "<=== Fpart crawling finished" "blue"
-            echo_log "1" "<=== Generated $(run_total_jobs_count "${FPSYNC_RUNID}") parts ($(run_total_size_count "${FPSYNC_RUNID}")B, $(run_total_files_count "${FPSYNC_RUNID}") files)"
+            echo_log "1" "<=== Generated $(run_total_jobs_count "${FPSYNC_RUNID}") parts ($(bytes_to_human_size $(run_total_size_count "${FPSYNC_RUNID}")), $(run_total_files_count "${FPSYNC_RUNID}") files)"
         fi
 
         # Remove FIFO (once tee exits and closes its fd)
