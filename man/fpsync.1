@@ -368,6 +368,13 @@ Synchronizes
 to
 .Pa /var/src/
 using 4 local jobs.
+.It Li "fpsync -n 4 -f 10000 -s 10g -m cpio /usr/src/ /var/src/"
+.sp
+The same, using
+.Xr cpio 1
+instead of
+.Xr rsync 1
+and partitions containing up to 10000 files and 10 GiB of data.
 .It Li "fpsync -n 2 -w login@machine1 -w login@machine2 -d /mnt/fpsync /mnt/src/ /mnt/dst/"
 .sp
 Synchronizes
@@ -386,6 +393,24 @@ The source directory
 is also available on those 3 machines, while the destination directory
 .Pa ( /mnt/dst/ )
 is mounted on SSH workers only (machine1 and machine2).
+.It Li "fpsync -n 1 -s 20g -vv -E -O '-x|./tmp/' /data/ /mnt/backup/"
+.sp
+Synchronizes
+.Pa /data/
+to
+.Pa /mnt/backup/
+using a single local job (to benefit from fpsync's fast synchronization
+startup, as well as its status and resuming facilities).
+Option
+.Fl E
+is enabled, which means fpsync works on a per-directory basis and enables
+.Xr rsync 1 's
+.Cm --delete
+option.
+Each job (partition) has a maximum size of 20 GiB.
+Finally, contents from '/data/tmp/' is excluded (note that the directory entry
+itself is created anyway, as it belongs to its parent folder, but remains
+empty).
 .El
 .Sh LIMITATIONS
 Parallelizing
