@@ -908,9 +908,9 @@ work_list_refresh () {
                         echo "${job_size}" \
                     ) \
                 ))
-                # Reset job's timestamps to reflect its inactivity
-                touch -c -r "${FPSYNC_PARTSDIR}/part.1" \
-                    "${JOBS_WORKDIR}/${_JOB_PART}"
+                # Mark job as done
+                mv "${JOBS_WORKDIR}/${_JOB_PART}" "${JOBS_DONEDIR}" 2>/dev/null || \
+                    end_die "Error moving job ${_JOB_PART} to done dir"
             else
                 # Job killed through fpsync, do *not* mark the job as done
                 # to make the run resumable
@@ -938,6 +938,8 @@ job_queue_init () {
         end_die "Cannot create job queue directory ${JOBS_QUEUEDIR}"
     mkdir -p "${JOBS_WORKDIR}" 2>/dev/null || \
         end_die "Cannot create job work directory ${JOBS_WORKDIR}"
+    mkdir -p "${JOBS_DONEDIR}" 2>/dev/null || \
+        end_die "Cannot create job done directory ${JOBS_DONEDIR}"
 }
 
 # Dump job queue information to allow later resuming
@@ -1075,7 +1077,7 @@ run_status_print () {
 }
 
 # List incomplete jobs in specified run
-# Incomplete jobs are those having timestamps newer than their partition 1's.
+# Incomplete jobs are those that remain in work dir
 # $1 = run ID
 # JOBS_WORKDIR can host several types of file :
 # <job_number>: a sync job to perform
@@ -1084,8 +1086,7 @@ run_incomplete_jobs_list () {
     [ -n "${1}" ] && \
       find "${OPT_TMPDIR}/work/${1}" \
           -type f -a \
-          '(' ! -name 'fp_done' ')' -a \
-          -newer "${OPT_SHDIR}/parts/${1}/part.1" \
+          '(' ! -name 'fp_done' ')' \
               -exec basename {} \; 2>/dev/null
 }
 
@@ -1095,17 +1096,23 @@ run_incomplete_jobs_count () {
     run_incomplete_jobs_list "${1}" | wc -l | awk '{print $1}'
 }
 
+# List jobs performed in current run (including running ones)
+work_jobs_list () {
+    find "${JOBS_WORKDIR}" "${JOBS_DONEDIR}" \
+        -type f -a \
+        '(' ! -name 'fp_done' ')' \
+        -exec basename {} \; 2>/dev/null
+}
+
 # Count jobs performed in current run (including running ones)
 work_jobs_count () {
-    (cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done' | \
-        wc -l | awk '{print $1}')
+    work_jobs_list | wc -l | awk '{print $1}'
 }
 
 # Count files transferred in current run (including files from running jobs)
 work_files_count () {
     local _jobs_files=0
-    for _file in \
-        $(cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done')
+    for _file in $(work_jobs_list)
     do
         _jobs_files=$(( \
             ${_jobs_files} + $( \
@@ -1121,8 +1128,7 @@ work_files_count () {
 # Count bytes transferred in current run (including bytes from running jobs)
 work_size_count () {
     local _jobs_size=0
-    for _file in \
-        $(cd "${JOBS_WORKDIR}" && ls -1 2>/dev/null | grep -v 'fp_done')
+    for _file in $(work_jobs_list)
     do
         _jobs_size=$(( \
             ${_jobs_size} + $( \
@@ -1231,10 +1237,6 @@ job_queue_next () {
         _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' | head -n 1)
         if [ -n "${_next}" ]
         then
-            # Update job's timestamps to reflect its activity
-            # An active job is a job that is in "${JOBS_WORKDIR}" and whose
-            # timestamps are newer than its partition 1's.
-            touch -c "${JOBS_QUEUEDIR}/${_next}"
             mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
                 end_die "Cannot dequeue next job"
             echo "${_next}"
@@ -1311,6 +1313,7 @@ then
         rm -rf "${OPT_SHDIR}/log/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/queue/${OPT_DELETERUN}" && \
         rm -rf "${OPT_TMPDIR}/work/${OPT_DELETERUN}" && \
+        rm -rf "${OPT_TMPDIR}/done/${OPT_DELETERUN}" && \
         end_ok "Successfully deleted run ${OPT_DELETERUN}" ;} || \
             end_die "Error deleting run ${OPT_DELETERUN}"
 fi
@@ -1327,7 +1330,8 @@ then
                 "${OPT_SHDIR}/parts/${OPT_ARCHIVERUN}" \
                 "${OPT_SHDIR}/log/${OPT_ARCHIVERUN}" \
                 "${OPT_TMPDIR}/queue/${OPT_ARCHIVERUN}" \
-                "${OPT_TMPDIR}/work/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
+                "${OPT_TMPDIR}/work/${OPT_ARCHIVERUN}" \
+                "${OPT_TMPDIR}/done/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
             end_ok "Successfully created ${OPT_TMPDIR}/fpsync-run-${OPT_ARCHIVERUN}.tgz" ;} || \
                 end_die "Error archiving run ${OPT_ARCHIVERUN}"
 fi
@@ -1339,11 +1343,12 @@ if [ -n "${OPT_RUNID}" ]
 then
     # Resume mode, check if run ID exists
     if [ -d "${OPT_TMPDIR}/queue/${OPT_RUNID}" ] && \
-        [ -d "${OPT_TMPDIR}/work/${OPT_RUNID}" ]
+        [ -d "${OPT_TMPDIR}/work/${OPT_RUNID}" ] && \
+        [ -d "${OPT_TMPDIR}/done/${OPT_RUNID}" ]
     then
         FPSYNC_RUNID="${OPT_RUNID}"
     else
-        end_die "Could not find specified run's queue and work directories"
+        end_die "Could not find specified run's queue/work/done directories"
     fi
 else
     # Generate a unique run ID. This run ID *must* remain
@@ -1354,6 +1359,7 @@ fi
 # Queue manager configuration. This queue remains local, even when using SSH.
 JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPSYNC_RUNID}" # Sync jobs' queue dir
 JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPSYNC_RUNID}"   # Currently syncing jobs' dir
+JOBS_DONEDIR="${OPT_TMPDIR}/done/${FPSYNC_RUNID}"   # Done jobs' dir
 
 # Shared paths. Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
@@ -1467,7 +1473,9 @@ else
     [ ! -f "${JOBS_QUEUEDIR}/info" ] && \
         end_die "Specified run is not resumable ('info' flag missing)"
     [ ! -d "${JOBS_WORKDIR}" ] && \
-        end_die "Specified run is not resumable (work queue missing)"
+        end_die "Specified run is not resumable (work dir missing)"
+    [ ! -d "${JOBS_DONEDIR}" ] && \
+        end_die "Specified run is not resumable (done dir missing)"
 
     # Simple resume
     if [ -z "${OPT_REPLAYRUN}" ]
@@ -1505,21 +1513,13 @@ else
     if [ -n "${OPT_REPLAYRUN}" ]
     then
         for _file in \
-            $(cd "${JOBS_WORKDIR}" && ls -1)
+            $(cd "${JOBS_DONEDIR}" && ls -1)
         do
             echo_log "3" "=> [QMGR] Rescheduling job ${_file}"
-            mv "${JOBS_WORKDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
+            mv "${JOBS_DONEDIR}/${_file}" "${JOBS_QUEUEDIR}" 2>/dev/null || \
                 end_die "Error replaying specified run (could not re-schedule jobs)"
         done
     fi
-
-    # Finally, reset jobs' original timestamps in the jobs queue
-    # to restore their original execution order
-    for _file in \
-        $(cd "${JOBS_QUEUEDIR}" && ls -1 | grep -v -e 'fp_done' -e 'info')
-    do
-        touch -c -r "${FPSYNC_PARTSDIR}/part.${_file}" "${JOBS_QUEUEDIR}/${_file}"
-    done
 fi
 
 # Validate src_dir/ locally (needed for fpart) for first runs or local ones

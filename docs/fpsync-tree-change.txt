@@ -33,7 +33,7 @@ It shows file movements within involved directories.
 -/tmp/fpsync/queue/1689103660-37834/3
 -/tmp/fpsync/queue/1689103660-37834/fp_done
  /tmp/fpsync/queue/1689103660-37834/info
-+/tmp/fpsync/work/1689103660-37834/1             # Job 1's script once run
-+/tmp/fpsync/work/1689103660-37834/2
-+/tmp/fpsync/work/1689103660-37834/3
++/tmp/fpsync/done/1689103660-37834/1             # Job 1's script once run
++/tmp/fpsync/done/1689103660-37834/2
++/tmp/fpsync/done/1689103660-37834/3
 +/tmp/fpsync/work/1689103660-37834/fp_done
