@@ -15,7 +15,7 @@
     - fpsync: fix failure detection for piped tools (tar, cpio, pax)
     - fpsync: rename main log file to fpsync.log
     - fpsync: improve startup logs
-    - fpsync: cleanup logs when replaying a run
+    - fpsync: cleanup log files when replaying a run
     - fpsync: fix wrong jobs rescheduled when resuming a run (option -r)
     - fpsync: fix wrong counters erroneously including killed jobs
     - fpsync: only display kill messages once when pressing CTRL-C
