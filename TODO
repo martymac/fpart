@@ -41,7 +41,6 @@ Fpsync:
 - Add "debug" pseudo-tool ?
 - Homogenize variable names ('_', MAJ, min)
 - Improve portability (egrep vs grep, ...)
-- Colorized / Improved output / Progressbar
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)
 - Add options to limit total bandwidth / per-syncer load

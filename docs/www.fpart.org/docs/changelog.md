@@ -19,6 +19,7 @@
     - fpsync: fix wrong jobs rescheduled when resuming a run (option -r)
     - fpsync: fix wrong counters erroneously including killed jobs
     - fpsync: only display kill messages once when pressing CTRL-C
+    - fpsync: colorize output
 ```
 # Current: 1.6.0
 ```nohighlight

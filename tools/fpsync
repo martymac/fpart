@@ -83,12 +83,24 @@ OPT_VERBOSE="0"
 OPT_SRCDIR=""
 # Destination directory
 OPT_DSTURL=""
+# Force color usage (even if stdout and stderr are *not* associated with a terminal)
+# Cannot be set through CLI yet
+OPT_FORCECOLORS=""
 
 ########## Various functions
 
 #set -o errexit
 #set -o nounset
 LC_ALL=C
+
+# Our color constants
+# See: https://en.wikipedia.org/wiki/ANSI_escape_code
+COLOR_BLUE='\033[0;34m'
+COLOR_GREEN='\033[0;32m'
+COLOR_ORANGE='\033[0;33m'
+COLOR_RED='\033[0;31m'
+COLOR_WHITE='\033[1;37m'
+COLOR_STOP='\033[0m'
 
 # Print help
 usage () {
@@ -172,10 +184,41 @@ end_die () {
 # Print (to stdout) and log a message
 # $1 = level (0 = quiet, 1 = verbose, >=2 more verbose)
 # $2 = message to log
+# $3 = color
 echo_log () {
     local _log_ts=$(date '+%s')
+    local _color_start=''
+    local _color_stop=''
+
+    # Prepare color
+    if { [ -t 1 ] && [ -t 2 ] ;} || [ -n "${OPT_FORCECOLORS}" ]
+    then
+        case "$3" in
+        "blue")
+            _color_start="${COLOR_BLUE}"
+            _color_stop="${COLOR_STOP}"
+            ;;
+        "green")
+            _color_start="${COLOR_GREEN}"
+            _color_stop="${COLOR_STOP}"
+            ;;
+        "orange")
+            _color_start="${COLOR_ORANGE}"
+            _color_stop="${COLOR_STOP}"
+            ;;
+        "red")
+            _color_start="${COLOR_RED}"
+            _color_stop="${COLOR_STOP}"
+            ;;
+        "white")
+            _color_start="${COLOR_WHITE}"
+            _color_stop="${COLOR_STOP}"
+            ;;
+        esac
+    fi
+
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
-        echo "${_log_ts} $2"
+        echo -e "${_log_ts} ${_color_start}$2${_color_stop}"
     [ -n "$2" ] && \
         echo "${_log_ts} $2" >> "${FPSYNC_LOGFILE}"
 }
@@ -890,7 +933,12 @@ work_list_refresh () {
                 # XXX Externally-killed jobs will not be rescheduled when
                 # resuming run. User will have to perform a full replay in that
                 # case.
-                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited"
+                if retfile_is_success "${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
+                then
+                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (success)" "green"
+                else
+                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (error)" "red"
+                fi
 
                 # Update status counters
                 _run_done_jobs=$(( ${_run_done_jobs} + 1 ))
@@ -914,7 +962,7 @@ work_list_refresh () {
             else
                 # Job killed through fpsync, do *not* mark the job as done
                 # to make the run resumable
-                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed by user)"
+                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed by user)" "red"
             fi
 
             # Remove useless log and result files
@@ -1159,7 +1207,7 @@ sigint_handler () {
         for _JOB in ${WORK_LIST}
         do
             [ ${SIGINT_COUNT} -le 2 ] && \
-                echo_log "3" "=> [QMGR] Killing job ${_JOB}"
+                echo_log "3" "=> [QMGR] Killing job ${_JOB}" "orange"
             kill -s INT -- "-$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
         done
     fi
@@ -1215,10 +1263,17 @@ siginfo_handler () {
         _run_bytes_per_second="$(( ${_run_size_done} / ${_run_elapsed_time} ))"
     fi
 
-    echo "${_siginfo_ts} <=== Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)"
-    echo "${_siginfo_ts} <=== Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}"
-    echo "${_siginfo_ts} <=== Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}"
-    echo "${_siginfo_ts} <=== Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)"
+    local _color_start=''
+    local _color_stop=''
+    if { [ -t 1 ] && [ -t 2 ] ;} || [ -n "${OPT_FORCECOLORS}" ]
+    then
+        _color_start="${COLOR_WHITE}"
+        _color_stop="${COLOR_STOP}"
+    fi
+    echo -e "${_siginfo_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
+    echo -e "${_siginfo_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
+    echo -e "${_siginfo_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
+    echo -e "${_siginfo_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -1601,9 +1656,9 @@ work_list_free_workers_init
 
 # Let's rock !
 echo_log "4" "----"
-echo_log "1" "Info: Fpsync start (syncing ${OPT_SRCDIR} => ${OPT_DSTURL}, pid: $$)"
-echo_log "1" "Info: Run ID: ${FPSYNC_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})"
-echo_log "2" "Info: Start time: $(date)"
+echo_log "1" "Info: Fpsync started (syncing ${OPT_SRCDIR} => ${OPT_DSTURL}, pid: $$)" "blue"
+echo_log "1" "Info: Run ID: ${FPSYNC_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})" "blue"
+echo_log "2" "Info: Start time: $(date)" "blue"
 echo_log "2" "Info: Concurrent sync jobs: ${OPT_JOBS}"
 echo_log "2" "Info: Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
 echo_log "2" "Info: Shared dir: ${OPT_SHDIR}"
@@ -1647,7 +1702,7 @@ then
     mkfifo "${FPSYNC_LOGFIFO}" || \
         end_die "Cannot create named pipe: ${FPSYNC_LOGFIFO}"
 
-    echo_log "2" "===> Starting Fpart"
+    echo_log "2" "===> Starting Fpart" "blue"
     # Fpart process is forked in the same process group as its parent
     # (the main script) to allow SIGINT propagation and tty output
     # https://pubs.opengroup.org/onlinepubs/009604599/basedefs/xbd_chap11.html#tag_11_01_04
@@ -1667,7 +1722,7 @@ then
         # Allow spaces within fpart sub-options
         IFS="|"
 
-        echo_log "1" "===> Analyzing filesystem..."
+        echo_log "1" "===> Analyzing filesystem..." "blue"
         # Start fpart from src_dir/ directory and produce jobs within
         # ${JOBS_QUEUEDIR}/
         cd "${OPT_SRCDIR}" && \
@@ -1680,11 +1735,11 @@ then
         if [ $? -ne 0 ]
         then
             job_queue_sl_stop
-            echo_log "1" "<=== Fpart exited with errors"
+            echo_log "1" "<=== Fpart exited with errors" "red"
         else
             # Tell job_queue_loop that crawling has finished
             job_queue_fp_done
-            echo_log "1" "<=== Fpart crawling finished"
+            echo_log "1" "<=== Fpart crawling finished" "blue"
             echo_log "1" "<=== Generated $(total_jobs_count) parts ($(total_size_count)B, $(total_files_count) files)"
         fi
 
@@ -1703,7 +1758,7 @@ then
     echo_log "2" "===> Use ^C to abort, ^T (SIGINFO) to display status"
 
     # Main jobs' loop: pick up jobs within the queue directory and start them
-    echo_log "2" "===> [QMGR] Starting queue manager"
+    echo_log "2" "===> [QMGR] Starting queue manager" "blue"
 
     _next_job=""
     while [ "${_next_job}" != "fp_done" ] && [ "${_next_job}" != "sl_stop" ]
@@ -1718,7 +1773,7 @@ then
             then
                 if [ -z "${OPT_WRKRS}" ]
                 then
-                    echo_log "2" "=> [QMGR] Starting job ${_next_job} locally (${JOBS_WORKDIR}/${_next_job})"
+                    echo_log "2" "=> [QMGR] Starting job ${_next_job} locally (${JOBS_WORKDIR}/${_next_job})" "blue"
                     # We want a new process group for each sync process to
                     # prevent SIGINT propagation
                     set -m
@@ -1733,7 +1788,7 @@ then
                 else
                     _next_host="$(work_list_pick_next_free_worker)"
                     work_list_trunc_next_free_worker
-                    echo_log "2" "=> [QMGR] Starting job ${_next_job} on ${_next_host} (${JOBS_WORKDIR}/${_next_job})"
+                    echo_log "2" "=> [QMGR] Starting job ${_next_job} on ${_next_host} (${JOBS_WORKDIR}/${_next_job})" "blue"
                     set -m
                     (
                         "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
@@ -1777,14 +1832,14 @@ fi
 
 if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
 then
-    echo_log "1" "<=== Fpsync interrupted."
+    echo_log "1" "<=== Fpsync interrupted." "red"
     end_die
 fi
 
 # Examine results and prepare report
 if [ -n "${OPT_PREPARERUN}" ]
 then
-    echo_log "0" "<=== Successfully prepared run: ${FPSYNC_RUNID}"
+    echo_log "0" "<=== Successfully prepared run: ${FPSYNC_RUNID}" "green"
     _report_subj="Fpsync run ${FPSYNC_RUNID} (prepared)"
 else
     _report_subj="Fpsync run ${FPSYNC_RUNID}"
@@ -1827,11 +1882,16 @@ _report_body=$(
 
 # Print report
 echo_log "1" "<=== ${_report_body}"
-echo_log "2" "<=== End time: $(date)"
+echo_log "2" "<=== End time: $(date)" "blue"
 
 # Send mail if required
 [ -n "${OPT_MAIL}" ] && \
     printf "Sync ${OPT_SRCDIR} => ${OPT_DSTURL}\n\n${_report_body}\n" | ${MAIL_BIN} -s "${_report_subj}" ${OPT_MAIL}
 
-[ -n "${_report_logs_fatal}" ] && end_die
+if [ -n "${_report_logs_fatal}" ]
+then
+    echo_log "1" "Info: Fpsync stopped (with errors)" "red"
+    end_die
+fi
+echo_log "1" "Info: Fpsync stopped (with success)" "green"
 end_ok
