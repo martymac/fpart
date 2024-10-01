@@ -1059,36 +1059,39 @@ job_queue_sl_stop () {
 
 ########## Status functions
 
-# Count total jobs to perform
+# Count total jobs to perform in specified run
+# $1 = run ID
 # FPSYNC_PARTSDIR can host several types of file :
 # part.<job_number>: file listing for a sync job
 # part.<job_number>.meta: job meta-information (number of files, size)
 # run.meta: run meta-information (number of jobs, files, size)
-total_jobs_count () {
+run_total_jobs_count () {
     (
         total_num_parts=0 ; \
-        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
-            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
         echo "${total_num_parts}"
     )
 }
 
-# Count total files to transfer
-total_files_count () {
+# Count total files to transfer in specified run
+# $1 = run ID
+run_total_files_count () {
     (
         total_num_files=0 ; \
-        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
-            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
         echo "${total_num_files}"
     )
 }
 
-## Count total bytes to transfer
-total_size_count () {
+## Count total bytes to transfer in specified run
+# $1 = run ID
+run_total_size_count () {
     (
         total_size=0 ; \
-        [ -f "${FPSYNC_PARTSDIR}/run.meta" ] && \
-            . "${FPSYNC_PARTSDIR}/run.meta" 2>/dev/null ; \
+        [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
+            . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
         echo "${total_size}"
     )
 }
@@ -1144,28 +1147,31 @@ run_incomplete_jobs_count () {
     run_incomplete_jobs_list "${1}" | wc -l | awk '{print $1}'
 }
 
-# List jobs performed in current run (including running ones)
-work_jobs_list () {
-    find "${JOBS_WORKDIR}" "${JOBS_DONEDIR}" \
-        -type f -a \
-        '(' ! -name 'fp_done' ')' \
-        -exec basename {} \; 2>/dev/null
+# List complete jobs in specified run
+# $1 = run ID
+run_complete_jobs_list () {
+    [ -n "${1}" ] && \
+        find "${JOBS_DONEDIR_BASE}/${1}" \
+            -type f \
+            -exec basename {} \; 2>/dev/null
 }
 
-# Count jobs performed in current run (including running ones)
-work_jobs_count () {
-    work_jobs_list | wc -l | awk '{print $1}'
+# Count complete jobs in specified run
+# $1 = run ID
+run_complete_jobs_count () {
+    run_complete_jobs_list "${1}" | wc -l | awk '{print $1}'
 }
 
-# Count files transferred in current run (including files from running jobs)
-work_files_count () {
+# Count files transferred in specified run
+# $1 = run ID
+run_complete_files_count () {
     local _jobs_files=0
-    for _file in $(work_jobs_list)
+    for _file in $(run_complete_jobs_list "${1}")
     do
         _jobs_files=$(( \
             ${_jobs_files} + $( \
                 job_files=0 ; \
-                . "${FPSYNC_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                . "${FPSYNC_PARTSDIR_BASE}/${1}/part.${_file}.meta" 2>/dev/null ; \
                 echo "${job_files}" \
             ) \
         ))
@@ -1173,15 +1179,16 @@ work_files_count () {
     echo "${_jobs_files}"
 }
 
-# Count bytes transferred in current run (including bytes from running jobs)
-work_size_count () {
+# Count bytes transferred in specified run
+# $1 = run ID
+run_complete_size_count () {
     local _jobs_size=0
-    for _file in $(work_jobs_list)
+    for _file in $(run_complete_jobs_list "${1}")
     do
         _jobs_size=$(( \
             ${_jobs_size} + $( \
                 job_size=0 ; \
-                . "${FPSYNC_PARTSTMPL}.${_file}.meta" 2>/dev/null ; \
+                . "${FPSYNC_PARTSDIR_BASE}/${1}/part.${_file}.meta" 2>/dev/null ; \
                 echo "${job_size}" \
             ) \
         ))
@@ -1218,49 +1225,49 @@ sigint_handler () {
 # by setting sysctl 'kern.tty_info_kstacks' to 0)
 siginfo_handler () {
     #### Jobs
-    local _jobs_total="$(total_jobs_count)"
+    local _jobs_total=$(run_total_jobs_count "${FPSYNC_RUNID}")
     local _jobs_running="${WORK_NUM}"
     local _jobs_done="${_run_done_jobs}"
     # Jobs remaining, including running ones
-    local _jobs_remaining="$(( ${_jobs_total} - ${_jobs_done} ))"
+    local _jobs_remaining=$(( ${_jobs_total} - ${_jobs_done} ))
     local _jobs_percent="??"
     [ ${_jobs_total} -ge 1 ] && \
-        _jobs_percent="$(( (${_jobs_done} * 100) / ${_jobs_total} ))"
+        _jobs_percent=$(( (${_jobs_done} * 100) / ${_jobs_total} ))
 
     #### Files
-    local _files_total="$(total_files_count)"
+    local _files_total=$(run_total_files_count "${FPSYNC_RUNID}")
     local _files_done="${_run_done_files}"
-    local _files_remaining="$(( ${_files_total} - ${_files_done} ))"
+    local _files_remaining=$(( ${_files_total} - ${_files_done} ))
     local _files_percent="??"
     [ ${_files_total} -ge 1 ] && \
-        _files_percent="$(( (${_files_done} * 100) / ${_files_total} ))"
+        _files_percent=$(( (${_files_done} * 100) / ${_files_total} ))
 
     #### Size
-    local _size_total="$(total_size_count)"
+    local _size_total=$(run_total_size_count "${FPSYNC_RUNID}")
     local _size_done="${_run_done_size}"
-    local _size_remaining="$(( ${_size_total} - ${_size_done} ))"
+    local _size_remaining=$(( ${_size_total} - ${_size_done} ))
     local _size_percent="??"
     [ ${_size_total} -ge 1 ] && \
-        _size_percent="$(( (${_size_done} * 100) / ${_size_total} ))"
+        _size_percent=$(( (${_size_done} * 100) / ${_size_total} ))
 
     # Time counters, relative to the current run (resume-aware)
     local _siginfo_ts=$(date '+%s')
-    local _run_elapsed_time="$(( ${_siginfo_ts} - ${_run_start_time} ))"
-    local _run_jobs_done="$(( ${_jobs_done} - ${_run_start_jobs} ))"
-    local _run_size_done="$(( ${_size_done} - ${_run_start_size} ))"
+    local _run_elapsed_time=$(( ${_siginfo_ts} - ${_run_start_time} ))
+    local _run_jobs_done=$(( ${_jobs_done} - ${_run_start_jobs} ))
+    local _run_size_done=$(( ${_size_done} - ${_run_start_size} ))
 
     local _run_time_per_job="??"
     local _run_time_remaining="??"
     if [ ${_run_jobs_done} -ge 1 ]
     then
-        _run_time_per_job="$(( ${_run_elapsed_time} / ${_run_jobs_done} ))"
-        _run_time_remaining="$(( ${_run_time_per_job} * ${_jobs_remaining} ))"
+        _run_time_per_job=$(( ${_run_elapsed_time} / ${_run_jobs_done} ))
+        _run_time_remaining=$(( ${_run_time_per_job} * ${_jobs_remaining} ))
     fi
 
     local _run_bytes_per_second="??"
     if [ ${_run_elapsed_time} -ge 1 ]
     then
-        _run_bytes_per_second="$(( ${_run_size_done} / ${_run_elapsed_time} ))"
+        _run_bytes_per_second=$(( ${_run_size_done} / ${_run_elapsed_time} ))
     fi
 
     local _color_start=''
@@ -1520,9 +1527,9 @@ then
     job_queue_init
 else
     # When resuming a run, check if :
+    # - the queue, work and done dirs exist
     # - we can get the number of workers previously implied
     #   (the 'info' flag is present)
-    # - the work queue exists
     # + For resume mode, strictly check if :
     #   - fpart pass has completed
     #     (the 'fp_done' flag has been created in the job queue dir)
@@ -1689,10 +1696,10 @@ fi
 job_queue_info_dump
 
 # Initial status, required by siginfo_handler()
-_run_start_time="$(date '+%s')"
-_run_start_jobs="$(work_jobs_count)"
-_run_start_files="$(work_files_count)"
-_run_start_size="$(work_size_count)"
+_run_start_time=$(date '+%s')
+_run_start_jobs=$(run_complete_jobs_count "${FPSYNC_RUNID}")
+_run_start_files=$(run_complete_files_count "${FPSYNC_RUNID}")
+_run_start_size=$(run_complete_size_count "${FPSYNC_RUNID}")
 # Current status (incremented after each job is finished)
 _run_done_jobs="${_run_start_jobs}"
 _run_done_files="${_run_start_files}"
@@ -1749,7 +1756,7 @@ then
             # Tell job_queue_loop that crawling has finished
             job_queue_fp_done
             echo_log "1" "<=== Fpart crawling finished" "blue"
-            echo_log "1" "<=== Generated $(total_jobs_count) parts ($(total_size_count)B, $(total_files_count) files)"
+            echo_log "1" "<=== Generated $(run_total_jobs_count "${FPSYNC_RUNID}") parts ($(run_total_size_count "${FPSYNC_RUNID}")B, $(run_total_files_count "${FPSYNC_RUNID}") files)"
         fi
 
         # Remove FIFO (once tee exits and closes its fd)
