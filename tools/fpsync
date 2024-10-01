@@ -1096,37 +1096,6 @@ run_total_size_count () {
     )
 }
 
-# Check if specified run is resumable
-# $1 = run ID
-run_is_resumable () {
-    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
-        { [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ] && \
-          [ $(run_incomplete_jobs_count "${1}") -gt 0 ] ;}
-}
-
-# Check if specified run is replayable
-# $1 = run ID
-run_is_replayable () {
-    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
-        [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ]
-}
-
-# Print a specific run's status to stdout
-# $1 = run ID
-run_status_print () {
-    if run_is_resumable "${1}"
-    then
-        echo "resumable (synchronization not complete, use -r to resume)"
-    else
-        if run_is_replayable "${1}"
-        then
-            echo "replayable (use -R to replay)"
-        else
-            echo "not resumable (fpart pass not complete)"
-        fi
-    fi
-}
-
 # List incomplete jobs in specified run
 # Incomplete jobs are those that remain in work dir
 # $1 = run ID
@@ -1194,6 +1163,37 @@ run_complete_size_count () {
         ))
     done
     echo "${_jobs_size}"
+}
+
+# Check if specified run is resumable
+# $1 = run ID
+run_is_resumable () {
+    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
+        { [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ] && \
+          [ $(run_incomplete_jobs_count "${1}") -gt 0 ] ;}
+}
+
+# Check if specified run is replayable
+# $1 = run ID
+run_is_replayable () {
+    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
+        [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ]
+}
+
+# Print a specific run's status to stdout
+# $1 = run ID
+run_status_print () {
+    if run_is_resumable "${1}"
+    then
+        echo "resumable (synchronization not complete, use -r to resume)"
+    else
+        if run_is_replayable "${1}"
+        then
+            echo "replayable (use -R to replay)"
+        else
+            echo "not resumable (fpart pass not complete)"
+        fi
+    fi
 }
 
 sigint_handler () {
