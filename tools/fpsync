@@ -1096,16 +1096,16 @@ total_size_count () {
 # Check if specified run is resumable
 # $1 = run ID
 run_is_resumable () {
-    [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || \
-        { [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ] && \
+    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
+        { [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ] && \
           [ $(run_incomplete_jobs_count "${1}") -gt 0 ] ;}
 }
 
 # Check if specified run is replayable
 # $1 = run ID
 run_is_replayable () {
-    [ -f "${OPT_TMPDIR}/queue/${1}/fp_done" ] || \
-        [ -f "${OPT_TMPDIR}/work/${1}/fp_done" ]
+    [ -f "${JOBS_QUEUEDIR_BASE}/${1}/fp_done" ] || \
+        [ -f "${JOBS_WORKDIR_BASE}/${1}/fp_done" ]
 }
 
 # Print a specific run's status to stdout
@@ -1132,7 +1132,7 @@ run_status_print () {
 # 'fp_done': present when every job has been scheduled
 run_incomplete_jobs_list () {
     [ -n "${1}" ] && \
-      find "${OPT_TMPDIR}/work/${1}" \
+      find "${JOBS_WORKDIR_BASE}/${1}" \
           -type f -a \
           '(' ! -name 'fp_done' ')' \
               -exec basename {} \; 2>/dev/null
@@ -1304,6 +1304,13 @@ job_queue_next () {
 # Parse command-line options
 parse_opts "$@"
 
+# Base paths, common to all runs
+JOBS_QUEUEDIR_BASE="${OPT_TMPDIR}/queue"
+JOBS_WORKDIR_BASE="${OPT_TMPDIR}/work"
+JOBS_DONEDIR_BASE="${OPT_TMPDIR}/done"
+FPSYNC_PARTSDIR_BASE="${OPT_SHDIR}/parts"
+FPSYNC_LOGDIR_BASE="${OPT_SHDIR}/log"
+
 ## Paths to 3rd party binaries
 
 # Tar version to use for 'tar' and 'tarify' tools
@@ -1353,7 +1360,7 @@ if [ -n "${OPT_LISTRUNS}" ]
 then
     echo "<=== Listing runs"
     for _run in \
-        $(cd "${OPT_SHDIR}/parts" 2>/dev/null && ls -1)
+        $(cd "${FPSYNC_PARTSDIR_BASE}" 2>/dev/null && ls -1)
     do
         echo "===> Run: ID: ${_run}, status: $(run_status_print "${_run}")"
     done
@@ -1363,12 +1370,12 @@ fi
 # Delete run and exit
 if [ -n "${OPT_DELETERUN}" ]
 then
-    { [ -d "${OPT_SHDIR}/parts/${OPT_DELETERUN}" ] && \
-        rm -rf "${OPT_SHDIR}/parts/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_SHDIR}/log/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_TMPDIR}/queue/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_TMPDIR}/work/${OPT_DELETERUN}" && \
-        rm -rf "${OPT_TMPDIR}/done/${OPT_DELETERUN}" && \
+    { [ -d "${FPSYNC_PARTSDIR_BASE}/${OPT_DELETERUN}" ] && \
+        rm -rf "${FPSYNC_PARTSDIR_BASE}/${OPT_DELETERUN}" && \
+        rm -rf "${FPSYNC_LOGDIR_BASE}/${OPT_DELETERUN}" && \
+        rm -rf "${JOBS_QUEUEDIR_BASE}/${OPT_DELETERUN}" && \
+        rm -rf "${JOBS_WORKDIR_BASE}/${OPT_DELETERUN}" && \
+        rm -rf "${JOBS_DONEDIR_BASE}/${OPT_DELETERUN}" && \
         end_ok "Successfully deleted run ${OPT_DELETERUN}" ;} || \
             end_die "Error deleting run ${OPT_DELETERUN}"
 fi
@@ -1379,14 +1386,14 @@ then
     [ ! -x "${TAR_BIN}" ] && \
         end_die "Tar is missing locally, check your configuration"
 
-    { [ -d "${OPT_SHDIR}/parts/${OPT_ARCHIVERUN}" ] && \
+    { [ -d "${FPSYNC_PARTSDIR_BASE}/${OPT_ARCHIVERUN}" ] && \
         ( cd "${OPT_TMPDIR}" 2>/dev/null && \
             "${TAR_BIN}" czf fpsync-run-${OPT_ARCHIVERUN}.tgz \
-                "${OPT_SHDIR}/parts/${OPT_ARCHIVERUN}" \
-                "${OPT_SHDIR}/log/${OPT_ARCHIVERUN}" \
-                "${OPT_TMPDIR}/queue/${OPT_ARCHIVERUN}" \
-                "${OPT_TMPDIR}/work/${OPT_ARCHIVERUN}" \
-                "${OPT_TMPDIR}/done/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
+                "${FPSYNC_PARTSDIR_BASE}/${OPT_ARCHIVERUN}" \
+                "${FPSYNC_LOGDIR_BASE}/${OPT_ARCHIVERUN}" \
+                "${JOBS_QUEUEDIR_BASE}/${OPT_ARCHIVERUN}" \
+                "${JOBS_WORKDIR_BASE}/${OPT_ARCHIVERUN}" \
+                "${JOBS_DONEDIR_BASE}/${OPT_ARCHIVERUN}" 2>/dev/null ) && \
             end_ok "Successfully created ${OPT_TMPDIR}/fpsync-run-${OPT_ARCHIVERUN}.tgz" ;} || \
                 end_die "Error archiving run ${OPT_ARCHIVERUN}"
 fi
@@ -1397,9 +1404,9 @@ fi
 if [ -n "${OPT_RUNID}" ]
 then
     # Resume mode, check if run ID exists
-    if [ -d "${OPT_TMPDIR}/queue/${OPT_RUNID}" ] && \
-        [ -d "${OPT_TMPDIR}/work/${OPT_RUNID}" ] && \
-        [ -d "${OPT_TMPDIR}/done/${OPT_RUNID}" ]
+    if [ -d "${JOBS_QUEUEDIR_BASE}/${OPT_RUNID}" ] && \
+        [ -d "${JOBS_WORKDIR_BASE}/${OPT_RUNID}" ] && \
+        [ -d "${JOBS_DONEDIR_BASE}/${OPT_RUNID}" ]
     then
         FPSYNC_RUNID="${OPT_RUNID}"
     else
@@ -1411,17 +1418,19 @@ else
     FPSYNC_RUNID="$(date '+%s')-$$"
 fi
 
-# Queue manager configuration. This queue remains local, even when using SSH.
-JOBS_QUEUEDIR="${OPT_TMPDIR}/queue/${FPSYNC_RUNID}" # Sync jobs' queue dir
-JOBS_WORKDIR="${OPT_TMPDIR}/work/${FPSYNC_RUNID}"   # Currently syncing jobs' dir
-JOBS_DONEDIR="${OPT_TMPDIR}/done/${FPSYNC_RUNID}"   # Done jobs' dir
+# Queue manager configuration for current run.
+# Those queues remain local, even when using SSH.
+JOBS_QUEUEDIR="${JOBS_QUEUEDIR_BASE}/${FPSYNC_RUNID}" # Sync jobs' queue dir
+JOBS_WORKDIR="${JOBS_WORKDIR_BASE}/${FPSYNC_RUNID}"   # Currently syncing jobs' dir
+JOBS_DONEDIR="${JOBS_DONEDIR_BASE}/${FPSYNC_RUNID}"   # Done jobs' dir
 
-# Shared paths. Those ones must be shared amongst all nodes when using SSH
+# Shared paths for current run.
+# Those ones must be shared amongst all nodes when using SSH
 # (e.g. through a NFS share mounted on *every* single node, including the master
 # 'job submitter').
-FPSYNC_PARTSDIR="${OPT_SHDIR}/parts/${FPSYNC_RUNID}"
+FPSYNC_PARTSDIR="${FPSYNC_PARTSDIR_BASE}/${FPSYNC_RUNID}"
 FPSYNC_PARTSTMPL="${FPSYNC_PARTSDIR}/part"
-FPSYNC_LOGDIR="${OPT_SHDIR}/log/${FPSYNC_RUNID}"
+FPSYNC_LOGDIR="${FPSYNC_LOGDIR_BASE}/${FPSYNC_RUNID}"
 FPSYNC_LOGFILE="${FPSYNC_LOGDIR}/fpsync.log"
 FPSYNC_LOGFIFO="${FPSYNC_LOGDIR}/.fpsync.log.fifo"
 
