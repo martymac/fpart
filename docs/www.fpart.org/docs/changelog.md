@@ -20,6 +20,7 @@
     - fpsync: fix wrong counters erroneously including killed jobs
     - fpsync: only display kill messages once when pressing CTRL-C
     - fpsync: colorize output
+    - fpsync: display additional info when listing runs (-l) in verbose mode
 ```
 # Current: 1.6.0
 ```nohighlight

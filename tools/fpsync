@@ -262,10 +262,12 @@ is_runid () {
 
 ########## Results handling
 
-# Get files from "${FPSYNC_LOGDIR}/" by extension
-logfiles_get_list_by_ext () {
-    [ -n "$1" ] && \
-        find "${FPSYNC_LOGDIR}/" -type f -name "*.${1}" ! -size 0 2>/dev/null
+# Get files from specified run's logdir, by extension
+# $1 = run ID
+# $2 = file extension
+run_logs_list_by_ext () {
+    [ -n "$1" ] && [ -n "$2" ] && \
+        find "${FPSYNC_LOGDIR_BASE}/${1}/" -type f -name "*.${2}" ! -size 0 2>/dev/null
 }
 
 # Check if file $1 exists and contains something
@@ -1369,7 +1371,31 @@ then
     for _run in \
         $(cd "${FPSYNC_PARTSDIR_BASE}" 2>/dev/null && ls -1)
     do
-        echo "===> Run: ID: ${_run}, status: $(run_status_print "${_run}")"
+        echo "===> Run ID: ${_run}, status: $(run_status_print "${_run}")"
+        if [ ${OPT_VERBOSE} -ge 1 ]
+        then
+            if run_is_resumable "${_run}"
+            then
+                _jobs_total=$(run_total_jobs_count "${_run}")
+                _jobs_done=$(run_complete_jobs_count "${_run}")
+                _jobs_remaining=$(( ${_jobs_total} - ${_jobs_done} ))
+                _jobs_percent="??"
+                [ ${_jobs_total} -ge 1 ] && \
+                    _jobs_percent=$(( (${_jobs_done} * 100) / ${_jobs_total} ))
+                echo "     Jobs done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+            else
+                if run_is_replayable "${_run}"
+                then
+                    _report_logs_fatal=$(run_logs_list_by_ext "${_run}" "ret" | logfiles_filter_ret_with_errors)
+                    if [ -z "${_report_logs_fatal}" ]
+                    then
+                        echo "     Run completed without error."
+                    else
+                        echo "     Run completed with errors."
+                    fi
+                fi
+            fi
+        fi
     done
     end_ok
 fi
@@ -1862,9 +1888,9 @@ else
 fi
 _ts_now=$(date '+%s')
 _total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
-_report_logs_fatal=$(logfiles_get_list_by_ext "ret" | logfiles_filter_ret_with_errors)
+_report_logs_fatal=$(run_logs_list_by_ext "${FPSYNC_RUNID}" "ret" | logfiles_filter_ret_with_errors)
 _report_logs_fatal_stderr=$(echo "${_report_logs_fatal}" | logfiles_filter_ret_to_stderr)
-_report_logs_additional_stderr=$(logfiles_get_list_by_ext "stderr" | logfiles_filter_stderr_without_ret)
+_report_logs_additional_stderr=$(run_logs_list_by_ext "${FPSYNC_RUNID}" "stderr" | logfiles_filter_stderr_without_ret)
 _report_body=$(
     if [ -z "${_report_logs_fatal}" ]
     then
