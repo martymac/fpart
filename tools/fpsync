@@ -41,8 +41,6 @@ OPT_JOBS=2
 # Same, but autodetected
 #OPT_JOBS=$(sysctl -n hw.ncpu)  # On FreeBSD
 #OPT_JOBS=$(nproc)              # On Linux
-# Number of sync jobs from resumed run, read from the 'info' file
-OPT_RJOBS=
 # Maximum files or directories per sync job (-f)
 OPT_FPMAXPARTFILES="2000"
 # Maximum bytes per sync job (-s)
@@ -1009,7 +1007,6 @@ job_queue_info_dump () {
     cat << EOF > "${JOBS_QUEUEDIR}/info" || \
         end_die "Cannot record run information"
 # Run information used for resuming, do not edit !
-OPT_RJOBS="${OPT_JOBS}"
 OPT_SRCDIR="${OPT_SRCDIR}"
 OPT_DSTURL="${OPT_DSTURL}"
 OPT_TOOL_NAME="${OPT_TOOL_NAME}"
@@ -1023,9 +1020,6 @@ job_queue_info_load () {
         end_die "Cannot read run information"
 
     # Validate loaded options
-    { is_num "${OPT_RJOBS}" && [ ${OPT_RJOBS} -ge 1 ] ;} || \
-        end_die "Invalid option value loaded from resumed run: OPT_RJOBS"
-
     ! tool_is_supported "${OPT_TOOL_NAME}" && \
         end_die "Invalid option value loaded from resumed run: OPT_TOOL_NAME"
 
