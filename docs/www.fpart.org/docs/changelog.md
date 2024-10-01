@@ -17,6 +17,9 @@
     - fpsync: improve startup logs
     - fpsync: cleanup log files when replaying a run
     - fpsync: fix wrong jobs rescheduled when resuming a run (option -r)
+      That change introduces a new layout within fpsync's temporary directory.
+      That version of fpsync will not be able to resume or replay runs
+      generated with a previous version.
     - fpsync: fix wrong counters erroneously including killed jobs
     - fpsync: only display kill messages once when pressing CTRL-C
     - fpsync: colorize output
