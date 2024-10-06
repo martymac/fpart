@@ -269,16 +269,25 @@ run_logs_list_by_ext () {
 }
 
 # Check if file $1 exists and contains something
-logfile_is_not_empty () {
+# $1 = file path
+file_is_not_empty () {
     [ -s "$1" ]
 }
 
+# Return contents of .ret file $1
+# $1 = .ret file path
+retfile_get_code () {
+    cat "$1" 2>/dev/null
+}
+
 # Check if .ret file $1 exists and contains a non-error return code
+# $1 = .ret file path
 retfile_is_success () {
     grep -q '^0$' "$1" 2>/dev/null
 }
 
 # Check if .ret file $1 exists and contains an error return code
+# $1 = .ret file path
 retfile_is_error () {
     grep -q -v '^0$' "$1" 2>/dev/null
 }
@@ -290,7 +299,7 @@ logfiles_filter_ret_to_stderr () {
     do
         case "${_line}" in
         *.ret)
-            logfile_is_not_empty "${_line%.ret}.stderr" && \
+            file_is_not_empty "${_line%.ret}.stderr" && \
                 echo "${_line%.ret}.stderr"
             ;;
         esac
@@ -915,29 +924,43 @@ work_list_refresh () {
         # Extract job info
         _JOB_PID="$(echo ${_JOB} | cut -d ':' -f 1)"
         _JOB_PART="$(echo ${_JOB} | cut -d ':' -f 2)"
-        # If the process is still alive, keep it
         if ps -p "${_JOB_PID}" 1>/dev/null 2>&1
         then
+            # The process is still alive, keep it
             _WORK_LIST="${_WORK_LIST} ${_JOB}"
             _WORK_NUM="$((${_WORK_NUM} + 1))"
-        # else, update workers list and counters
         else
+            # Job exited (either naturally or by signal)
             if [ -n "${OPT_WRKRS}" ]
             then
                 WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 3)"
             fi
 
-            if [ ${SIGINT_COUNT} -le 1 ]
+            # Not finding a .ret file is abnormal
+            # Main job script (the one that generates the .ret file
+            # itself) must have been killed. We mark it as erroneous by
+            # simulating a SIGTERM with a return code of 143 (128 + SIGTERM).
+            # See: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_08_02
+            if ! file_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
             then
-                # Job exited (either normally or killed through external command)
-                # XXX Externally-killed jobs will not be rescheduled when
-                # resuming run. User will have to perform a full replay in that
-                # case.
+                echo "143" 2>/dev/null >"${FPSYNC_LOGDIR}/${_JOB_PART}.ret" || \
+                    end_die "Error writing to .ret file: ${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
+                echo "Job killed (SIGTERM simulated by fpsync)" 2>/dev/null >>"${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
+                    end_die "Error writing to .stderr file: ${FPSYNC_LOGDIR}/${_JOB_PART}.stderr"
+            fi
+
+            _retcode=$(retfile_get_code "${FPSYNC_LOGDIR}/${_JOB_PART}.ret")
+            is_num "${_retcode}" || \
+                end_die "Invalid return code fetched for job: ${_JOB_PART}"
+
+            if [ "${_retcode}" -le 128 ]
+            then
+                # Job finished naturally, check return value
                 if retfile_is_success "${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
                 then
                     echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (success)" "green"
                 else
-                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (error)" "red"
+                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (error: ${_retcode})" "red"
                 fi
 
                 # Update status counters
@@ -960,15 +983,20 @@ work_list_refresh () {
                 mv "${JOBS_WORKDIR}/${_JOB_PART}" "${JOBS_DONEDIR}" 2>/dev/null || \
                     end_die "Error moving job ${_JOB_PART} to done dir"
             else
-                # Job killed through fpsync, do *not* mark the job as done
+                # Job killed, do *not* mark the job as done
                 # to make the run resumable
-                echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed by user)" "red"
+                if [ ${SIGINT_COUNT} -le 1 ]
+                then
+                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed)" "red"
+                else
+                    echo_log "2" "<= [QMGR] Job ${_JOB_PART} (${_JOB}) exited (killed by user)" "red"
+                fi
             fi
 
             # Remove useless log and result files
-            logfile_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stdout" || \
+            file_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stdout" || \
                 rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.stdout" 2>/dev/null
-            logfile_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
+            file_is_not_empty "${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
                 rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" 2>/dev/null
             retfile_is_success "${FPSYNC_LOGDIR}/${_JOB_PART}.ret" && \
                 rm -f "${FPSYNC_LOGDIR}/${_JOB_PART}.ret" 2>/dev/null
