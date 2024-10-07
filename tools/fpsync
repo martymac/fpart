@@ -953,7 +953,9 @@ work_list_refresh () {
             is_num "${_retcode}" || \
                 end_die "Invalid return code fetched for job: ${_JOB_PART}"
 
-            if [ "${_retcode}" -le 128 ]
+            if [ "${_retcode}" -le 128 ] && \
+                # XXX Workaround for rsync(1) returning 20 when killed
+                { [ "${OPT_TOOL_NAME}" != "rsync" ] || [ "${_retcode}" -ne 20 ] ;}
             then
                 # Job finished naturally, check return value
                 if retfile_is_success "${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
