@@ -81,9 +81,18 @@ OPT_VERBOSE="0"
 OPT_SRCDIR=""
 # Destination directory
 OPT_DSTURL=""
+
+########## Internal variables (cannot be set through CLI yet)
+
 # Force color usage (even if stdout and stderr are *not* associated with a terminal)
-# Cannot be set through CLI yet
 OPT_FORCECOLORS=""
+# POSIX-compliant shell used within generated jobs. It must exist locally
+# and remotely (when using workers), as well as support '-c' (commands) and
+# '-s' (stdin) options.
+# That option may be used to work-around missing 'pipefail' option from '/bin/sh'
+# on certain systems (e.g. Debian)
+OPT_JOBSSHELL="/bin/sh"
+#OPT_JOBSSHELL="/bin/bash"
 
 ########## Various functions
 
@@ -99,6 +108,11 @@ COLOR_ORANGE=$(tput setaf 3)
 COLOR_RED=$(tput setaf 1)
 COLOR_WHITE=$(tput setaf 7)
 COLOR_STOP=$(tput sgr0)
+
+# Disable 'pipefail' option if not supported
+QUIRK_PIPEFAIL='set -o pipefail'
+${OPT_JOBSSHELL} -c "${QUIRK_PIPEFAIL}" 2>/dev/null || \
+    QUIRK_PIPEFAIL=':'
 
 # Print help
 usage () {
@@ -532,7 +546,7 @@ tool_init_fpart_job_command () {
         if [ -z "$2" ]
         then
             # Regular mode
-            FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
+            FPART_JOBCOMMAND="${OPT_JOBSSHELL} -c '${SUDO} ${TOOL_BIN} ${OPT_TOOL} \
                 ${TOOL_MODEOPTS} --files-from=\\\"\${FPART_PARTFILENAME}\\\" --from0 \
                 \\\"${OPT_SRCDIR}/\\\" \
                 \\\"${OPT_DSTURL}/\\\"' \
@@ -543,7 +557,7 @@ tool_init_fpart_job_command () {
             # (i.e. where: (errno != 0) && (errno != EACCESS))
             # Also, skip sync for errno==EACCESS as this is a legitimate error:
             # unaccessible dirs will be re-created by parents, anyway
-            FPART_JOBCOMMAND="/bin/sh -c ' \
+            FPART_JOBCOMMAND="${OPT_JOBSSHELL} -c ' \
                 FPART_PARTERRNO=\\\"\${FPART_PARTERRNO}\\\"; \
                 TOOL_MODEOPTS_R=; \
                 if [ \\\${FPART_PARTERRNO} -ne 0 ]; \
@@ -568,7 +582,7 @@ tool_init_fpart_job_command () {
         # (not supported on Solaris), see:
         # http://pubs.opengroup.org/onlinepubs/7908799/xcu/cpio.html
         # XXX Exec whole shell cmd as root, because we need to cwd first
-        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'set -o pipefail ; \
+        FPART_JOBCOMMAND="${SUDO} ${OPT_JOBSSHELL} -c '${QUIRK_PIPEFAIL} ; \
             cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} -0 --quiet ${TOOL_MODEOPTS} \
@@ -579,7 +593,7 @@ tool_init_fpart_job_command () {
     "pax")
         # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
         # XXX Exec whole shell cmd as root, because we need to cwd first
-        FPART_JOBCOMMAND="${SUDO} /bin/sh -c 'set -o pipefail ; \
+        FPART_JOBCOMMAND="${SUDO} ${OPT_JOBSSHELL} -c '${QUIRK_PIPEFAIL} ; \
             cd \\\"${OPT_SRCDIR}/\\\" && \
             cat \\\"\${FPART_PARTFILENAME}\\\" | \
             ${TOOL_BIN} ${OPT_TOOL} ${TOOL_MODEOPTS} \
@@ -588,7 +602,7 @@ tool_init_fpart_job_command () {
             2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "tar")
-        FPART_JOBCOMMAND="/bin/sh -c 'set -o pipefail ; \
+        FPART_JOBCOMMAND="${OPT_JOBSSHELL} -c '${QUIRK_PIPEFAIL} ; \
             ${SUDO} ${TOOL_BIN} cf - \
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\" | \
@@ -598,7 +612,7 @@ tool_init_fpart_job_command () {
             2>\"${FPSYNC_LOGDIR}/\${FPART_PARTNUMBER}.stderr\""
         ;;
     "tarify")
-        FPART_JOBCOMMAND="/bin/sh -c '${SUDO} ${TOOL_BIN} c \
+        FPART_JOBCOMMAND="${OPT_JOBSSHELL} -c '${SUDO} ${TOOL_BIN} c \
             -f \\\"${OPT_DSTURL}/\${FPART_PARTNUMBER}.tar\\\" \
             ${OPT_TOOL} -C \\\"${OPT_SRCDIR}/\\\" ${TOOL_MODEOPTS} \
             --null -T \\\"\${FPART_PARTFILENAME}\\\"' \
@@ -1662,7 +1676,7 @@ then
         # Check for sudo presence (it must be passwordless)
         if [ -n "${OPT_SUDO}" ]
         then
-            "${SSH_BIN}" "${_host}" "${SUDO} /bin/sh -c ':' 2>/dev/null" || \
+            "${SSH_BIN}" "${_host}" "${SUDO} ${OPT_JOBSSHELL} -c ':' 2>/dev/null" || \
                 end_die "Sudo executable not found or requires password on target ${_host}"
         fi
 
@@ -1676,23 +1690,23 @@ then
             # nodes (typically a local mount point where the shared storage
             # area *should* be mounted but isn't, for any reason).
             [ "${_host}" = "${_FIRST_HOST}" ] && \
-                "${SSH_BIN}" "${_host}" "/bin/sh -c 'mkdir -p \"${OPT_DSTURL}\" && \
+                "${SSH_BIN}" "${_host}" "${OPT_JOBSSHELL} -c 'mkdir -p \"${OPT_DSTURL}\" && \
                     ${SUDO} touch \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
         fi
 
         # Check for src_dir/ presence
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -d \"${OPT_SRCDIR}\" ]'" || \
+        "${SSH_BIN}" "${_host}" "${OPT_JOBSSHELL} -c '[ -d \"${OPT_SRCDIR}\" ]'" || \
             end_die "Source directory does not exist on target ${_host} (or is not a directory): ${OPT_SRCDIR}"
 
         # Check for dst_url/ presence (witness file)
         if is_abs_path "${OPT_DSTURL}"
         then
-            "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\" ]'" || \
+            "${SSH_BIN}" "${_host}" "${OPT_JOBSSHELL} -c '[ -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\" ]'" || \
                 end_die "Destination directory (shared) is not available on target ${_host}: ${OPT_DSTURL}"
         fi
 
         # Finally, check for tool presence
-        "${SSH_BIN}" "${_host}" "/bin/sh -c '[ -x \"${TOOL_BIN}\" ]'" || \
+        "${SSH_BIN}" "${_host}" "${OPT_JOBSSHELL} -c '[ -x \"${TOOL_BIN}\" ]'" || \
             end_die "Tool ${OPT_TOOL_NAME} not useable on target ${_host}: ${TOOL_BIN} not found"
 
         echo_log "2" "<=== ${_host}: OK"
@@ -1702,7 +1716,7 @@ then
     if is_abs_path "${OPT_DSTURL}"
     then
         "${SSH_BIN}" "${_FIRST_HOST}" \
-            "/bin/sh -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
+            "${OPT_JOBSSHELL} -c '${SUDO} rm -f \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
     fi
 
     unset _FIRST_HOST
@@ -1741,6 +1755,8 @@ then
     echo_log "2" "Info: Max files or directories per sync job: ${OPT_FPMAXPARTFILES}"
     echo_log "2" "Info: Max bytes per sync job: ${OPT_FPMAXPARTSIZE}"
 fi
+[ "${QUIRK_PIPEFAIL}" = ":" ] && \
+    echo_log "1" "Warn: shell '${OPT_JOBSSHELL}' does not support the 'pipefail' option, sync errors may be missed" "orange"
 
 # Record run information
 job_queue_info_dump
@@ -1779,7 +1795,7 @@ then
 
         # We use a FIFO for logging to avoid a pipe because we would need
         # a 'pipefail' option from the shell, which is not always available
-        # (Debian dash does not support it, for example)
+        # (Debian's dash does not support it, for example)
         tee -a "${FPSYNC_LOGFILE}" < "${FPSYNC_LOGFIFO}" &
 
         # Allow passing special characters within fpart sub-options
@@ -1844,7 +1860,7 @@ then
                     # prevent SIGINT propagation
                     set -m
                     (
-                        /bin/sh "${JOBS_WORKDIR}/${_next_job}"
+                        . "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
@@ -1857,7 +1873,7 @@ then
                     echo_log "2" "=> [QMGR] Starting job ${_next_job} on ${_next_host} (${JOBS_WORKDIR}/${_next_job})" "blue"
                     set -m
                     (
-                        "${SSH_BIN}" "${_next_host}" '/bin/sh -s' \
+                        "${SSH_BIN}" "${_next_host}" "${OPT_JOBSSHELL} -s" \
                             < "${JOBS_WORKDIR}/${_next_job}"
                         echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
