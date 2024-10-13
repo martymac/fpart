@@ -93,12 +93,12 @@ LC_ALL=C
 
 # Our color constants
 # See: https://en.wikipedia.org/wiki/ANSI_escape_code
-COLOR_BLUE='\033[0;34m'
-COLOR_GREEN='\033[0;32m'
-COLOR_ORANGE='\033[0;33m'
-COLOR_RED='\033[0;31m'
-COLOR_WHITE='\033[1;37m'
-COLOR_STOP='\033[0m'
+COLOR_BLUE=$(tput setaf 4)
+COLOR_GREEN=$(tput setaf 2)
+COLOR_ORANGE=$(tput setaf 3)
+COLOR_RED=$(tput setaf 1)
+COLOR_WHITE=$(tput setaf 7)
+COLOR_STOP=$(tput sgr0)
 
 # Print help
 usage () {
@@ -216,7 +216,7 @@ echo_log () {
     fi
 
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
-        echo -e "${_log_ts} ${_color_start}$2${_color_stop}"
+        printf '%s\n' "${_log_ts} ${_color_start}$2${_color_stop}"
     [ -n "$2" ] && \
         echo "${_log_ts} $2" >> "${FPSYNC_LOGFILE}"
 }
@@ -1303,10 +1303,10 @@ siginfo_handler () {
         _color_start="${COLOR_WHITE}"
         _color_stop="${COLOR_STOP}"
     fi
-    echo -e "${_siginfo_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
-    echo -e "${_siginfo_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
-    echo -e "${_siginfo_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
-    echo -e "${_siginfo_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
+    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
+    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
+    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
+    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
