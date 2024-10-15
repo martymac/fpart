@@ -933,11 +933,14 @@ work_list_refresh () {
     local _WORK_NUM=0
     local _JOB_PID=""
     local _JOB_PART=""
+    local _JOB_HOST=""
     for _JOB in ${WORK_LIST}
     do
         # Extract job info
-        _JOB_PID="$(echo ${_JOB} | cut -d ':' -f 1)"
-        _JOB_PART="$(echo ${_JOB} | cut -d ':' -f 2)"
+        _JOB_PID="${_JOB%%:*}"
+        _JOB_PART="${_JOB#*:}" ; _JOB_PART="${_JOB_PART%:*}"
+        _JOB_HOST="${_JOB##*:}"
+
         if ps -p "${_JOB_PID}" 1>/dev/null 2>&1
         then
             # The process is still alive, keep it
@@ -947,7 +950,7 @@ work_list_refresh () {
             # Job exited (either naturally or by signal)
             if [ -n "${OPT_WRKRS}" ]
             then
-                WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${_JOB} | cut -d ':' -f 3)"
+                WORK_FREEWORKERS="${WORK_FREEWORKERS} ${_JOB_HOST}"
             fi
 
             # Not finding a .ret file is abnormal
@@ -1251,11 +1254,13 @@ sigint_handler () {
     else
         [ ${SIGINT_COUNT} -le 2 ] && \
             echo_log "1" "===> Interrupted again, killing remaining jobs"
-        for _JOB in ${WORK_LIST}
+        for _KJOB in ${WORK_LIST}
         do
+            # Extract job info
+            _KJOB_PID="${_KJOB%%:*}"
             [ ${SIGINT_COUNT} -le 2 ] && \
-                echo_log "3" "=> [QMGR] Killing job ${_JOB}" "orange"
-            kill -s INT -- "-$(echo ${_JOB} | cut -d ':' -f 1)" 1>/dev/null 2>&1
+                echo_log "2" "=> [QMGR] Killing job ${_KJOB}" "orange"
+            kill -s INT -- "-${_KJOB_PID}" 1>/dev/null 2>&1
         done
     fi
 }
