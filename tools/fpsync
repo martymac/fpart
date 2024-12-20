@@ -1586,7 +1586,7 @@ else
 fi
 
 # Create or update log file
-touch "${FPSYNC_LOGFILE}" 2>/dev/null || \
+{ touch "${FPSYNC_LOGFILE}" 2>/dev/null && [ -w "${FPSYNC_LOGFILE}" ] ;} || \
     end_die "Cannot create log file: ${FPSYNC_LOGFILE}"
 
 # Create / check for run's queue and work dirs
