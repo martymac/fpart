@@ -1,6 +1,6 @@
 # Next: 1.6.1
 ```nohighlight
-    2024/??/??, 1.6.1 ('???') :
+    2025/??/??, 1.7.0 ('???') :
     - fpsync: check for common commands/tools presence
       (discussed in GH issue #47)
     - fpsync: add support for pax copy tool (option -m)
