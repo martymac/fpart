@@ -279,7 +279,7 @@ is_runid () {
 # $2 = file extension
 run_logs_list_by_ext () {
     [ -n "$1" ] && [ -n "$2" ] && \
-        find "${FPSYNC_LOGDIR_BASE}/${1}/" -type f -name "*.${2}" ! -size 0 2>/dev/null
+        find "${FPSYNC_LOGDIR_BASE}/${1}" -type f -name "*.${2}" ! -size 0 2>/dev/null
 }
 
 # Check if file $1 exists and contains something
