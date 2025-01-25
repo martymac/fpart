@@ -1,6 +1,6 @@
-# Next: 1.6.1
+# Current: 1.7.0
 ```nohighlight
-    2025/??/??, 1.7.0 ('???') :
+    2025/01/25, 1.7.0 ('About skiing and high school') :
     - fpsync: check for common commands/tools presence
       (discussed in GH issue #47)
     - fpsync: add support for pax copy tool (option -m)
@@ -25,7 +25,7 @@
     - fpsync: colorize output
     - fpsync: display additional info when listing runs (-l) in verbose mode
 ```
-# Current: 1.6.0
+# 1.6.0
 ```nohighlight
     2024/01/21, 1.6.0 ('College years') :
     - fpsync: fix run resuming caused by empty OPT_TOOL_PATH in info file

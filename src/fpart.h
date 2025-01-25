@@ -29,7 +29,7 @@
 
 #include "types.h"
 
-#define FPART_VERSION "1.6.1"
+#define FPART_VERSION "1.7.0"
 
 /* maximum input line length, including '\n' and '\0' */
 #define MAX_LINE_LENGTH 2048
