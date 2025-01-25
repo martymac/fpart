@@ -43,6 +43,7 @@ Fpsync:
 - Check if src_dir/ is the same on all workers (using a stat fingerprint)
   and use the same method for dst_dir/ (stop using a witness file)
 - Add options to limit total bandwidth / per-syncer load
+- Provide a status socket
 
 Autotools:
 - Use config.h (for program version, data types, header inclusion,
