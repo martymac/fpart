@@ -1,3 +1,16 @@
+fpart (1.7.0-1) unstable; urgency=low
+
+  [ Ganael LAPLANCHE ]
+  * New upstream release
+  * debian/control
+    - Bump Standards-Version to 4.7.2 (no changes required)
+    - Add pax to Depends
+    - Refine description
+  * debian/copyright
+    - Bump copyright dates
+
+ -- Ganael LAPLANCHE <ganael.laplanche@martymac.org>  Tue, 04 Mar 2025 16:41:28 +0100
+
 fpart (1.6.0-1) unstable; urgency=low
 
   * New upstream release
