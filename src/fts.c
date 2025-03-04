@@ -47,6 +47,7 @@
 #define _close close
 #define _fstat fstat
 #define _dirfd dirfd
+#define _fstatfs fstatfs
 #endif /* defined(__FreeBSD__) */
 
 #include <sys/param.h>
@@ -1238,15 +1239,19 @@ fts_safe_changedir(FTS *sp, FTSENT *p, int fd, char *path)
  */
 #if !defined(__APPLE__)
 	if (p->fts_dev != sb.st_dev || p->fts_ino != sb.st_ino) {
+#if defined(__FreeBSD__)
 		if (_fstatfs(newfd, &sf) != 0 ||
 		    (sf.f_flags & MNT_AUTOMOUNTED) == 0) {
+#endif /* defined(__FreeBSD__) */
 			errno = ENOENT;		/* disinformation */
 			ret = -1;
 			goto bail;
+#if defined(__FreeBSD__)
 		}
 		/* autofs might did the mount under us, accept. */
 		p->fts_dev = sb.st_dev;
 		p->fts_ino = sb.st_ino;
+#endif /* defined(__FreeBSD__) */
 	}
 #endif /* !defined(__APPLE__) */
 	ret = fchdir(newfd);
