@@ -22,7 +22,7 @@ endif
 endif
 
 if SOLARIS
-fpart_CFLAGS += -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -xc99
+fpart_CFLAGS += -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__
 endif
 
 if LINUX

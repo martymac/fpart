@@ -58,6 +58,7 @@
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
+#include <sys/sysmacros.h>
 #else
 #if defined(__linux__)
 #include <sys/vfs.h>
