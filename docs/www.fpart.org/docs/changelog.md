@@ -1,3 +1,8 @@
+# Next: 1.7.1
+```nohighlight
+    2025/??/??, 1.7.1 ('???') :
+    - fpart: update embedded fts(3) using FreeBSD 15-CURRENT's version
+```
 # Current: 1.7.0
 ```nohighlight
     2025/01/25, 1.7.0 ('About skiing and high school') :
