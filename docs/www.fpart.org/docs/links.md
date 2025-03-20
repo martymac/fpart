@@ -17,7 +17,7 @@
   which was developed by Jean-Baptiste Denis as the original proof of concept.
   See also his newer tool, [Msrsync](https://github.com/jbd/msrsync)
 
-# Projects using fpart
+# Projects using fpart or fpsync
 
 * Harry Mangalam, from UCI, has an excellent article about data transfer
   [here](http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html). Check out his
@@ -29,6 +29,9 @@
 
 * [K-rsync](https://doughgle.github.io/k-rsync/) uses fpart and the kubernetes
   Job scheduler to transfer files between PVCs
+
+* [fpsync-k8s-rclone](https://github.com/aboovv1976/fpsync-k8s-rclone) provides
+  a patch for fpsync to make it support rclone and Kubernetes pods
 
 # Fpsync users (Research / Education)
 
@@ -62,8 +65,8 @@
 
 * [Amazon](https://s3.amazonaws.com/solutions-reference/efs-backup/latest/efs-to-efs-backup.pdf)
   uses fpart and fpsync in their EFS-to-EFS backup solution. See also their
-  [Amazon Elastic File System (Amazon EFS) for File Storage](https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage) presentation
-  (AWS Storage Days, New York, September 6-8, 2017) and the
+  [Amazon Elastic File System (Amazon EFS) for File Storage](https://www.slideshare.net/AmazonWebServices/amazon-elastic-file-system-amazon-efs-for-file-storage)
+  presentation (AWS Storage Days, New York, September 6-8, 2017) and the
   [Amazon EFS performance tutorial](https://github.com/aws-samples/amazon-efs-tutorial/tree/master/performance),
   both presenting fpart and fpsync capabilities
 
@@ -73,6 +76,9 @@
 * [Alibaba (Aliyun)](https://www.alibabacloud.com/help/doc-detail/128764.htm)
 
 * [Oracle](https://docs.oracle.com/en-us/iaas/Content/File/Troubleshooting/transferring-windows-data-sms.htm)
+  advises to use fpsync to copy data to File Storage. Check also their tutorial
+  explaining how to use
+  [migration Tools to Move Data into OCI Cloud Storage Services](https://docs.oracle.com/en/learn/migr-ocistorage-p1/)
 
 * [cunoFS](https://cuno-cunofs.readthedocs-hosted.com/en/stable/user-guide-tips-for-apps.html#fpsync)
 
