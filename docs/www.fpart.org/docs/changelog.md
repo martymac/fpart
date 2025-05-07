@@ -2,6 +2,8 @@
 ```nohighlight
     2025/??/??, 1.7.1 ('???') :
     - fpart: update embedded fts(3) using FreeBSD 15-CURRENT's version
+    - fpsync: Give more time for .ret file to be created
+      (see GH discussion #68)
 ```
 # Current: 1.7.0
 ```nohighlight
