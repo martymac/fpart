@@ -26,6 +26,7 @@ Fpart:
 - Use queue(3) ?
 
 Fpsync:
+- Support OpenRsync (https://www.openrsync.org/) ?
 - Add an option to specify run ID name and set default run ID scheme to YYYYDDMM-HHMMSS
 - Ability to replay one or more jobs within a specific run
   (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
