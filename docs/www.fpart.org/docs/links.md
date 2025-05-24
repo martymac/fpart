@@ -58,6 +58,17 @@
 
 * Fpart is proudly referenced in the [French Government's 'SILL'](https://code.gouv.fr/sill/detail?name=fpart)
 
+* [NASA's Center for Climate Simulation (NCCS)](https://www.nccs.nasa.gov/nccs-users/instructional/using-discover/file-transfer/nccs-transfer-nodes)
+  provides fpsync on their transfer nodes to improve users’ ability to move medium and large datasets
+
+* [Georgia Advanced Computing Resource Center (GACRC)](https://wiki.gacrc.uga.edu/wiki/Transferring_Files#Transferring_Files_between_two_file_systems_on_Sapelo2)
+  advises to use fpsync to speed-up transfers on their Sapelo2 HPC cluster
+
+<br>
+<center>
+[![NASA](img/ext-logos/Nasa.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://www.nccs.nasa.gov/nccs-users/instructional/using-discover/file-transfer/nccs-transfer-nodes)
+</center>
+
 # Fpsync users (Storage / Cloud providers)
 
 * [Intel](https://web.archive.org/web/20230314023512/http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/data-migration-enterprise-edition-for-lustre-software-white-paper.pdf)
