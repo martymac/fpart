@@ -1713,9 +1713,12 @@ then
             # situations where dst_url/ exists but is not shared amongst all
             # nodes (typically a local mount point where the shared storage
             # area *should* be mounted but isn't, for any reason).
-            [ "${_host}" = "${_FIRST_HOST}" ] && \
+            if [ "${_host}" = "${_FIRST_HOST}" ]
+            then
                 "${SSH_BIN}" "${_host}" "${OPT_JOBSSHELL} -c 'mkdir -p \"${OPT_DSTURL}\" && \
-                    ${SUDO} touch \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null"
+                    ${SUDO} touch \"${OPT_DSTURL}/${FPSYNC_RUNID}\"' 2>/dev/null" || \
+                    end_die "Cannot create witness file on target ${_host}: ${OPT_DSTURL}/${FPSYNC_RUNID}"
+            fi
         fi
 
         # Check for src_dir/ presence
