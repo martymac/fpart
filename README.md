@@ -63,6 +63,16 @@ fts(3) code originally comes from FreeBSD :
 It has been slightly modified for portability and is available under the BSD
 license.
 
+# Installing fpart
+    dnf install git autoconf make
+    cd /usr/local/src
+    git clone git@github.com:martymac/fpart.git
+    cd fpart
+    autoreconf -i
+    ./configure --prefix=/usr/local
+    make
+    make install
+
 # Supporting fpart
 
 If fpart (or fpsync) is useful to you or your organization, do not hesitate to
