@@ -1,6 +1,6 @@
 Name:    fpart
-Version: 1.2.0
-Release: 2%{?dist}
+Version: 1.7.0
+Release: 1%{?dist}
 License: BSD
 Summary: a tool that sorts files and packs them into bags
 URL:     http://contribs.martymac.org
@@ -35,7 +35,7 @@ make %{?_smp_mflags}
 
 %files
 %license COPYING
-%doc Changelog README TODO
+%doc Changelog.md README.md TODO
 %{_mandir}/man1/fpart.1*
 %{_mandir}/man1/fpsync.1*
 %{_bindir}/fpart
