@@ -114,12 +114,19 @@ QUIRK_PIPEFAIL='set -o pipefail'
 ${OPT_JOBSSHELL} -c "${QUIRK_PIPEFAIL}" 2>/dev/null || \
     QUIRK_PIPEFAIL=':'
 
-# Print help
-usage () {
+# Print version
+version () {
     cat << EOF
 fpsync v${FPSYNC_VERSION} - Sync directories in parallel using fpart
 Copyright (c) 2014-2025 Ganael LAPLANCHE <ganael.laplanche@martymac.org>
 WWW: http://contribs.martymac.org
+EOF
+}
+
+# Print help
+usage () {
+    version
+    cat << EOF
 Usage: $0 [-p] [OPTIONS...] src_dir/ dst_url/
        $0 -l
        $0 -r runid [-R] [OPTIONS...]
@@ -136,6 +143,7 @@ COMMON OPTIONS:
               This option can be be specified several times to
               increase verbosity level.
   -h          this help
+  -V          print version
 
 SYNCHRONIZATION OPTIONS:
   -m tool     external copy tool to use: $(tool_print_supported)
@@ -665,7 +673,7 @@ tool_uses_forbidden_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:T:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:Svh" opt
+    while getopts "m:T:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:SvhV" opt
     do
         case "${opt}" in
         "m")
@@ -804,6 +812,10 @@ parse_opts () {
             ;;
         "h")
             usage
+            end_ok
+            ;;
+        "V")
+            version
             end_ok
             ;;
         *)

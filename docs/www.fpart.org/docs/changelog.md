@@ -6,6 +6,8 @@
       (see GH discussion #68)
     - fpsync: be more explicit when witness file creation fails
       (see GH issue #70)
+    - fpsync: add option -V to print version
+      (see GH issue #78)
 ```
 # Current: 1.7.0
 ```nohighlight
