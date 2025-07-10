@@ -44,6 +44,7 @@
 .Op Fl t Ar tmpdir
 .Op Fl d Ar shdir
 .Op Fl M Ar mailaddr
+.Op Fl Z
 .Op Fl v
 .Pa src_dir/
 .Pa dst_url/
@@ -115,6 +116,8 @@ That option requires the
 .Xr mail 1
 client to be installed and configured on the master host running
 .Nm .
+.It Fl Z
+Prefix logs with human-readable dates instead of timestamps.
 .It Fl v
 Verbose mode.
 Can be be specified several times to increase verbosity level.

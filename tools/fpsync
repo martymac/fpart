@@ -57,6 +57,8 @@ OPT_SHDIR=""
 OPT_TMPDIR="/tmp/fpsync"
 # E-mail report option (-M)
 OPT_MAIL=""
+# Date format used for log prefix (-Z)
+OPT_DATEFORMAT="+%s"
 # Prepare mode (-p)
 OPT_PREPARERUN=""
 # List runs (-l)
@@ -139,6 +141,7 @@ COMMON OPTIONS:
               This option is mandatory when using SSH workers.
   -M mailaddr send an e-mail to mailaddr after a run. Multiple
               -space-separated- addresses can be specified.
+  -Z          prefix logs with human-readable dates instead of timestamps
   -v          verbose mode (default: quiet)
               This option can be be specified several times to
               increase verbosity level.
@@ -206,7 +209,7 @@ end_die () {
 # $2 = message to log
 # $3 = color
 echo_log () {
-    local _log_ts=$(date '+%s')
+    local _log_ts=$(date "${OPT_DATEFORMAT}")
     local _color_start=''
     local _color_stop=''
 
@@ -673,7 +676,7 @@ tool_uses_forbidden_option () {
 parse_opts () {
     local opt OPTARG OPTIND
 
-    while getopts "m:T:n:f:s:Ew:d:t:M:plr:Ra:D:o:O:SvhV" opt
+    while getopts "m:T:n:f:s:Ew:d:t:M:Zplr:Ra:D:o:O:SvhV" opt
     do
         case "${opt}" in
         "m")
@@ -754,6 +757,9 @@ parse_opts () {
             else
                 end_die "Please supply a valid e-mail address"
             fi
+            ;;
+        "Z")
+            OPT_DATEFORMAT="+%b %d %H:%M:%S"
             ;;
         "p")
             OPT_PREPARERUN="yes"
@@ -1353,10 +1359,13 @@ siginfo_handler () {
         _color_start="${COLOR_WHITE}"
         _color_stop="${COLOR_STOP}"
     fi
-    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
-    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
-    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
-    printf '%s\n' "${_siginfo_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
+
+    # Display computed status
+    local _log_ts=$(date "${OPT_DATEFORMAT}")
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Parts done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining} (${_jobs_running} running)${_color_stop}"
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Files done: ${_files_done}/${_files_total} (${_files_percent}%), remaining: ${_files_remaining}${_color_stop}"
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Bytes done: ${_size_done}/${_size_total} (${_size_percent}%), remaining: ${_size_remaining}${_color_stop}"
+    printf '%s\n' "${_log_ts} <=== ${_color_start}Time elapsed: ${_run_elapsed_time}s, remaining: ~${_run_time_remaining}s (~${_run_time_per_job}s/job, ~${_run_bytes_per_second}B/sec)${_color_stop}"
 }
 
 # Get next job name relative to ${JOBS_WORKDIR}/
@@ -1556,7 +1565,7 @@ FPART_POSTHOOK="echo \"${FPART_JOBCOMMAND}\" > \
     printf '%s\n%s\n%s\n' total_num_parts=\"\${FPART_TOTALNUMPARTS}\" total_size=\"\${FPART_TOTALSIZE}\" total_num_files=\"\${FPART_TOTALNUMFILES}\" > \
     \"${FPSYNC_PARTSDIR}/run.meta\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
-    echo \"\$(date '+%s') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
+    echo \"\$(date '${OPT_DATEFORMAT}') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
 # fine-grained mtime timestamps (i.e. with a sub-second precision) if you want

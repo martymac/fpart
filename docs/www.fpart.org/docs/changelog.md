@@ -8,6 +8,8 @@
       (see GH issue #70)
     - fpsync: add option -V to print version
       (see GH issue #78)
+    - fpsync: add option -Z to prefix logs with human-readable dates instead of
+      timestamps (see GH issue #79)
 ```
 # Current: 1.7.0
 ```nohighlight
