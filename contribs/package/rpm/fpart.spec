@@ -12,8 +12,8 @@ Name:           fpart
 Version:        1.7.0
 Release:        %autorelease
 Summary:        Helps you sort file trees and pack them into bags
-# main source is BSD-2-Clause
-# src/fts.c and src/fts.h are BSD-3-Clause
+# src/block_abi.h and main source are BSD-2-Clause
+# src/fts.h and src/fts.c are BSD-3-Clause
 License:        BSD-2-Clause AND BSD-3-Clause
 URL:            https://fpart.org
 Source:         https://github.com/martymac/fpart/archive/fpart-%{version}.tar.gz

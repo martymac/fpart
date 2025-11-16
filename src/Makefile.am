@@ -11,7 +11,7 @@ fpart_CFLAGS += -g -DDEBUG
 endif
 
 if EMBEDDED_FTS
-fpart_SOURCES += fts.c fts.h
+fpart_SOURCES += block_abi.h fts.h fts.c
 fpart_CFLAGS += -DEMBED_FTS
 else
 if EXTERNAL_FTS

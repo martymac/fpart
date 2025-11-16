@@ -103,8 +103,9 @@ Thanks to Jean-Baptiste Denis for having given me the idea of this program !
 
 fts(3) code originally comes from FreeBSD :
 
-    lib/libc/gen/fts.c -> src/fts.c
-    include/fts.h      -> src/fts.h
+    lib/libc/include/block_abi.h    -> src/block_abi.h
+    include/fts.h                   -> src/fts.h
+    lib/libc/gen/fts.c              -> src/fts.c
 
 It has been slightly modified for portability and is available under the BSD
 license.
