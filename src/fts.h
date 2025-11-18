@@ -32,6 +32,10 @@
 #ifndef	_FTS_H_
 #define	_FTS_H_
 
+#ifndef __weak_symbol
+#define __weak_symbol __attribute__((__weak__))
+#endif
+
 #if !defined(MAX)
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #endif

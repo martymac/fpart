@@ -123,7 +123,17 @@ reallocf(void *ptr, size_t size)
 #include "block_abi.h"
 typedef DECLARE_BLOCK(int, fts_block,
     const FTSENT * const *, const FTSENT * const *);
+#if defined(__FreeBSD__)
 void qsort_b(void *, size_t, size_t, fts_block);
+#else
+void
+qsort_b(void *base, size_t nel, size_t width, fts_block compar)
+{
+       qsort_r(base, nel, width,
+               (int (*)(const void *, const void *, void *))
+               GET_BLOCK_FUNCTION(compar), compar);
+}
+#endif /* defined(__FreeBSD__) */
 #endif /* __BLOCKS__ */
 /* only present if linked with blocks runtime */
 void *_Block_copy(const void *) __weak_symbol;
