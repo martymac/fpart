@@ -105,7 +105,9 @@ typedef struct {
 					/* 0x0100 is FTS_NAMEONLY below */
 					/* 0x0200 was previously FTS_STOP */
 #define FTS_COMFOLLOWDIR 0x00400	/* like COMFOLLOW but directories only */
+#if defined(__FreeBSD__) || defined(__linux__)
 #define FTS_NOSTAT_TYPE	0x000800	/* like NOSTAT but use d_type */
+#endif
 #define	FTS_OPTIONMASK	0x000cff	/* valid user option mask */
 
 /* valid only for fts_children() */

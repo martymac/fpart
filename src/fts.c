@@ -30,13 +30,16 @@
  *
  * $OpenBSD: fts.c,v 1.22 1999/10/03 19:22:22 millert Exp $
  *
- * This version of fts has been patched to build on Solaris and GNU/Linux.
+ * This version of fts has been patched to build on Solaris, GNU/Linux and Darwin.
  * Solaris notes : 
  *   - no support for FTS_WHITEOUT (sparse files)
  *   - no support for O_CLOEXEC and O_DIRECTORY flags
+ *   - no support for FTS_NOSTAT_TYPE
  * GNU/Linux notes :
- *   - the FTS_NOSTAT speedup trick is disabled
  *   - no support for FTS_WHITEOUT (sparse files)
+ *   - the FTS_NOSTAT UFS-style links speedup trick is disabled
+ * Darwin notes :
+ *   - no support for FTS_NOSTAT_TYPE
  *
  */
 
@@ -213,9 +216,11 @@ __fts_open(FTS *sp, char * const *argv)
 	if (ISSET(FTS_LOGICAL))
 		SET(FTS_NOCHDIR);
 
+#if defined(FTS_NOSTAT_TYPE)
 	/* NOSTAT_TYPE implies NOSTAT */
 	if (ISSET(FTS_NOSTAT_TYPE))
 		SET(FTS_NOSTAT);
+#endif /* defined(FTS_NOSTAT_TYPE) */
 
 	/*
 	 * Start out with 1K of path space, and enough, in any case,
@@ -1014,6 +1019,7 @@ mem1:				saved_errno = errno;
 			    p->fts_info == FTS_DC || p->fts_info == FTS_DOT))
 				--nlinks;
 		}
+#if defined(FTS_NOSTAT_TYPE)
 		if (p->fts_info == FTS_NSOK && ISSET(FTS_NOSTAT_TYPE)) {
 			switch (dp->d_type) {
 			case DT_FIFO:
@@ -1033,6 +1039,7 @@ mem1:				saved_errno = errno;
 				break;
 			}
 		}
+#endif /* defined(FTS_NOSTAT_TYPE) */
 
 		/* We walk in directory order so "ls -f" doesn't get upset. */
 		p->fts_link = NULL;
