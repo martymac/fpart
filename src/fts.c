@@ -35,9 +35,11 @@
  *   - no support for FTS_WHITEOUT (sparse files)
  *   - no support for O_CLOEXEC and O_DIRECTORY flags
  *   - no support for FTS_NOSTAT_TYPE
+ *   - no support for fts_open_b() (would need qsort_r(), which is missing)
  * GNU/Linux notes :
  *   - no support for FTS_WHITEOUT (sparse files)
  *   - the FTS_NOSTAT UFS-style links speedup trick is disabled
+ *   - should support fts_open_b() by defining WANT_BLOCKS (untested)
  * Darwin notes :
  *   - no support for FTS_NOSTAT_TYPE
  *
@@ -120,6 +122,7 @@ reallocf(void *ptr, size_t size)
 }
 #endif
 
+#if defined(WANT_BLOCKS)
 #ifdef __BLOCKS__
 #include <Block.h>
 #else
@@ -142,6 +145,7 @@ qsort_b(void *base, size_t nel, size_t width, fts_block compar)
 void *_Block_copy(const void *) __weak_symbol;
 void _Block_release(const void *) __weak_symbol;
 extern void *_NSConcreteGlobalBlock[] __weak_symbol;
+#endif /* WANT_BLOCKS */
 
 static FTSENT	*fts_alloc(FTS *, char *, size_t);
 static FTSENT	*fts_build(FTS *, int);
@@ -332,6 +336,7 @@ fts_open(char * const *argv, int options,
 	return (__fts_open(sp, argv));
 }
 
+#if defined(WANT_BLOCKS)
 #ifdef __BLOCKS__
 FTS *
 fts_open_b(char * const *argv, int options,
@@ -393,6 +398,7 @@ fts_open_b(char * const *argv, int options, fts_block compar)
 	}
 	return (sp);
 }
+#endif /* WANT_BLOCKS */
 
 static void
 fts_load(FTS *sp, FTSENT *p)
@@ -445,6 +451,7 @@ fts_close(FTS *sp)
 		free(sp->fts_array);
 	free(sp->fts_path);
 
+#if defined(WANT_BLOCKS)
 	/* Free up any block pointer. */
 	if (ISSET(FTS_COMPAR_B) && sp->fts_compar_b != NULL) {
 #ifdef __BLOCKS__
@@ -455,6 +462,7 @@ fts_close(FTS *sp)
 			_Block_release(sp->fts_compar_b);
 #endif /* __BLOCKS__ */
 	}
+#endif
 
 	/* Return to original directory, save errno if necessary. */
 	if (!ISSET(FTS_NOCHDIR)) {
@@ -1226,6 +1234,7 @@ fts_sort(FTS *sp, FTSENT *head, size_t nitems)
 	}
 	for (ap = sp->fts_array, p = head; p; p = p->fts_link)
 		*ap++ = p;
+#if defined(WANT_BLOCKS)
 	if (ISSET(FTS_COMPAR_B)) {
 #ifdef __BLOCKS__
 		qsort_b(sp->fts_array, nitems, sizeof(FTSENT *),
@@ -1235,9 +1244,12 @@ fts_sort(FTS *sp, FTSENT *head, size_t nitems)
 		    sp->fts_compar_b);
 #endif /* __BLOCKS__ */
 	} else {
+#endif /* WANT_BLOCKS */
 		qsort(sp->fts_array, nitems, sizeof(FTSENT *),
 		    (int (*)(const void *, const void *))sp->fts_compar);
+#if defined(WANT_BLOCKS)
 	}
+#endif /* WANT_BLOCKS */
 	for (head = *(ap = sp->fts_array); --nitems; ++ap)
 		ap[0]->fts_link = ap[1];
 	ap[0]->fts_link = NULL;

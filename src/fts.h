@@ -36,6 +36,10 @@
 #define __weak_symbol __attribute__((__weak__))
 #endif
 
+#if !defined(__sun) && !defined(__sun__)
+#define WANT_BLOCKS 1
+#endif
+
 #if !defined(MAX)
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #endif
@@ -83,12 +87,14 @@ typedef struct {
 	union {
 		int (*fts_compar)	/* compare function */
 		    (const FTSENT * const *, const FTSENT * const *);
+#if defined(WANT_BLOCKS)
 #ifdef __BLOCKS__
 		int (^fts_compar_b)
 		    (const FTSENT * const *, const FTSENT * const *);
 #else
 		void *fts_compar_b;
 #endif /* __BLOCKS__ */
+#endif /* WANT_BLOCKS */
 	};
 
 /* valid for fts_open() */
@@ -115,7 +121,9 @@ typedef struct {
 
 /* internal use only */
 #define	FTS_STOP	0x010000	/* unrecoverable error */
+#if defined(WANT_BLOCKS)
 #define	FTS_COMPAR_B	0x020000	/* compare function is a block */
+#endif /* WANT_BLOCKS */
 	int fts_options;		/* fts_open options, global flags */
 	void *fts_clientptr;		/* thunk for sort function */
 } FTS;
@@ -187,10 +195,12 @@ FTS	*fts_get_stream(FTSENT *);
 #define	 fts_get_stream(ftsent)	((ftsent)->fts_fts)
 FTS	*fts_open(char * const *, int,
 	    int (*)(const FTSENT * const *, const FTSENT * const *));
+#if defined(WANT_BLOCKS)
 #ifdef __BLOCKS__
 FTS	*fts_open_b(char * const *, int,
 	    int (^)(const FTSENT * const *, const FTSENT * const *));
 #endif /* __BLOCKS__ */
+#endif /* WANT_BLOCKS */
 FTSENT	*fts_read(FTS *);
 int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
