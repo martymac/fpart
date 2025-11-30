@@ -108,7 +108,13 @@ version(void)
     fprintf(stderr, "no, fts=");
 #endif
 #if defined(EMBED_FTS)
-    fprintf(stderr, "embedded\n");
+    fprintf(stderr, "embedded");
+#if defined(WANT_BLOCKS)
+    fprintf(stderr, " (with blocks support)");
+#else
+    fprintf(stderr, " (without blocks support)");
+#endif
+    fprintf(stderr, "\n");
 #else
     fprintf(stderr, "system\n");
 #endif

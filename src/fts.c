@@ -42,6 +42,7 @@
  *   - should support fts_open_b() by defining WANT_BLOCKS (untested)
  * Darwin notes :
  *   - no support for FTS_NOSTAT_TYPE
+ *   - should support fts_open_b() by defining WANT_BLOCKS (untested)
  *
  */
 
