@@ -95,7 +95,7 @@
 
 * [Nutanix](https://portal.nutanix.com/page/documents/solutions/details?targetId=TN-2016-Nutanix-Files-Migration-Guide:fpsync-for-nfs.html)
 
-* [Huawei Latin America cloud](https://github.com/huaweicloud-latam/migration-tool-map/tree/main/02-014-fpsync)
+* [Huawei cloud](https://support.huaweicloud.com/intl/en-us/bestpractice-sfs/sfs_03_0037.html) (see also [here](https://github.com/huaweicloud-latam/migration-tool-map/tree/main/02-014-fpsync))
 
 <br>
 <center>
@@ -112,5 +112,5 @@
 <br>
 <center>
 [![Nutanix](img/ext-logos/Nutanix.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://portal.nutanix.com/page/documents/solutions/details?targetId=TN-2016-Nutanix-Files-Migration-Guide:fpsync-for-nfs.html)
-[![Huawei](img/ext-logos/Huawei.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://github.com/huaweicloud-latam/migration-tool-map/tree/main/02-014-fpsync)
+[![Huawei](img/ext-logos/Huawei.png){: style="width:175px;margin-right:75px;margin-down:75px"}](https://support.huaweicloud.com/intl/en-us/bestpractice-sfs/sfs_03_0037.html)
 </center>
