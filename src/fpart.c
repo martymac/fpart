@@ -278,8 +278,7 @@ handle_argument(char *argument, struct file_entry **head,
     else {
     /* handle paths, must examine filesystem */
         char *input_path = NULL;
-        size_t input_path_len = strlen(argument);
-        size_t malloc_size = input_path_len + 1;
+        size_t malloc_size = strlen(argument) + 1;
         if_not_malloc(input_path, malloc_size,
             return (1);
         )
