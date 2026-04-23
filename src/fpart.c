@@ -762,6 +762,8 @@ int main(int argc, char **argv)
                 *line_end_p = '\0';
 
             if(handle_argument(line, &head, &options, &main_status) != 0) {
+                if(in_fp != stdin)
+                    fclose(in_fp);
                 uninit_file_entries(head, &options, &main_status);
                 uninit_options(&options);
                 exit(EXIT_FAILURE);
@@ -777,7 +779,8 @@ int main(int argc, char **argv)
         }
 
         /* cleanup */
-        fclose(in_fp);
+        if(in_fp != stdin)
+            fclose(in_fp);
     }
 
 /******************
