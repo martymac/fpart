@@ -87,9 +87,6 @@ static struct option long_options[] =
 /* strlen(3) */
 #include <string.h>
 
-/* bzero(3) */
-#include <strings.h>
-
 /* errno */
 #include <errno.h>
 
@@ -755,7 +752,6 @@ int main(int argc, char **argv)
         /* read fd and do the work */
         char line[MAX_LINE_LENGTH];
         char *line_end_p = NULL;
-        bzero(line, MAX_LINE_LENGTH);
         while(fgets(line, MAX_LINE_LENGTH, in_fp) != NULL) {
             /* replace '\n' with '\0' */
             if((line_end_p = strchr(line, '\n')) != NULL)
@@ -768,9 +764,6 @@ int main(int argc, char **argv)
                 uninit_options(&options);
                 exit(EXIT_FAILURE);
             }
-
-            /* cleanup */
-            bzero(line, MAX_LINE_LENGTH);
         }
 
         /* check for error reading input */
