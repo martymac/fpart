@@ -983,6 +983,7 @@ init_file_entries(char *file_path, struct file_entry **head,
             case FTS_NS:    /* stat() error */
                 fprintf(stderr, "%s: %s\n", p->fts_path,
                     strerror(fts_read_errno));
+                /* fallthrough */
             case FTS_NSOK:  /* no stat(2) available (not requested) */
                 /* mark current dir as not empty */
                 curdir_empty = 0;
@@ -990,6 +991,7 @@ init_file_entries(char *file_path, struct file_entry **head,
 
             case FTS_DC:
                 fprintf(stderr, "%s: filesystem loop detected\n", p->fts_path);
+                /* fallthrough */
             case FTS_DOT:   /* ignore "." and ".." */
                 continue;
 
