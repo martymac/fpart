@@ -61,7 +61,7 @@
 /* open(2) */
 #include <fcntl.h>
 
-/* close(2) */
+/* close(2), _exit(2) */
 #include <unistd.h>
 
 /* assert(3) */
@@ -114,7 +114,7 @@ static struct {
     -1
 };
 
-/* Signal handler, kills child and exit() */
+/* Signal handler, kills child and exit */
 static void
 kill_child(int sig)
 {
@@ -126,7 +126,7 @@ kill_child(int sig)
         killpg(live_status.child_pid, sig ? sig : SIGTERM);
         waitpid(live_status.child_pid, NULL, 0);
     }
-    exit(EXIT_FAILURE);
+    _exit(EXIT_FAILURE);
 }
 
 /* Executes 'cmd' and waits for it to terminate
