@@ -473,7 +473,7 @@ str_to_uintmax(const char *str, const unsigned char handle_multiplier)
     errno = 0;
     val = strtoumax(str, &endptr, 10);
     /* check that something was converted and refuse invalid values */
-    if((endptr == optarg) || (val == 0))
+    if((endptr == str) || (val == 0))
         return (0);
     /* check for other errors */
     if(errno != 0) {
@@ -504,7 +504,7 @@ str_to_uintmax(const char *str, const unsigned char handle_multiplier)
     }
 #if defined(DEBUG)
     fprintf(stderr, "%s(): converted string %s to value %ju\n", __func__,
-        optarg, val);
+        str, val);
 #endif
     return (val);
 }
