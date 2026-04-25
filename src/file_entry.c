@@ -657,7 +657,7 @@ end_part:
             parent = parent_path(path, 1);
             while((parent != NULL) &&
                   (parent[0] != '\0') &&
-                  (strstr(parent, live_status.entry_path) != NULL)) {
+                  (strncmp(parent, live_status.entry_path, strlen(live_status.entry_path)) == 0)) {
                 if(out_template == NULL) {
                     /* no template provided, just print parent to stdout */
                     display_file_entry(adapt_partition_index(live_status.partition_index, options),
