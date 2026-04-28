@@ -392,7 +392,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
         case 0:             /* child */
         {
             /* become process group leader */
-            if(setpgid(live_status.child_pid, 0) != 0) {
+            if(setpgid(0, 0) != 0) {
                 fprintf(stderr, "%s(): setpgid(): %s\n", __func__,
                     strerror(errno));
                 exit(EXIT_FAILURE);
