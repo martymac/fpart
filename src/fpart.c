@@ -77,7 +77,7 @@ static struct option long_options[] =
     { "live",           no_argument,        NULL, 'L' },
     { "pre-part-cmd",   required_argument,  NULL, 'w' },
     { "post-part-cmd",  required_argument,  NULL, 'W' },
-    { "post-run-cmd",  required_argument,  NULL, 'R' },
+    { "post-run-cmd",   required_argument,  NULL, 'R' },
     { NULL, 0, NULL, 0 }
 };
 #else
