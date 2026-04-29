@@ -86,7 +86,7 @@
     }
 
 uintmax_t char_to_multiplier(const char c);
-unsigned int get_num_digits(double i);
+uintmax_t get_num_digits(uintmax_t i);
 fsize_t get_size(char *file_path, struct stat *file_stat,
     struct program_options *options);
 char *abs_path(const char *path);

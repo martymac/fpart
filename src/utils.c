@@ -31,9 +31,6 @@
 #include "utils.h"
 #include "options.h"
 
-/* log10(3) */
-#include <math.h>
-
 /* malloc(3) */
 #include <stdlib.h>
 
@@ -114,14 +111,15 @@ char_to_multiplier(const char c)
 }
 
 /* Return the number of digits necessary to print i */
-unsigned int
-get_num_digits(double i)
+uintmax_t
+get_num_digits(uintmax_t i)
 {
-    if((int)i == 0)
-        return (1);
+    uintmax_t digits = 1;
 
-    double logvalue = log10(i);
-    return (logvalue >= 0 ? (unsigned int)logvalue + 1 : 0);
+    while (i /= 10)
+        digits++;
+
+    return digits;
 }
 
 /* Return the size of a file or directory

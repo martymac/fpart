@@ -339,14 +339,18 @@ fpart_hook(const char *cmd, const struct program_options *options,
 
     /* FPART_PARTERRNO */
     if(cmd != options->post_run_hook) {
+        /* live_partition_errno - derived from errno - is always
+           positive, see:
+           https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
+           This is ensured by an assert() check above */
         malloc_size = strlen(env_fpart_parterrno_name) + 1 +
-            get_num_digits(live_partition_errno) + 1;
+            get_num_digits((uintmax_t)live_partition_errno) + 1;
         if_not_malloc(env_fpart_parterrno_string, malloc_size,
             retval = 1;
             goto cleanup;
         )
-        snprintf(env_fpart_parterrno_string, malloc_size, "%s=%d",
-            env_fpart_parterrno_name, live_partition_errno);
+        snprintf(env_fpart_parterrno_string, malloc_size, "%s=%ju",
+            env_fpart_parterrno_name, (uintmax_t)live_partition_errno);
         if(push_env(env_fpart_parterrno_string, &envp) != 0) {
             retval = 1;
             goto cleanup;
@@ -354,15 +358,15 @@ fpart_hook(const char *cmd, const struct program_options *options,
     }
 
     /* FPART_PID */
-    pid_t fpart_pid = getpid();
+    pid_t fpart_pid = getpid(); /* always >= 1 */
     malloc_size = strlen(env_fpart_pid_name) + 1 +
-        get_num_digits(fpart_pid) + 1;
+        get_num_digits((uintmax_t)fpart_pid) + 1;
     if_not_malloc(env_fpart_pid_string, malloc_size,
         retval = 1;
         goto cleanup;
     )
-    snprintf(env_fpart_pid_string, malloc_size, "%s=%d",
-        env_fpart_pid_name, (int)fpart_pid);
+    snprintf(env_fpart_pid_string, malloc_size, "%s=%ju",
+        env_fpart_pid_name, (uintmax_t)fpart_pid);
     if(push_env(env_fpart_pid_string, &envp) != 0) {
         retval = 1;
         goto cleanup;
