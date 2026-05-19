@@ -434,9 +434,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
         default:            /* parent */
         {
             /* child-killer signal handler */
-            signal(SIGTERM, kill_child);
-            signal(SIGINT, kill_child);
-            signal(SIGHUP, kill_child);
+            struct sigaction sa;
+            sa.sa_handler = kill_child;
+            sa.sa_flags = SA_RESTART;
+            sigemptyset(&sa.sa_mask);
+            sigaction(SIGTERM, &sa, NULL);
+            sigaction(SIGINT,  &sa, NULL);
+            sigaction(SIGHUP,  &sa, NULL);
 
             /* restore signals */
             if (sigprocmask(SIG_SETMASK, &oldset, NULL) < 0) {
@@ -452,9 +456,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
             } while((wpid == -1) && (errno == EINTR));
 
             /* reset actions for signals */
-            signal(SIGTERM, SIG_DFL);
-            signal(SIGINT, SIG_DFL);
-            signal(SIGHUP, SIG_DFL);
+            struct sigaction sa_dfl;
+            sa_dfl.sa_handler = SIG_DFL;
+            sa_dfl.sa_flags = 0;
+            sigemptyset(&sa_dfl.sa_mask);
+            sigaction(SIGTERM, &sa_dfl, NULL);
+            sigaction(SIGINT,  &sa_dfl, NULL);
+            sigaction(SIGHUP,  &sa_dfl, NULL);
             /* reset child PID */
             live_status.child_pid = -1;
 
