@@ -67,7 +67,7 @@
 /* assert(3) */
 #include <assert.h>
 
-/* wait(2) */
+/* waitpid(2) */
 #include <sys/wait.h>
 
 /* _PATH_BSHELL */
@@ -445,10 +445,11 @@ fpart_hook(const char *cmd, const struct program_options *options,
                 retval = 1;
             }
 
+            /* wait for child to terminate */
             pid_t wpid;
             do {
-                wpid = wait(&child_status);
-            } while((wpid != live_status.child_pid) && (wpid != -1));
+                wpid = waitpid(live_status.child_pid, &child_status, 0);
+            } while((wpid == -1) && (errno == EINTR));
 
             /* reset actions for signals */
             signal(SIGTERM, SIG_DFL);
@@ -458,7 +459,7 @@ fpart_hook(const char *cmd, const struct program_options *options,
             live_status.child_pid = -1;
 
             if(wpid == -1) {
-                fprintf(stderr, "%s(): wait(): %s\n", __func__,
+                fprintf(stderr, "%s(): waitpid(): %s\n", __func__,
                     strerror(errno));
                 retval = 1;
             }
