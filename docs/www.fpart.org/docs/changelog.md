@@ -1,7 +1,8 @@
 # Next: 1.7.1
 ```nohighlight
-    2026/??/??, 1.7.1 ('???') :
+    2026/??/??, 1.7.1 ('Crocodile's rap') :
     - fpart: update embedded fts(3) using FreeBSD 15-CURRENT's version
+    - fpart: fix various errors spotted by Claude (Anthropic)
     - fpsync: give more time for .ret file to be created
       (see GH discussion #68)
     - fpsync: be more explicit when witness file creation fails
