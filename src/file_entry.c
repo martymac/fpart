@@ -386,10 +386,28 @@ fpart_hook(const char *cmd, const struct program_options *options,
         goto cleanup;
     }
 
+    /* block signals before forking */
+    sigset_t sigset, oldset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGTERM);
+    sigaddset(&sigset, SIGINT);
+    sigaddset(&sigset, SIGHUP);
+    if (sigprocmask(SIG_BLOCK, &sigset, &oldset) < 0) {
+        retval = 1;
+        goto cleanup;
+    }
+
     /* fork child process */
     int child_status = 0;
     switch(live_status.child_pid = fork()) {
         case -1:            /* error */
+            /* restore signals */
+            if (sigprocmask(SIG_SETMASK, &oldset, NULL) < 0) {
+                fprintf(stderr, "%s(): sigprocmask(): %s\n", __func__,
+                    strerror(errno));
+                /* fallthrough */
+            }
+
             fprintf(stderr, "fork(): %s\n", strerror(errno));
             retval = 1;
             break;
@@ -401,6 +419,14 @@ fpart_hook(const char *cmd, const struct program_options *options,
                     strerror(errno));
                 exit(EXIT_FAILURE);
             }
+
+            /* restore signals */
+            if (sigprocmask(SIG_SETMASK, &oldset, NULL) < 0) {
+                fprintf(stderr, "%s(): sigprocmask(): %s\n", __func__,
+                    strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+
             execle(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL, envp);
             /* if reached, error */
             exit(EXIT_FAILURE);
@@ -411,6 +437,13 @@ fpart_hook(const char *cmd, const struct program_options *options,
             signal(SIGTERM, kill_child);
             signal(SIGINT, kill_child);
             signal(SIGHUP, kill_child);
+
+            /* restore signals */
+            if (sigprocmask(SIG_SETMASK, &oldset, NULL) < 0) {
+                fprintf(stderr, "%s(): sigprocmask(): %s\n", __func__,
+                    strerror(errno));
+                retval = 1;
+            }
 
             pid_t wpid;
             do {
