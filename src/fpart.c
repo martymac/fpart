@@ -42,7 +42,7 @@
 #include <limits.h>
 #include <inttypes.h>
 
-/* fprintf(3), fopen(3), fclose(3), fgets(3), foef(3) */
+/* fprintf(3), fopen(3), fclose(3), fgets(3), feof(3) */
 #include <stdio.h>
 
 /* getopt(3) / getopt_long(3) */
