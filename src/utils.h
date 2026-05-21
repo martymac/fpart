@@ -94,7 +94,7 @@ void cleanslash_path(char * const path);
 char * parent_path(const char * const path, const unsigned char keep_ending_slash);
 int str_push(char ***array, unsigned int *num, const char * const str);
 void str_cleanup(char ***array, unsigned int *num);
-int str_is_negative(const char * const str);
+int str_is_negative(const char *str);
 uintmax_t str_to_uintmax(const char *str, const unsigned char handle_multiplier);
 int file_match(const char * const * const array, const unsigned int num,
     const FTSENT * const p, const unsigned char ignore_case);
