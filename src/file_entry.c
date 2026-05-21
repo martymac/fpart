@@ -817,14 +817,9 @@ add_file_entry(struct file_entry **head, char *path, fsize_t size,
 
     /* backup current structure pointer and initialize a new structure */
     previous = *current;
-
     if_not_malloc(*current, sizeof(struct file_entry),
         return (-1);
     )
-
-    /* set head on first call */
-    if(*head == NULL)
-        *head = *current;
 
     /* set current file data */
     size_t malloc_size = strlen(path) + 1;

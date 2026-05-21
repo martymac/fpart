@@ -69,10 +69,6 @@ add_partitions(struct partition **head, pnum_t num_parts,
             return (1);
         )
 
-        /* set head on first pass */
-        if(*head == NULL)
-            *head = *current;
-
         /* initialize partition data */
         (*current)->size = options->preload_size;
         (*current)->num_files = 0;
