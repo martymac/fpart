@@ -132,6 +132,34 @@ kill_child(int sig)
 /* Executes 'cmd' and waits for it to terminate
    - returns 0 if cmd has been executed and its return code was 0,
      else returns 1 */
+/* Single-quote a filename for safe use when a hook command expands
+   $FPART_PARTFILENAME via sh -c. Returns a malloc'd shell-safe string,
+   or NULL on allocation failure. Caller must free(). */
+static char *
+shell_quote(const char *s)
+{
+    size_t len = strlen(s);
+    size_t nq = 0, i;
+    for(i = 0; i < len; i++)
+        if(s[i] == '\'') nq++;
+    /* 2 outer single-quotes + 3 extra chars per embedded ' + NUL */
+    char *r = malloc(len + nq * 3 + 3);
+    if(r == NULL)
+        return (NULL);
+    char *p = r;
+    *p++ = '\'';
+    for(i = 0; i < len; i++) {
+        if(s[i] == '\'') {
+            *p++ = '\''; *p++ = '\\'; *p++ = '\''; *p++ = '\'';
+        } else {
+            *p++ = s[i];
+        }
+    }
+    *p++ = '\'';
+    *p = '\0';
+    return (r);
+}
+
 int
 fpart_hook(const char *cmd, const struct program_options *options,
     const struct program_status *status, const char *live_filename,
@@ -245,16 +273,25 @@ fpart_hook(const char *cmd, const struct program_options *options,
         }
     }
 
-    /* FPART_PARTFILENAME */
+    /* FPART_PARTFILENAME - shell-quote the filename so that hook commands
+       referencing $FPART_PARTFILENAME via sh -c are safe from injection
+       when filenames contain shell metacharacters. */
     if(live_filename != NULL) {
+        char *quoted_filename = shell_quote(live_filename);
+        if(quoted_filename == NULL) {
+            retval = 1;
+            goto cleanup;
+        }
         malloc_size = strlen(env_fpart_partfilename_name) + 1 +
-            strlen(live_filename) + 1;
+            strlen(quoted_filename) + 1;
         if_not_malloc(env_fpart_partfilename_string, malloc_size,
+            free(quoted_filename);
             retval = 1;
             goto cleanup;
         )
         snprintf(env_fpart_partfilename_string, malloc_size, "%s=%s",
-            env_fpart_partfilename_name, live_filename);
+            env_fpart_partfilename_name, quoted_filename);
+        free(quoted_filename);
         if(push_env(env_fpart_partfilename_string, &envp) != 0) {
             retval = 1;
             goto cleanup;
