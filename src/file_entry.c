@@ -1388,7 +1388,8 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
                 /* close all open descriptors and return */
                 pnum_t i;
                 for(i = 0; i < current_fd_index; i++)
-                     close(fd[i]);
+                    if(fd[i] >= 0)
+                        close(fd[i]);
                 return (1);
             )
             snprintf(out_filename, malloc_size, "%s.%ju", out_template,
@@ -1401,7 +1402,8 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
                 /* close all open descriptors and return */
                 pnum_t i;
                 for(i = 0; i < current_fd_index; i++)
-                     close(fd[i]);
+                    if(fd[i] >= 0)
+                        close(fd[i]);
                 return (1);
             }
             free(out_filename);
@@ -1420,7 +1422,8 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
                     /* close all open descriptors */
                     pnum_t i;
                     for(i = 0; (i < PRINT_FE_CHUNKS) && (((current_chunk * PRINT_FE_CHUNKS) + i) < num_parts); i++)
-                        close(fd[i]);
+                        if(fd[i] >= 0)
+                            close(fd[i]);
                     return (1);
                 }
             }
@@ -1432,7 +1435,8 @@ print_file_entries(struct file_entry *head, struct partition *part_head,
         /* close file descriptors */
         pnum_t i;
         for(i = 0; (i < PRINT_FE_CHUNKS) && (((current_chunk * PRINT_FE_CHUNKS) + i) < num_parts); i++)
-            close(fd[i]);
+            if(fd[i] >= 0)
+                close(fd[i]);
 
         current_fd_index = 0;
         current_chunk++;
