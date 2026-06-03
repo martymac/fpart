@@ -112,19 +112,6 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
     assert(part_head != NULL);
     assert(num_parts > 0);
 
-    /* backup head */
-    struct file_entry *start = head;
-
-    /* first pass: count empty files */
-    fnum_t num_empty_entries = 0;
-    while(head != NULL) {
-        if(head->size == 0)
-            num_empty_entries++;
-        head = head->nextp;
-    }
-    /* go back to original head */
-    head = start;
-
     /* compute mean file entry number per partition */
     fnum_t mean_files = (num_entries / num_parts);
 
