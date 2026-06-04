@@ -112,8 +112,11 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
     assert(part_head != NULL);
     assert(num_parts > 0);
 
-    /* compute mean file entry number per partition */
+    /* compute mean file entry number per partition, our ideal target when
+       dispatching files. That number is *rounded down* (integer division),
+       so leave remaining -extra- files go to the first partitions */
     fnum_t mean_files = (num_entries / num_parts);
+    fnum_t extra_files = (num_entries % num_parts);
 
     /* be sure to start at first partition as we are handling indexes here.
        Starting at first file_entry is not necessary as we would not corrupt
@@ -121,7 +124,8 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
     rewind_list(part_head);
 
     /* for each empty file, associate it with the first partition
-       having less files than mean_files */
+       having less files than mean_files (+ 1 for first extra_files partitions,
+       to leave extra_files being dispatched there) */
     while(head != NULL) {
         if(head->size == 0) {
             /* empty file found */
@@ -131,7 +135,8 @@ dispatch_empty_file_entries(struct file_entry *head, fnum_t num_entries,
 
             while(part_head != NULL) {
                 if((head->partition_index != j) &&
-                   (part_head->num_files < mean_files)) {
+                    (part_head->num_files < (mean_files +
+                        (j < extra_files ? 1 : 0)))) {
                     struct partition *previous_partition =
                         get_partition_at(part_start, head->partition_index);
                     if(previous_partition == NULL) {

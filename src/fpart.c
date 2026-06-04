@@ -820,7 +820,7 @@ int main(int argc, char **argv)
     /* our list of partitions */
     struct partition *part_head = NULL;
 
-    /* sort files with a fixed size of partitions */
+    /* sort files with a fixed number of partitions */
     if(options.num_parts != DFLT_OPT_NUM_PARTS) {
         /* create a fixed-size array of pointers to sort */
         struct file_entry **file_entry_p = NULL;
