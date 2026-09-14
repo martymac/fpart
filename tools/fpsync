@@ -83,7 +83,7 @@ OPT_SUDO=""
 OPT_VERBOSE="0"
 # Source directory
 OPT_SRCDIR=""
-# Destination directory
+# Destination URL
 OPT_DSTURL=""
 
 ########## Internal variables (cannot be set through CLI yet)
@@ -250,7 +250,7 @@ echo_log () {
 
 # Check if $1 is an absolute path
 is_abs_path() {
-    echo "$1" | grep -qE '^/'
+    echo "$1" | head -n1 | grep -qE '^/'
 }
 
 # Check if $1 is a valid rsync URL
@@ -260,19 +260,19 @@ is_abs_path() {
 #   Rsync: rsync://[USER@]HOST[:PORT]/DEST
 # Simplified as: "anything but slash" followed by at least one ":"
 is_remote_path() {
-    echo "$1" | grep -qE '^[^/]+:'
+    echo "$1" | head -n1 | grep -qE '^[^/]+:'
 }
 
 # Check if $1 is a number
 is_num () {
-    echo "$1" | grep -qE '^[0-9]+$'
+    echo "$1" | head -n 1 | grep -qE '^[0-9]+$'
 }
 
 # Check if $1 is an acceptable size argument
 # - must be greater than 0
 # - may contain 'kKmMgGtTpP' suffix
 is_size () {
-    echo "$1" | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
+    echo "$1" | head -n 1 | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
 }
 
 # Convert $1 (in bytes) to a human-readable size
@@ -300,12 +300,12 @@ bytes_to_human_size () {
 
 # Check if $1 contains (at least) a valid e-mail address
 is_mailaddr () {
-    echo "$1" | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
+    echo "$1" | head -n 1 | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
 }
 
 # Check if $1 is a valid run ID
 is_runid () {
-    echo "$1" | grep -qE '^[0-9]+-[0-9]+$'
+    echo "$1" | head -n 1 | grep -qE '^[0-9]+-[0-9]+$'
 }
 
 ########## Results handling
@@ -407,7 +407,7 @@ logfiles_filter_stderr_without_ret () {
 # Chek if a tool is supported
 # $1 = tool name
 tool_is_supported () {
-    echo "$1" | grep -qE '^(rsync|cpio|pax|tar|tarify)$'
+    echo "$1" | head -n 1 | grep -qE '^(rsync|cpio|pax|tar|tarify)$'
 }
 
 # Chek if TAR_BIN is GNU tar
@@ -425,21 +425,21 @@ tool_print_supported () {
 # Check if a tool supports a URL as sync target
 # $1 = tool name
 tool_supports_urls () {
-    echo "$1" | grep -q '^rsync$'
+    echo "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Check if a tool supports directory-only mode
 # (requires the ability to sync a single-level directory tree)
 # $1 = tool name
 tool_supports_dirsonly () {
-    echo "$1" | grep -q '^rsync$'
+    echo "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Check if a tool supports aggressive mode
 # (requires the ability to sync recursively)
 # $1 = tool name
 tool_supports_aggressive () {
-    echo "$1" | grep -q '^rsync$'
+    echo "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Get default tool-related options
