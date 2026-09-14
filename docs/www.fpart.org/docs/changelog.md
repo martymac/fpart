@@ -1,3 +1,9 @@
+# Next: 1.8.0
+```nohighlight
+    2026/??/??, 1.8.0 :
+    - fpsync: allow special characters in src_dir/ and dst_url/
+      (see GH issue #86)
+```
 # Current: 1.7.1
 ```nohighlight
     2026/07/09, 1.7.1 ('Crocodile's rap') :
