@@ -196,13 +196,13 @@ EOF
 
 # Print a message to stdout and exit with normal exit code
 end_ok () {
-    [ -n "$1" ] && echo "$1"
+    [ -n "$1" ] && printf '%s\n' "$1"
     exit 0
 }
 
 # Print a message to stderr and exit with error code 1
 end_die () {
-    [ -n "$1" ] && echo "$1" 1>&2
+    [ -n "$1" ] && printf '%s\n' "$1" 1>&2
     exit 1
 }
 
@@ -245,12 +245,12 @@ echo_log () {
     is_num "$1" && [ ${OPT_VERBOSE} -ge $1 ] && [ -n "$2" ] && \
         printf '%s\n' "${_log_ts} ${_color_start}$2${_color_stop}"
     [ -n "$2" ] && \
-        echo "${_log_ts} $2" >> "${FPSYNC_LOGFILE}"
+        printf '%s\n' "${_log_ts} $2" >> "${FPSYNC_LOGFILE}"
 }
 
 # Check if $1 is an absolute path
 is_abs_path() {
-    echo "$1" | head -n1 | grep -qE '^/'
+    printf '%s\n' "$1" | head -n1 | grep -qE '^/'
 }
 
 # Check if $1 is a valid rsync URL
@@ -260,7 +260,7 @@ is_abs_path() {
 #   Rsync: rsync://[USER@]HOST[:PORT]/DEST
 # Simplified as: "anything but slash" followed by at least one ":"
 is_remote_path() {
-    echo "$1" | head -n1 | grep -qE '^[^/]+:'
+    printf '%s\n' "$1" | head -n1 | grep -qE '^[^/]+:'
 }
 
 # Protect single quotes within $1
@@ -283,47 +283,47 @@ protect_quotes() {
 
 # Check if $1 is a number
 is_num () {
-    echo "$1" | head -n 1 | grep -qE '^[0-9]+$'
+    printf '%s\n' "$1" | head -n 1 | grep -qE '^[0-9]+$'
 }
 
 # Check if $1 is an acceptable size argument
 # - must be greater than 0
 # - may contain 'kKmMgGtTpP' suffix
 is_size () {
-    echo "$1" | head -n 1 | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
+    printf '%s\n' "$1" | head -n 1 | grep -qE '^0*[1-9][0-9]*[kKmMgGtTpP]?$'
 }
 
 # Convert $1 (in bytes) to a human-readable size
 bytes_to_human_size () {
     if ! is_num "$1"
     then
-        echo "$1"
+        printf '%s\n' "$1"
         return
     fi
 
-    local _result=$(echo "$1" | bc 2>/dev/null) # Remove leading 0s
+    local _result=$(printf '%s\n' "$1" | bc 2>/dev/null) # Remove leading 0s
     local _sufx="B,KiB,MiB,GiB,TiB,PiB"
-    local _round_max=$(( $(echo ${_sufx} | tr -cd ',' | \
+    local _round_max=$(( $(printf '%s\n' "${_sufx}" | tr -cd ',' | \
         wc -c | awk '{print $1}') + 1 ))
 
     local _round=1
     while [ "${_round}" -lt "${_round_max}" ] && \
-        [ $(echo "${_result} >= 1024" | bc 2>/dev/null) -eq 1 ]
+        [ $(printf '%s\n' "${_result} >= 1024" | bc 2>/dev/null) -eq 1 ]
     do
-        _result=$(echo "scale=2; ${_result} / 1024" | bc 2>/dev/null)
+        _result=$(printf '%s\n' "scale=2; ${_result} / 1024" | bc 2>/dev/null)
         _round=$(( ${_round} + 1 ))
     done
-    echo "${_result}$(echo ${_sufx} | cut -d ',' -f ${_round} 2>/dev/null)"
+    printf '%s\n' "${_result}$(printf '%s\n' "${_sufx}" | cut -d ',' -f "${_round}" 2>/dev/null)"
 }
 
 # Check if $1 contains (at least) a valid e-mail address
 is_mailaddr () {
-    echo "$1" | head -n 1 | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
+    printf '%s\n' "$1" | head -n 1 | grep -qE '^[a-zA-Z0-9+._-]+@[a-zA-Z0-9-]+\.'
 }
 
 # Check if $1 is a valid run ID
 is_runid () {
-    echo "$1" | head -n 1 | grep -qE '^[0-9]+-[0-9]+$'
+    printf '%s\n' "$1" | head -n 1 | grep -qE '^[0-9]+-[0-9]+$'
 }
 
 ########## Results handling
@@ -387,7 +387,7 @@ logfiles_filter_ret_to_stderr () {
         case "${_line}" in
         *.ret)
             file_is_not_empty "${_line%.ret}.stderr" && \
-                echo "${_line%.ret}.stderr"
+                printf '%s\n' "${_line%.ret}.stderr"
             ;;
         esac
     done
@@ -400,7 +400,7 @@ logfiles_filter_ret_with_errors () {
         case "${_line}" in
         *.ret)
             retfile_is_error "${_line}" && \
-                echo "${_line}"
+                printf '%s\n' "${_line}"
             ;;
         esac
     done
@@ -414,7 +414,7 @@ logfiles_filter_stderr_without_ret () {
         case "${_line}" in
         *.stderr)
             retfile_is_error "${_line%.stderr}.ret" || \
-                echo "${_line}"
+                printf '%s\n' "${_line}"
             ;;
         esac
     done
@@ -425,7 +425,7 @@ logfiles_filter_stderr_without_ret () {
 # Chek if a tool is supported
 # $1 = tool name
 tool_is_supported () {
-    echo "$1" | head -n 1 | grep -qE '^(rsync|cpio|pax|tar|tarify)$'
+    printf '%s\n' "$1" | head -n 1 | grep -qE '^(rsync|cpio|pax|tar|tarify)$'
 }
 
 # Chek if TAR_BIN is GNU tar
@@ -437,27 +437,27 @@ tar_is_GNU_tar () {
 
 # Print supported tools in a friendly manner
 tool_print_supported () {
-    echo "'rsync', 'cpio', 'pax', 'tar' or 'tarify'"
+    printf '%s\n' "'rsync', 'cpio', 'pax', 'tar' or 'tarify'"
 }
 
 # Check if a tool supports a URL as sync target
 # $1 = tool name
 tool_supports_urls () {
-    echo "$1" | head -n 1 | grep -q '^rsync$'
+    printf '%s\n' "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Check if a tool supports directory-only mode
 # (requires the ability to sync a single-level directory tree)
 # $1 = tool name
 tool_supports_dirsonly () {
-    echo "$1" | head -n 1 | grep -q '^rsync$'
+    printf '%s\n' "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Check if a tool supports aggressive mode
 # (requires the ability to sync recursively)
 # $1 = tool name
 tool_supports_aggressive () {
-    echo "$1" | head -n 1 | grep -q '^rsync$'
+    printf '%s\n' "$1" | head -n 1 | grep -q '^rsync$'
 }
 
 # Get default tool-related options
@@ -972,14 +972,14 @@ parse_opts () {
 # assigning a fixed number of slots to each worker.
 # Sanitize OPT_WRKRS if necessary.
 work_list_free_workers_init () {
-    local _OPT_WRKRS_NUM=$(echo ${OPT_WRKRS} | awk '{print NF}')
+    local _OPT_WRKRS_NUM=$(printf '%s\n' "${OPT_WRKRS}" | awk '{print NF}')
     if [ ${_OPT_WRKRS_NUM} -gt 0 ]
     then
         local _i=0
         while [ ${_i} -lt ${OPT_JOBS} ]
         do
             local _OPT_WRKRS_IDX="$((${_i} % ${_OPT_WRKRS_NUM} + 1))"
-            WORK_FREEWORKERS="${WORK_FREEWORKERS} $(echo ${OPT_WRKRS} | awk '{print $'${_OPT_WRKRS_IDX}'}')"
+            WORK_FREEWORKERS="${WORK_FREEWORKERS} $(printf '%s\n' "${OPT_WRKRS}" | awk '{print $'${_OPT_WRKRS_IDX}'}')"
             _i=$((${_i} + 1))
         done
     else
@@ -990,12 +990,12 @@ work_list_free_workers_init () {
 
 # Pick-up next worker
 work_list_pick_next_free_worker () {
-    echo "${WORK_FREEWORKERS}" | awk '{print $1}'
+    printf '%s\n' "${WORK_FREEWORKERS}" | awk '{print $1}'
 }
 
 # Remove next worker from list
 work_list_trunc_next_free_worker () {
-    WORK_FREEWORKERS="$(echo ${WORK_FREEWORKERS} | sed -E 's/^[[:space:]]*[^[:space:]]+[[:space:]]*//')"
+    WORK_FREEWORKERS="$(printf '%s\n' "${WORK_FREEWORKERS}" | sed -E 's/^[[:space:]]*[^[:space:]]+[[:space:]]*//')"
 }
 
 # Push a work to the list of currently-running ones
@@ -1040,9 +1040,9 @@ work_list_refresh () {
             # See: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_08_02
             if ! wait_for_file 5 "${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
             then
-                echo "143" 2>/dev/null >"${FPSYNC_LOGDIR}/${_JOB_PART}.ret" || \
+                printf '%s\n' "143" 2>/dev/null >"${FPSYNC_LOGDIR}/${_JOB_PART}.ret" || \
                     end_die "Error writing to .ret file: ${FPSYNC_LOGDIR}/${_JOB_PART}.ret"
-                echo "Job killed (SIGTERM simulated by fpsync)" 2>/dev/null >>"${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
+                printf '%s\n' "Job killed (SIGTERM simulated by fpsync)" 2>/dev/null >>"${FPSYNC_LOGDIR}/${_JOB_PART}.stderr" || \
                     end_die "Error writing to .stderr file: ${FPSYNC_LOGDIR}/${_JOB_PART}.stderr"
             fi
 
@@ -1068,14 +1068,14 @@ work_list_refresh () {
                     ${_run_done_files} + $( \
                         job_files=0 ; \
                         . "${FPSYNC_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
-                        echo "${job_files}" \
+                        printf '%s\n' "${job_files}" \
                     ) \
                 ))
                 _run_done_size=$(( \
                     ${_run_done_size} + $( \
                         job_size=0 ; \
                         . "${FPSYNC_PARTSTMPL}.${_JOB_PART}.meta" 2>/dev/null ; \
-                        echo "${job_size}" \
+                        printf '%s\n' "${job_size}" \
                     ) \
                 ))
                 # Mark job as done
@@ -1193,7 +1193,7 @@ run_total_jobs_count () {
         total_num_parts=0 ; \
         [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
             . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
-        echo "${total_num_parts}"
+        printf '%s\n' "${total_num_parts}"
     )
 }
 
@@ -1204,7 +1204,7 @@ run_total_files_count () {
         total_num_files=0 ; \
         [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
             . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
-        echo "${total_num_files}"
+        printf '%s\n' "${total_num_files}"
     )
 }
 
@@ -1215,7 +1215,7 @@ run_total_size_count () {
         total_size=0 ; \
         [ -f "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" ] && \
             . "${FPSYNC_PARTSDIR_BASE}/${1}/run.meta" 2>/dev/null ; \
-        echo "${total_size}"
+        printf '%s\n' "${total_size}"
     )
 }
 
@@ -1264,11 +1264,11 @@ run_complete_files_count () {
             ${_jobs_files} + $( \
                 job_files=0 ; \
                 . "${FPSYNC_PARTSDIR_BASE}/${1}/part.${_file}.meta" 2>/dev/null ; \
-                echo "${job_files}" \
+                printf '%s\n' "${job_files}" \
             ) \
         ))
     done
-    echo "${_jobs_files}"
+    printf '%s\n' "${_jobs_files}"
 }
 
 # Count bytes transferred in specified run
@@ -1281,11 +1281,11 @@ run_complete_size_count () {
             ${_jobs_size} + $( \
                 job_size=0 ; \
                 . "${FPSYNC_PARTSDIR_BASE}/${1}/part.${_file}.meta" 2>/dev/null ; \
-                echo "${job_size}" \
+                printf '%s\n' "${job_size}" \
             ) \
         ))
     done
-    echo "${_jobs_size}"
+    printf '%s\n' "${_jobs_size}"
 }
 
 # Check if specified run is resumable
@@ -1308,13 +1308,13 @@ run_is_replayable () {
 run_status_print () {
     if run_is_resumable "${1}"
     then
-        echo "resumable (synchronization not complete, use -r to resume)"
+        printf '%s\n' "resumable (synchronization not complete, use -r to resume)"
     else
         if run_is_replayable "${1}"
         then
-            echo "replayable (use -R to replay)"
+            printf '%s\n' "replayable (use -R to replay)"
         else
-            echo "not resumable (fpart pass not complete)"
+            printf '%s\n' "not resumable (fpart pass not complete)"
         fi
     fi
 }
@@ -1422,14 +1422,14 @@ job_queue_next () {
     local _next=""
     if [ -f "${JOBS_QUEUEDIR}/sl_stop" ]
     then
-        echo "sl_stop"
+        printf '%s\n' "sl_stop"
     else
         _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' | head -n 1)
         if [ -n "${_next}" ]
         then
             mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
                 end_die "Cannot dequeue next job"
-            echo "${_next}"
+            printf '%s\n' "${_next}"
         fi
     fi
 }
@@ -1493,11 +1493,11 @@ fi
 # List runs and exit
 if [ -n "${OPT_LISTRUNS}" ]
 then
-    echo "<=== Listing runs"
+    printf '%s\n' "<=== Listing runs"
     for _run in \
         $(cd "${FPSYNC_PARTSDIR_BASE}" 2>/dev/null && ls -1)
     do
-        echo "===> Run ID: ${_run}, status: $(run_status_print "${_run}")"
+        printf '%s\n' "===> Run ID: ${_run}, status: $(run_status_print "${_run}")"
         if [ ${OPT_VERBOSE} -ge 1 ]
         then
             if run_is_resumable "${_run}"
@@ -1508,16 +1508,16 @@ then
                 _jobs_percent="??"
                 [ ${_jobs_total} -ge 1 ] && \
                     _jobs_percent=$(( (${_jobs_done} * 100) / ${_jobs_total} ))
-                echo "     Jobs done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
+                printf '%s\n' "     Jobs done: ${_jobs_done}/${_jobs_total} (${_jobs_percent}%), remaining: ${_jobs_remaining}"
             else
                 if run_is_replayable "${_run}"
                 then
                     _report_logs_fatal=$(run_logs_list_by_ext "${_run}" "ret" | logfiles_filter_ret_with_errors)
                     if [ -z "${_report_logs_fatal}" ]
                     then
-                        echo "     Run completed without error."
+                        printf '%s\n' "     Run completed without error."
                     else
-                        echo "     Run completed with errors."
+                        printf '%s\n' "     Run completed with errors."
                     fi
                 fi
             fi
@@ -1603,12 +1603,12 @@ FPART_MODEOPTS=$(tool_get_fpart_mode_opts "${OPT_TOOL_NAME}" "${OPT_DIRSONLY}" "
 FPART_JOBCOMMAND= ; tool_init_fpart_job_command "${OPT_TOOL_NAME}" "${OPT_AGGRESSIVE}"
 FPART_POSTHOOK="printf '%s\\n' \"${FPART_JOBCOMMAND}\" > \
     \"${JOBS_QUEUEDIR}/\${FPART_PARTNUMBER}\" && \
-    printf '%s\n%s\n' job_size=\"\${FPART_PARTSIZE}\" job_files=\"\${FPART_PARTNUMFILES}\" > \
+    printf '%s\\n%s\\n' job_size=\"\${FPART_PARTSIZE}\" job_files=\"\${FPART_PARTNUMFILES}\" > \
     \"${FPSYNC_PARTSTMPL}.\${FPART_PARTNUMBER}.meta\" && \
-    printf '%s\n%s\n%s\n' total_num_parts=\"\${FPART_TOTALNUMPARTS}\" total_size=\"\${FPART_TOTALSIZE}\" total_num_files=\"\${FPART_TOTALNUMFILES}\" > \
+    printf '%s\\n%s\\n%s\\n' total_num_parts=\"\${FPART_TOTALNUMPARTS}\" total_size=\"\${FPART_TOTALSIZE}\" total_num_files=\"\${FPART_TOTALNUMFILES}\" > \
     \"${FPSYNC_PARTSDIR}/run.meta\" && \
     [ ${OPT_VERBOSE} -ge 2 ] && \
-    echo \"\$(date '${OPT_DATEFORMAT}') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
+    printf '%s\\n' \"\$(date '${OPT_DATEFORMAT}') ==> [FPART] Partition \${FPART_PARTNUMBER} written\"" # [1]
 
 # [1] Be careful to host the job queue on a filesystem that can handle
 # fine-grained mtime timestamps (i.e. with a sub-second precision) if you want
@@ -1758,7 +1758,7 @@ if [ -n "${OPT_WRKRS}" ]
 then
     echo_log "2" "=====> Validating requirements on SSH nodes..."
 
-    _FIRST_HOST="$(echo ${OPT_WRKRS} | awk '{print $1}')"
+    _FIRST_HOST="$(printf '%s\n' "${OPT_WRKRS}" | awk '{print $1}')"
     for _host in ${OPT_WRKRS}
     do
         # Check for sudo presence (it must be passwordless)
@@ -1828,10 +1828,10 @@ work_list_free_workers_init
 # Let's rock !
 echo_log "4" "----"
 echo_log "1" "Info: Fpsync started (syncing ${OPT_SRCDIR} => ${OPT_DSTURL}, pid: $$)" "blue"
-echo_log "1" "Info: Run ID: ${FPSYNC_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && echo ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && echo ' (resumed)' ;})" "blue"
+echo_log "1" "Info: Run ID: ${FPSYNC_RUNID}$({ [ -n "${OPT_REPLAYRUN}" ] && printf '%s\n' ' (replayed)' ;} || { [ -n "${OPT_RUNID}" ] && printf '%s\n' ' (resumed)' ;})" "blue"
 echo_log "2" "Info: Start time: $(date)" "blue"
 echo_log "2" "Info: Concurrent sync jobs: ${OPT_JOBS}"
-echo_log "2" "Info: Workers: $(echo "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && echo 'local')"
+echo_log "2" "Info: Workers: $(printf '%s\n' "${OPT_WRKRS}" | sed -E -e 's/^[[:space:]]+//' -e 's/[[:space:]]+/ /g')$([ -z "${OPT_WRKRS}" ] && printf '%s\n' 'local')"
 echo_log "2" "Info: Shared dir: ${OPT_SHDIR}"
 echo_log "2" "Info: Temp dir: ${OPT_TMPDIR}"
 # The following two options are just a recall to the user
@@ -1961,7 +1961,7 @@ then
                     set -m
                     (
                         . "${JOBS_WORKDIR}/${_next_job}"
-                        echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
+                        printf '%s\n' "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:local"
@@ -1975,7 +1975,7 @@ then
                     (
                         "${SSH_BIN}" "${_next_host}" "${OPT_JOBSSHELL} -s" \
                             < "${JOBS_WORKDIR}/${_next_job}"
-                        echo "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
+                        printf '%s\n' "$?" > "${FPSYNC_LOGDIR}/${_next_job}.ret"
                     ) &
                     _next_pid="$!"
                     work_list_push "${_next_pid}:${_next_job}:${_next_host}"
@@ -2029,36 +2029,36 @@ fi
 _ts_now=$(date '+%s')
 _total_run_elapsed_time="$(( ${_ts_now} - ${_run_start_time} ))"
 _report_logs_fatal=$(run_logs_list_by_ext "${FPSYNC_RUNID}" "ret" | logfiles_filter_ret_with_errors)
-_report_logs_fatal_stderr=$(echo "${_report_logs_fatal}" | logfiles_filter_ret_to_stderr)
+_report_logs_fatal_stderr=$(printf '%s\n' "${_report_logs_fatal}" | logfiles_filter_ret_to_stderr)
 _report_logs_additional_stderr=$(run_logs_list_by_ext "${FPSYNC_RUNID}" "stderr" | logfiles_filter_stderr_without_ret)
 _report_body=$(
     if [ -z "${_report_logs_fatal}" ]
     then
-        echo "Fpsync completed without error in ${_total_run_elapsed_time}s."
+        printf '%s\n' "Fpsync completed without error in ${_total_run_elapsed_time}s."
     else
-        echo "Fpsync completed with errors in ${_total_run_elapsed_time}s"
-        echo ""
-        echo "Some jobs did NOT return 0 (success):"
-        echo "${_report_logs_fatal}"
+        printf '%s\n' "Fpsync completed with errors in ${_total_run_elapsed_time}s"
+        printf '%s\n' ""
+        printf '%s\n' "Some jobs did NOT return 0 (success):"
+        printf '%s\n' "${_report_logs_fatal}"
         if [ -n "${_report_logs_fatal_stderr}" ]
         then
-            echo ""
-            echo "You may find more information in the following logs:"
-            echo "${_report_logs_fatal_stderr}"
+            printf '%s\n' ""
+            printf '%s\n' "You may find more information in the following logs:"
+            printf '%s\n' "${_report_logs_fatal_stderr}"
         fi
     fi
     if [ -n "${_report_logs_additional_stderr}" ]
     then
-        echo ""
-        echo "Some jobs reported non-fatal problems to stderr:"
-        echo "${_report_logs_additional_stderr}"
+        printf '%s\n' ""
+        printf '%s\n' "Some jobs reported non-fatal problems to stderr:"
+        printf '%s\n' "${_report_logs_additional_stderr}"
     fi
     if [ -n "${OPT_MAIL}" ]
     then
-        echo ""
-        echo "--"
-        echo "Logs generated by fpsync(1) tool."
-        echo "See https://www.fpart.org for more information."
+        printf '%s\n' ""
+        printf '%s\n' "--"
+        printf '%s\n' "Logs generated by fpsync(1) tool."
+        printf '%s\n' "See https://www.fpart.org for more information."
     fi
 )
 
