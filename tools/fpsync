@@ -1014,7 +1014,7 @@ work_list_refresh () {
     local _JOB_PID=""
     local _JOB_PART=""
     local _JOB_HOST=""
-    for _JOB in ${WORK_LIST}
+    for _JOB in $(printf '%s\n' "${WORK_LIST}")
     do
         # Extract job info
         _JOB_PID="${_JOB%%:*}"
@@ -1334,7 +1334,7 @@ sigint_handler () {
     else
         [ ${SIGINT_COUNT} -le 2 ] && \
             echo_log "1" "===> Interrupted again, killing remaining jobs"
-        for _KJOB in ${WORK_LIST}
+        for _KJOB in $(printf '%s\n' "${WORK_LIST}")
         do
             # Extract job info
             _KJOB_PID="${_KJOB%%:*}"
@@ -1759,7 +1759,7 @@ then
     echo_log "2" "=====> Validating requirements on SSH nodes..."
 
     _FIRST_HOST="$(printf '%s\n' "${OPT_WRKRS}" | awk '{print $1}')"
-    for _host in ${OPT_WRKRS}
+    for _host in $(printf '%s\n' "${OPT_WRKRS}")
     do
         # Check for sudo presence (it must be passwordless)
         if [ -n "${OPT_SUDO}" ]
