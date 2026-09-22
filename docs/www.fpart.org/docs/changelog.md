@@ -4,6 +4,7 @@
     - fpsync: allow special characters in src_dir/ and dst_url/
       (see GH issue #86)
     - fpsync: fix running on Zsh
+    - fpart: fix various errors spotted by Claude (Anthropic)
 ```
 # Current: 1.7.1
 ```nohighlight

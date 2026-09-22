@@ -72,8 +72,8 @@ dispatch_file_entry_p_by_size(struct file_entry **file_entry_p,
     assert(num_parts > 0);
 
     fnum_t i = 0;
-    while((file_entry_p != NULL) && (file_entry_p[i] != NULL) &&
-        (i < num_entries)) {
+    while((i < num_entries) &&
+        (file_entry_p != NULL) && (file_entry_p[i] != NULL)) {
         /* find most approriate partition */
         pnum_t smallest_partition_index = find_smallest_partition_index(head);
         struct partition *smallest_partition =
