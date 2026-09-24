@@ -5,7 +5,7 @@ That file shares several ideas I've had for the project. Feel free to contribute
 
 Global :
 - Unit testing !
-- Provide ready-to-use docker nodes ?
+- Provide ready-to-use docker images ?
 - FS analysis tool to help optimize fpart/fpsync options ?
 
 Fpart:
@@ -27,6 +27,8 @@ Fpart:
 
 Fpsync:
 - Support OpenRsync (https://www.openrsync.org/) ?
+- Add per-run locks to avoid manipulating the same run through several
+  concurrent fpsync instances
 - Add an option to specify run ID name and set default run ID scheme to YYYYDDMM-HHMMSS
 - Ability to replay one or more jobs within a specific run
   (see: https://sourceforge.net/p/fpart/discussion/general/thread/5d001d74b6/)
