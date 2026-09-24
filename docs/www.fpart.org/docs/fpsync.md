@@ -263,3 +263,8 @@ On OpenIndiana, if you need to use fpsync(1), the script will need adjustments :
 * Use gtar(1) instead or tar(1) (adapt TAR_NAME variable).
 
 On Alpine Linux, you will need the 'fts-dev' package to build fpart(1).
+
+Various :
+
+* Calls to 'sleep' use sub-second values, which may not be supported everywhere.
+* fpsync traps FreeBSD's SIGINFO (29) which may be another signal on your preferred OS.
