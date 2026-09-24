@@ -1424,7 +1424,7 @@ job_queue_next () {
     then
         printf '%s\n' "sl_stop"
     else
-        _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v 'info' | head -n 1)
+        _next=$(cd "${JOBS_QUEUEDIR}" && ls -rt1 2>/dev/null | grep -v '^info$' | head -n 1)
         if [ -n "${_next}" ]
         then
             mv "${JOBS_QUEUEDIR}/${_next}" "${JOBS_WORKDIR}" || \
