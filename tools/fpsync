@@ -106,12 +106,12 @@ LC_ALL=C
 
 # Our color constants
 # See: https://en.wikipedia.org/wiki/ANSI_escape_code
-COLOR_BLUE=$(tput setaf 4)
-COLOR_GREEN=$(tput setaf 2)
-COLOR_ORANGE=$(tput setaf 3)
-COLOR_RED=$(tput setaf 1)
-COLOR_WHITE=$(tput setaf 7)
-COLOR_STOP=$(tput sgr0)
+COLOR_BLUE=$(tput setaf 4 2>/dev/null)
+COLOR_GREEN=$(tput setaf 2 2>/dev/null)
+COLOR_ORANGE=$(tput setaf 3 2>/dev/null)
+COLOR_RED=$(tput setaf 1 2>/dev/null)
+COLOR_WHITE=$(tput setaf 7 2>/dev/null)
+COLOR_STOP=$(tput sgr0 2>/dev/null)
 
 # Disable 'pipefail' option if not supported
 QUIRK_PIPEFAIL='set -o pipefail'
